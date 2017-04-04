@@ -2,7 +2,6 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-var _ = require('lodash');
 var twitterConfig = require('./twitterConfig');
 var Twitter = require('node-tweet-stream')
   , t = new Twitter(twitterConfig);

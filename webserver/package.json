@@ -17,7 +17,6 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.15.2",
-    "lodash": "^4.17.4",
     "node-tweet-stream": "^2.0.1",
     "socket.io": "^1.7.3"
   }
