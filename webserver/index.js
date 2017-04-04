@@ -25,8 +25,7 @@ const unsubscribe = function (socket, keyword) {
     if (subscriptions[keyword]) {
         subscriptions[keyword] = subscriptions[keyword].filter((s) => s !== socket);
         if (subscriptions[keyword].length === 0) {
-            t.untrack(keyword);
-            subscriptions[keyword] = [];
+            t.untrack(keyword);            
         }
     }
 };
