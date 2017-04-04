@@ -72,10 +72,19 @@
             $('#m').val('');            
             return false;
         });
+        $('#m').on('input',function(e){
+            const keyword = $('#m').val();
+            if (subscriptions.indexOf(keyword) === -1) {
+                $('#btn').text('Subscribe');
+            } else {
+                $('#btn').text('Unsubscribe');
+            }
+        });
         socket.on('tweet', function (msg) {
             const value = counter[msg.keyword] + 1;
-            counter[msg.keyword] = value;            
-            $('#messages').append($('<li>').text(msg.keyword + " (" + value + ")  --> " + msg.text));
+            counter[msg.keyword] = value;      
+            const text = msg.keyword + " [" + msg.sentiment.score + "] (" + value + ")  --> " + msg.text
+            $('#messages').append($('<li>').text(text));
             $('body').scrollTop($('ul li').last().position().top + $('ul li').last().height());
         });
     });
@@ -85,7 +94,7 @@
 <body>
     <ul id="messages"></ul>
     <form action="">
-        <input id="m" autocomplete="off" /><button>Subscribe/Unsubscribe</button>
+        <input id="m" autocomplete="off" /><button id="btn">Subscribe</button>
     </form>
 </body>
 

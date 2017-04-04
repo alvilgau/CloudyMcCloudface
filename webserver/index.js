@@ -5,6 +5,7 @@ var io = require('socket.io')(http);
 var twitterConfig = require('./twitterConfig');
 var Twitter = require('node-tweet-stream')
     , t = new Twitter(twitterConfig);
+var sentiment = require('sentiment');
 
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
@@ -63,7 +64,8 @@ t.on('tweet', (tweet) => {
             subscriptions[keyword].forEach((socket) => {
                 socket.emit('tweet', {
                     keyword: keyword,
-                    text: tweet.text
+                    text: tweet.text,
+                    sentiment: sentiment(tweet.text)
                 });
             });
         }
