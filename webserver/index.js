@@ -11,6 +11,7 @@ app.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
 });
 
+// key = keyword, value = list of subscribed sockets for the keyword
 const subscriptions = {};
 
 const subscribe = function (socket, keyword) {
@@ -75,6 +76,10 @@ t.on('tweet', (tweet) => {
 t.on('error', (err) => {
     console.log('twitter-stream-error', err)
 });
+
+t.on('warning', (warning) => {
+    console.log('twitter-stream-warning', warning);
+})
 
 http.listen(3000, function () {
     console.log('listening on *:3000');

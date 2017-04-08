@@ -16,8 +16,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "amqplib": "^0.5.1",
+    "crypto": "0.0.3",
     "express": "^4.15.2",
     "node-tweet-stream": "^2.0.1",
+    "request": "^2.81.0",
     "sentiment": "^4.0.0",
     "socket.io": "^1.7.3"
   }
