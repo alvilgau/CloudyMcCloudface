@@ -14,6 +14,7 @@ npm install
 2. run scripts:
 
 ```bash
-node twitterstream.js
-node twitterlogger.js
+node tweetrstream.js
+node tweetanalyzer.js
+node tweetlogger.js
 ```
