@@ -24,7 +24,7 @@ const installResponseHandler = function(stream) {
                 const splitted = str.split('\r\n');
                 tweet += splitted[0];
                 try {
-                    const tweetAsJson = JSON.parse(tweet);                    
+                    const tweetAsJson = JSON.parse(tweet);                                                            
                     channel.sendToQueue(q, Buffer.from(tweetAsJson.text));                    
                 } catch (ignored) {}            
                 tweet = splitted[1];                             
