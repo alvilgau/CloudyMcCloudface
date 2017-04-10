@@ -35,16 +35,15 @@ const installResponseHandler = function(stream) {
     });
 };
 
-const connectToTwitter = function() {
-    const twitterConfig = {
-        consumer_key: process.env.TWITTER_CONSUMER_KEY,
-        token: process.env.TWITTER_TOKEN,
-        consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
-        token_secret: process.env.TWITTER_TOKEN_SECRET
-    };    
+const connectToTwitter = function() {    
     var stream = request.post({
         url: 'https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true',
-        oauth: twitterConfig,
+        oauth: {
+            consumer_key: process.env.TWITTER_CONSUMER_KEY,
+            token: process.env.TWITTER_TOKEN,
+            consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
+            token_secret: process.env.TWITTER_TOKEN_SECRET 
+        },
         form: {
             track: keywords.join(',')
         }
