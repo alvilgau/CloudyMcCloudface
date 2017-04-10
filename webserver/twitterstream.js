@@ -1,5 +1,6 @@
+require('dotenv').config()
 const https = require('https');
-const twitterConfig = require('./twitterConfig');
+//const twitterConfig = require('./twitterConfig');
 const crypto = require('crypto');
 const request = require('request');
 const amqp = require('amqplib');
@@ -36,11 +37,17 @@ const installResponseHandler = function(stream) {
 };
 
 const connectToTwitter = function() {
+    const twitterConfig = {
+        consumer_key: process.env.TWITTER_CONSUMER_KEY,
+        token: process.env.TWITTER_TOKEN,
+        consumer_token: process.env.TWITTER_CONSUMER_TOKEN,
+        token_secret: process.env.TWITTER_TOKEN_SECRET
+    };
     var stream = request.post({
         url: 'https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true',
         oauth: twitterConfig,
         form: {
-        track: keywords.join(',')
+            track: keywords.join(',')
         }
     });
     return stream;
