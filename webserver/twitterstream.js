@@ -52,7 +52,7 @@ const connectToTwitter = function() {
     return stream;
 }
 
-amqp.connect('amqp://localhost')
+amqp.connect(process.env.RABBITMQ_URL)
     .then((conn) => {
         return conn.createChannel();
     })
