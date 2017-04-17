@@ -19,7 +19,7 @@ The following technologies will be used with the different cloud services:
 - *Sentiment Analysis*: The sentiment analysis running on AWS lambda will be implemented with node.js.
 - *Persistence*: DynamoDB, the NoSQL DB by AWS will be used to have greater flexibility and better scalability compared to a SQL database
 
-![Architecture](architecture.png)
+![Architecture](assets/architecture.png)
 
 ## Testing/Verification
 To be able to determine if the application is developed properly for the cloud, a load test will be done. During the load test multiple AWS EC2 instances will be used, to simulate several hundred users. If the cloud application is setup correctly additional EC2 instances will be started automatically when the load gets too high. Similarly a single running instance could be terminated, which should be compensated for without any manual work.
