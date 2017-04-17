@@ -35,7 +35,3 @@ The sentiment analysis could be ported to an AWS EC2 instance. This would allow 
 
 ### Add Additional Cloud Services
 The application could be extended with additional cloud services. One possibility would be to use AWS SES (Simple Email Service) to allow users to trigger the sentiment analysis of Twitter streams via email and/or receive the result via email.
-
----
-
-*Team: Andreas Reinhardt, Markus Heilig, Alexander Vilgauk*
