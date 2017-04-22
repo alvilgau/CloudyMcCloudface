@@ -13,6 +13,6 @@ amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
         console.log(JSON.parse(msg.content));
       }, { noAck: true });
     });
-
   });
+
 });

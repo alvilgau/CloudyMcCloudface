@@ -80,12 +80,13 @@
                 $('#btn').text('Unsubscribe');
             }
         });
-        socket.on('tweet', function (msg) {
-            const value = counter[msg.keyword] + 1;
-            counter[msg.keyword] = value;      
-            const text = msg.keyword + " [" + msg.sentiment.score + "] (" + value + ")  --> " + msg.text
-            $('#messages').append($('<li>').text(text));
-            $('body').scrollTop($('ul li').last().position().top + $('ul li').last().height());
+        socket.on('tweets', function (msg) {            
+            console.log(msg);
+            msg.tweets.forEach(tweet => {
+                const text = msg.keyword + " [" + tweet.score + "] " + tweet.text
+                $('#messages').append($('<li>').text(text));                
+            })  
+            $('body').scrollTop($('ul li').last().position().top + $('ul li').last().height());                
         });
     });
 
