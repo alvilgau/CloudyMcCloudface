@@ -104,12 +104,13 @@ const handleNewTweet = function(tweet) {
            as well as the keywords = ['dog', 'doghouse'].
            this sould match 'doghouse' instead of 'dog'.
            this can be reached when we sort the string by length.         
-  */
+  */        
   const keyword = Object.keys(keywords)
                         .sort((a, b) => b.length - a.length)
-                        .find(keyword => tweet.includes(keyword));
+                        .find(keyword => tweet.toLowerCase().includes(keyword));
   // no keyword found
   if (keyword == undefined) {    
+    console.log('no keyword found for: ' + tweet);
     return;
   }
   // create key for keyword if not already exists
@@ -142,7 +143,7 @@ amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
   // assert channel for tweet stream
   conn.createChannel((err, ch) => {          
     ch.assertQueue('tweets', {durable: false});
-    ch.consume('tweets', (msg) => {      
+    ch.consume('tweets', (msg) => {          
       const tweet = msg.content.toString();      
       handleNewTweet(tweet);      
     }, { noAck: true });
@@ -155,7 +156,7 @@ amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
       ch.bindQueue(q.queue, 'keywords', '');
       ch.consume(q.queue, function(msg) {
         const message = JSON.parse(msg.content);        
-        if (message.type === 'register') {          
+        if (message.type === 'register') {            
           handleRegisterMessage(message);                    
         } else if (message.type === 'unregister') {
           handleUnregisterMessage(message);          

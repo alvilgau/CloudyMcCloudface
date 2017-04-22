@@ -64,9 +64,9 @@ const unsubscribe = function (socket, keyword) {
 };
 
 // removes all keyword subscriptions for a given socket
-const removeAllSubscriptions = function (socket) {
-  Object.keys(subscriptions).forEach((keyword) => {
-    unsubscribe(keyword, socket);
+const removeAllSubscriptions = function (socket) {  
+  Object.keys(subscriptions).forEach(keyword => {
+    unsubscribe(socket, keyword);
   });
 };
 
@@ -76,20 +76,17 @@ io.on('connection', (socket) => {
   console.log('connection', socket.id);
 
   // client subscribes a keyword
-  socket.on('subscribe', (keyword) => {
-    console.log('subscribe', keyword);
-    subscribe(socket, keyword);
+  socket.on('subscribe', (keyword) => {    
+    subscribe(socket, keyword.toLowerCase());
   });
 
   // client unsubscribes a keyword
-  socket.on('unsubscribe', (keyword) => {
-    console.log('unsubscribe', keyword);
-    unsubscribe(socket, keyword);
+  socket.on('unsubscribe', (keyword) => {    
+    unsubscribe(socket, keyword.toLowerCase());
   });
 
   // client closed connection
   socket.on('disconnect', () => {
-    console.log('disconnect', socket.id);
     removeAllSubscriptions(socket);
   });
 

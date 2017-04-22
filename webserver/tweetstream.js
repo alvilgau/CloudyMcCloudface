@@ -1,6 +1,5 @@
 require('dotenv').config();
 const https = require('https');
-const crypto = require('crypto');
 const request = require('request');
 const amqp = require('amqplib/callback_api');
 
@@ -27,10 +26,10 @@ const installResponseHandler = function (stream) {
         const splitted = chunk.split('\r\n');
         // first part belongs to 'current' tweet
         tweet += splitted[0];
-        try {
+        try {          
           // publish tweet          
-          const tweetAsJson = JSON.parse(tweet);                 
-          channel.sendToQueue('tweets', Buffer.from(tweetAsJson.text));
+          const tweetAsJson = JSON.parse(tweet);             
+          channel.sendToQueue('tweets', Buffer.from(tweetAsJson.text));                                      
         } catch (ignored) { /* should never happen */ }
         // now the new tweet message
         tweet = splitted[1];

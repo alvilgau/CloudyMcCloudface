@@ -80,9 +80,13 @@
                 $('#btn').text('Unsubscribe');
             }
         });
-        socket.on('tweets', function (msg) {            
-            console.log(msg);
-            msg.tweets.forEach(tweet => {
+
+        var counter = 0;
+
+        socket.on('tweets', function (msg) {                        
+            counter += msg.tweets.length;
+            document.title = "tweets: " + counter;
+            msg.tweets.forEach(tweet => {                
                 const text = msg.keyword + " [" + tweet.score + "] " + tweet.text
                 $('#messages').append($('<li>').text(text));                
             })  
