@@ -8,6 +8,7 @@ var channel = null;
 var stream = null;
 const q = 'tweets';
 const keywords = ['trump'];
+var receivedNewKeywords = false;
 
 const installErrorHandler = function (stream) {
     stream.on('error', (err) => {
@@ -71,7 +72,22 @@ amqp.connect(process.env.RABBITMQ_URL)
         channel = ch;
         channel.assertQueue(q, { durable: false });
         connectToTwitter();        
+        reconnect();
     })
     .catch((err) => {
         console.log(err);
     });
+
+const reconnect = function() {
+    // when we received new keywords, we have to create a new connection to twitter
+    // but we dont want to do this to often because we are afraid of being blocked!
+    const timeoutInSeconds = 30;
+    setInterval(() => {        
+        if (receivedNewKeywords) {
+            console.log('reconnect to twitter...');
+            stream.abort();
+            connectToTwitter();
+        }
+    }, timeoutInSeconds * 1000);
+};
+
