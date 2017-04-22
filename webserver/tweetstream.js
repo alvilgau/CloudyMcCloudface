@@ -21,7 +21,7 @@ const installResponseHandler = function (stream) {
     res.on('data', (bytes) => {      
       // we received a new chunk from twitter
       const chunk = bytes.toString();
-      // check if check contains a new tweet (tweets are separated by '\r\n')
+      // check if chunk contains a new tweet (tweets are separated by '\r\n')
       if (chunk.includes('\r\n')) {                
         const splitted = chunk.split('\r\n');
         // first part belongs to 'current' tweet
