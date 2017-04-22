@@ -9,47 +9,59 @@ var stream = null;
 const q = 'tweets';
 const keywords = ['trump'];
 
-const installErrorHandler = function(stream) {
+const installErrorHandler = function (stream) {
     stream.on('error', (err) => {
         console.log('ERROR', err);
     });
 };
 
-const installResponseHandler = function(stream) {
+const installResponseHandler = function (stream) {
     stream.on('response', (res) => {
-        var tweet = ''; 
+        var tweet = '';
         res.on('data', (chunk) => {
+            // we received a new chunk from twitter
             const str = chunk.toString();
-            if (str.includes('\r\n'))  {
+            // check if check contains a new tweet (tweets are separated by '\r\n')
+            if (str.includes('\r\n')) {                
                 const splitted = str.split('\r\n');
+                // first part belongs to 'current' tweet
                 tweet += splitted[0];
                 try {
-                    const tweetAsJson = JSON.parse(tweet);                                                            
-                    channel.sendToQueue(q, Buffer.from(tweetAsJson.text));                    
-                } catch (ignored) {}            
-                tweet = splitted[1];                             
+                    // publish tweet
+                    const tweetAsJson = JSON.parse(tweet);
+                    channel.sendToQueue(q, Buffer.from(tweetAsJson.text));
+                } catch (ignored) { /* should never happen */ }
+                // now the new tweet message
+                tweet = splitted[1];
             } else {
+                // the whole chunk belongs to the current tweet
                 tweet += str;
             }
         });
     });
 };
 
-const connectToTwitter = function() {    
+const createTwitterStream = function () {
     var stream = request.post({
         url: 'https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true',
         oauth: {
             consumer_key: process.env.TWITTER_CONSUMER_KEY,
             token: process.env.TWITTER_TOKEN,
             consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
-            token_secret: process.env.TWITTER_TOKEN_SECRET 
+            token_secret: process.env.TWITTER_TOKEN_SECRET
         },
         form: {
             track: keywords.join(',')
         }
     });
     return stream;
-}
+};
+
+const connectToTwitter = function() {
+    stream = createTwitterStream();
+    installErrorHandler(stream);
+    installResponseHandler(stream);
+};
 
 amqp.connect(process.env.RABBITMQ_URL)
     .then((conn) => {
@@ -57,10 +69,8 @@ amqp.connect(process.env.RABBITMQ_URL)
     })
     .then((ch) => {
         channel = ch;
-        channel.assertQueue(q, {durable: false});        
-        stream = connectToTwitter();
-        installErrorHandler(stream);
-        installResponseHandler(stream);
+        channel.assertQueue(q, { durable: false });
+        connectToTwitter();        
     })
     .catch((err) => {
         console.log(err);

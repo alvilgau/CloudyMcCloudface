@@ -2,7 +2,7 @@ require('dotenv').config();
 const amqp = require('amqplib/callback_api');
 const sentiment = require('sentiment');
 const stats = require('stats-lite');
-
+26
 /* analyze a single tweet
  return value:
    {
@@ -11,7 +11,7 @@ const stats = require('stats-lite');
         comparative: 1
    }
 */
-const analyzeTweet = function(tweet) {    
+const analyzeTweet = function (tweet) {
     const analysis = sentiment(tweet);
     return {
         text: tweet,
@@ -33,7 +33,7 @@ const analyzeTweet = function(tweet) {
        }
    }
 */
-const analyzeTweets = function(tweets) {
+const analyzeTweets = function (tweets) {
     const analyzedTweets = tweets.map(t => analyzeTweet(t));
     const scores = analyzedTweets.map(t => t.score);
     const comparatives = analyzedTweets.map(t => t.comparative);
@@ -46,7 +46,7 @@ const analyzeTweets = function(tweets) {
             standardDeviation: stats.stdev(scores),
             percentile: stats.percentile(scores, 0.85)
         }
-    };    
+    };
 };
 
 amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
@@ -56,7 +56,7 @@ amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
         // store a bunch of tweets (which will be analyzed all in one step)
         const tweets = [];
         // bunch size
-        const treshold = 10;        
+        const treshold = 10;
 
         conn.createChannel((err, inChannel) => {
             inChannel.assertQueue('tweets', { durable: false });
@@ -72,10 +72,11 @@ amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
                     // publish tweet statistics to subscribers                                     
                     exchangeChannel.publish('analyzed_tweets', '', Buffer.from(JSON.stringify(analysis)));
                     // clear array
-                    tweets.length = 0;                       
+                    tweets.length = 0;
                 }
 
             }, { noAck: true });
         });
     });
 });
+
