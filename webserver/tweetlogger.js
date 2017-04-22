@@ -9,9 +9,8 @@ amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
     ch.assertQueue('', { exclusive: true }, function (err, q) {
       console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", q.queue);
       ch.bindQueue(q.queue, ex, '');
-      ch.consume(q.queue, function (msg) {
-        const obj = JSON.parse(msg.content);//JSON.parse(msg.content.toString());
-        console.log(obj);
+      ch.consume(q.queue, function (msg) {        
+        console.log(JSON.parse(msg.content));
       }, { noAck: true });
     });
 
