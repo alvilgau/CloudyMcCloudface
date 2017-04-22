@@ -10,7 +10,8 @@ amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
       console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", q.queue);
       ch.bindQueue(q.queue, ex, '');
       ch.consume(q.queue, function (msg) {
-        console.log(msg.content.toString());
+        const obj = JSON.parse(msg.content);//JSON.parse(msg.content.toString());
+        console.log(obj);
       }, { noAck: true });
     });
 
