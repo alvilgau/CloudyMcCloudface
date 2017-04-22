@@ -4,11 +4,11 @@ const crypto = require('crypto');
 const request = require('request');
 const amqp = require('amqplib');
 
-var channel = null;
-var stream = null;
+let channel = null;
+let stream = null;
 const q = 'tweets';
 const keywords = ['trump'];
-var receivedNewKeywords = false;
+let receivedNewKeywords = false;
 
 const installErrorHandler = function (stream) {
   stream.on('error', (err) => {
@@ -18,7 +18,7 @@ const installErrorHandler = function (stream) {
 
 const installResponseHandler = function (stream) {
   stream.on('response', (res) => {
-    var tweet = '';
+    let tweet = '';
     res.on('data', (chunk) => {
       // we received a new chunk from twitter
       const str = chunk.toString();
@@ -43,7 +43,7 @@ const installResponseHandler = function (stream) {
 };
 
 const createTwitterStream = function () {
-  var stream = request.post({
+  const stream = request.post({
     url: 'https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true',
     oauth: {
       consumer_key: process.env.TWITTER_CONSUMER_KEY,
@@ -84,9 +84,9 @@ const reconnect = function() {
   const timeoutInSeconds = 30;
   setInterval(() => {        
     if (receivedNewKeywords) {
-        console.log('reconnect to twitter...');
-        stream.abort();
-        connectToTwitter();
+      console.log('reconnect to twitter...');
+      stream.abort();
+      connectToTwitter();
     }
   }, timeoutInSeconds * 1000);
 };
