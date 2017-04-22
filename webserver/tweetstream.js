@@ -127,7 +127,7 @@ amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
 
 const reconnect = function() {
   // when we received new keywords, we have to create a new connection to twitter
-  // but we dont want to do this to often because we are afraid of being blocked!
+  // but we dont want to do this too often because we are afraid of being blocked!
   const timeoutInSeconds = 15;
   setInterval(() => {      
     // check if we really need to reconnect         
