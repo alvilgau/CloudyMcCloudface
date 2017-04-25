@@ -12,12 +12,12 @@ const stats = require('stats-lite');
    }
 */
 const analyzeTweet = function (tweet) {
-    const analysis = sentiment(tweet);
-    return {
-        text: tweet,
-        score: analysis.score,
-        comparative: analysis.comparative
-    };
+  const analysis = sentiment(tweet);
+  return {
+    text: tweet,
+    score: analysis.score,
+    comparative: analysis.comparative,
+  };
 };
 
 /* analyze a bunch of tweets
@@ -41,46 +41,46 @@ const analyzeTweet = function (tweet) {
    }
 */
 const analyzeTweets = function (tweets) {
-    const analyzedTweets = tweets.map(t => analyzeTweet(t));
-    const scores = analyzedTweets.map(t => t.score);
-    const comparatives = analyzedTweets.map(t => t.comparative);
-    return {
-      tweets: analyzedTweets,
-      score: {
-        mean: stats.mean(scores),
-        median: stats.median(scores),
-        variance: stats.variance(scores),
-        standardDeviation: stats.stdev(scores),
-        percentile: stats.percentile(scores, 0.85)
-      },
-      comparative: {
-        mean: stats.mean(comparatives),
-        median: stats.median(comparatives),
-        variance: stats.variance(comparatives),
-        standardDeviation: stats.stdev(comparatives),
-        percentile: stats.percentile(comparatives, 0.85)
-      }
-    };
+  const analyzedTweets = tweets.map(t => analyzeTweet(t));
+  const scores = analyzedTweets.map(t => t.score);
+  const comparatives = analyzedTweets.map(t => t.comparative);
+  return {
+    tweets: analyzedTweets,
+    score: {
+      mean: stats.mean(scores),
+      median: stats.median(scores),
+      variance: stats.variance(scores),
+      standardDeviation: stats.stdev(scores),
+      percentile: stats.percentile(scores, 0.85),
+    },
+    comparative: {
+      mean: stats.mean(comparatives),
+      median: stats.median(comparatives),
+      variance: stats.variance(comparatives),
+      standardDeviation: stats.stdev(comparatives),
+      percentile: stats.percentile(comparatives, 0.85),
+    },
+  };
 };
 
 // key = keyword, value = number of registrations for a given keyword
 const keywords = {};
 
-const handleRegisterMessage = function(msg) {  
+const handleRegisterMessage = function (msg) {
   const keyword = msg.keyword;
-  if (keywords[keyword] == null) {
+  if (keywords[keyword] === null) {
     keywords[keyword] = 0;
-  }  
+  }
   // keep track of registrations
   keywords[keyword] += 1;
 };
 
-const handleUnregisterMessage = function(msg) {
+const handleUnregisterMessage = function (msg) {
   const keyword = msg.keyword;
-  if (keywords[keyword] != null) {    
+  if (keywords[keyword] !== null) {
     // decrement registration counter
     keywords[keyword] -= 1;
-    if (keywords[keyword] == 0) {
+    if (keywords[keyword] === 0) {
       // there are no more registrations for the given keyword
       delete keywords[keyword];
     }
@@ -95,22 +95,22 @@ const tweets = {};
 // number of tweets to collect (per keyword) before analysis starts
 const threshold = 10;
 
-const handleNewTweet = function(tweet) {
+const handleNewTweet = function (tweet) {
   /* determine the keyword for the tweet
-     
-     note: we have to sort the keywords by length (longest first), 
+
+     note: we have to sort the keywords by length (longest first),
            otherwise more generic words would match first!
            imagine the tweet: "we have a new doghouse :-)"
            as well as the keywords = ['dog', 'doghouse'].
            this sould match 'doghouse' instead of 'dog'.
-           this can be reached when we sort the string by length.         
-  */        
+           this can be reached when we sort the string by length.
+  */
   const keyword = Object.keys(keywords)
                         .sort((a, b) => b.length - a.length)
-                        .find(keyword => tweet.toLowerCase().includes(keyword));
+                        .find(kw => tweet.toLowerCase().includes(kw));
   // no keyword found
-  if (keyword == undefined) {    
-    console.log('no keyword found for: ' + tweet);
+  if (keyword) {
+    console.log(`no keyword found for: ${tweet}`);
     return;
   }
   // create key for keyword if not already exists
@@ -121,10 +121,10 @@ const handleNewTweet = function(tweet) {
   tweets[keyword].push(tweet);
 
   // check if exchangeChannel is set up and threshold is reached
-  if (exchangeChannel != null && tweets[keyword].length >= threshold) {
-    // analyze a bunch of tweets  
+  if (exchangeChannel !== null && tweets[keyword].length >= threshold) {
+    // analyze a bunch of tweets
     const analysis = analyzeTweets(tweets[keyword]);
-    analysis.keyword = keyword;    
+    analysis.keyword = keyword;
     // and publish our analysis results
     exchangeChannel.publish('analyzed_tweets', '', Buffer.from(JSON.stringify(analysis)));
     // clear tweets for the keyword
@@ -133,19 +133,18 @@ const handleNewTweet = function(tweet) {
 };
 
 amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
-    
   // assert channel for analyzed tweets
-  conn.createChannel((err, ch) => {
+  conn.createChannel((createChannelErr, ch) => {
     exchangeChannel = ch;
-    exchangeChannel.assertExchange('analyzed_tweets', 'fanout', {durable: false});
+    exchangeChannel.assertExchange('analyzed_tweets', 'fanout', { durable: false });
   });
 
   // assert channel for tweet stream
-  conn.createChannel((err, ch) => {          
-    ch.assertQueue('tweets', {durable: false});
-    ch.consume('tweets', (msg) => {          
-      const tweet = msg.content.toString();      
-      handleNewTweet(tweet);      
+  conn.createChannel((createChannelErr, ch) => {
+    ch.assertQueue('tweets', { durable: false });
+    ch.consume('tweets', (msg) => {
+      const tweet = msg.content.toString();
+      handleNewTweet(tweet);
     }, { noAck: true });
   });
 
@@ -154,16 +153,15 @@ amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
     ch.assertExchange('keywords', 'fanout', {durable: false});
     ch.assertQueue('', {exclusive: true}, function(err, q) {
       ch.bindQueue(q.queue, 'keywords', '');
-      ch.consume(q.queue, function(msg) {
-        const message = JSON.parse(msg.content);        
-        if (message.type === 'register') {            
-          handleRegisterMessage(message);                    
+      ch.consume(q.queue, (msg) => {
+        const message = JSON.parse(msg.content);
+        if (message.type === 'register') {
+          handleRegisterMessage(message);
         } else if (message.type === 'unregister') {
-          handleUnregisterMessage(message);          
+          handleUnregisterMessage(message);
         }
-      }, {noAck: true});
+      }, { noAck: true });
     });
   });
-
 });
 
