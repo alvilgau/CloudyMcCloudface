@@ -1,5 +1,4 @@
 require('dotenv').config();
-const https = require('https');
 const request = require('request');
 const amqp = require('amqplib/callback_api');
 
