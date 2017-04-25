@@ -68,7 +68,7 @@ const keywords = {};
 
 const handleRegisterMessage = function (msg) {
   const keyword = msg.keyword;
-  if (keywords[keyword] == null) {
+  if (keywords[keyword] === null) {
     keywords[keyword] = 0;
   }
   // keep track of registrations
@@ -77,10 +77,10 @@ const handleRegisterMessage = function (msg) {
 
 const handleUnregisterMessage = function (msg) {
   const keyword = msg.keyword;
-  if (keywords[keyword] != null) {
+  if (keywords[keyword] !== null) {
     // decrement registration counter
     keywords[keyword] -= 1;
-    if (keywords[keyword] == 0) {
+    if (keywords[keyword] === 0) {
       // there are no more registrations for the given keyword
       delete keywords[keyword];
     }
@@ -107,9 +107,9 @@ const handleNewTweet = function (tweet) {
   */
   const keyword = Object.keys(keywords)
                         .sort((a, b) => b.length - a.length)
-                        .find(keyword => tweet.toLowerCase().includes(keyword));
+                        .find(kw => tweet.toLowerCase().includes(kw));
   // no keyword found
-  if (keyword == undefined) {
+  if (keyword) {
     console.log(`no keyword found for: ${tweet}`);
     return;
   }
@@ -121,7 +121,7 @@ const handleNewTweet = function (tweet) {
   tweets[keyword].push(tweet);
 
   // check if exchangeChannel is set up and threshold is reached
-  if (exchangeChannel != null && tweets[keyword].length >= threshold) {
+  if (exchangeChannel !== null && tweets[keyword].length >= threshold) {
     // analyze a bunch of tweets
     const analysis = analyzeTweets(tweets[keyword]);
     analysis.keyword = keyword;
@@ -134,13 +134,13 @@ const handleNewTweet = function (tweet) {
 
 amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
   // assert channel for analyzed tweets
-  conn.createChannel((err, ch) => {
+  conn.createChannel((createChannelErr, ch) => {
     exchangeChannel = ch;
     exchangeChannel.assertExchange('analyzed_tweets', 'fanout', { durable: false });
   });
 
   // assert channel for tweet stream
-  conn.createChannel((err, ch) => {
+  conn.createChannel((createChannelErr, ch) => {
     ch.assertQueue('tweets', { durable: false });
     ch.consume('tweets', (msg) => {
       const tweet = msg.content.toString();
@@ -149,9 +149,9 @@ amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
   });
 
   // assert exchange for keyword observation
-  conn.createChannel((err, ch) => {
+  conn.createChannel((createChannelErr, ch) => {
     ch.assertExchange('keywords', 'fanout', { durable: true });
-    ch.assertQueue('', { exclusive: true }, (err, q) => {
+    ch.assertQueue('', { exclusive: true }, (assertQueueErr, q) => {
       ch.bindQueue(q.queue, 'keywords', '');
       ch.consume(q.queue, (msg) => {
         const message = JSON.parse(msg.content);
