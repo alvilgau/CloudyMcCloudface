@@ -109,7 +109,7 @@ const handleNewTweet = function (tweet) {
                         .sort((a, b) => b.length - a.length)
                         .find(kw => tweet.toLowerCase().includes(kw));
   // no keyword found
-  if (keyword) {
+  if (!keyword) {
     console.log(`no keyword found for: ${tweet}`);
     return;
   }
