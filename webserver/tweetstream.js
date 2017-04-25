@@ -95,6 +95,24 @@ const handleUnregisterMessage = function (msg) {
   console.log(`received unregistration for keyword: ${keyword}`);
 };
 
+const reconnect = function () {
+  // when we received new keywords, we have to create a new connection to twitter
+  // but we dont want to do this too often because we are afraid of being blocked!
+  const timeoutInSeconds = 15;
+  setInterval(() => {
+    // check if we really need to reconnect
+    if (needReconnect) {
+      needReconnect = false;
+      console.log(`reconnect to twitter: ${Object.keys(registrations).join()}`);
+      // close current stream and connect again
+      stream.abort();
+      connectToTwitter();
+    } else {
+      console.log('no need to reconnect');
+    }
+  }, timeoutInSeconds * 1000);
+};
+
 amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
   // create a channel to publish the tweets from twitter stream
   conn.createChannel((err, ch) => {
@@ -120,22 +138,4 @@ amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
     });
   });
 });
-
-const reconnect = function () {
-  // when we received new keywords, we have to create a new connection to twitter
-  // but we dont want to do this too often because we are afraid of being blocked!
-  const timeoutInSeconds = 15;
-  setInterval(() => {
-    // check if we really need to reconnect
-    if (needReconnect) {
-      needReconnect = false;
-      console.log(`reconnect to twitter: ${Object.keys(registrations).join()}`);
-      // close current stream and connect again
-      stream.abort();
-      connectToTwitter();
-    } else {
-      console.log('no need to reconnect');
-    }
-  }, timeoutInSeconds * 1000);
-};
 
