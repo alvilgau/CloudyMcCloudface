@@ -18,7 +18,7 @@ const subscriptions = {};
 
 // notify tweetstream & tweetanalyzer about new keyword
 const registerKeyword = function (keyword) {
-  if (keywordExchange != null) {
+  if (keywordExchange !== null) {
     const msg = {
       type: 'register',
       keyword,
@@ -29,7 +29,7 @@ const registerKeyword = function (keyword) {
 
 // notify tweetstream & tweetanalyzer that keyword is no longer used
 const unregisterKeyword = function (keyword) {
-  if (keywordExchange != null) {
+  if (keywordExchange !== null) {
     const msg = {
       type: 'unregister',
       keyword,
@@ -101,16 +101,16 @@ const notifyClients = function (data) {
 
 amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
   // create exchange for keywords
-  conn.createChannel((err, ch) => {
+  conn.createChannel((createChannelErr, ch) => {
     keywordExchange = ch;
     keywordExchange.assertExchange('keywords', 'fanout', { durable: true });
   });
 
   // create exchange for analyzed tweets
-  conn.createChannel((err, ch) => {
+  conn.createChannel((createChannelErr, ch) => {
     const ex = 'analyzed_tweets';
     ch.assertExchange(ex, 'fanout', { durable: false });
-    ch.assertQueue('', { exclusive: true }, (err, q) => {
+    ch.assertQueue('', { exclusive: true }, (assertQueueErr, q) => {
       ch.bindQueue(q.queue, ex, '');
 
       ch.consume(q.queue, (msg) => {
@@ -132,11 +132,11 @@ const cleanUpAndExit = function (reason) {
   });
   process.exit(0);
 };
-process.on('exit', code => cleanUpAndExit('exit'));
+process.on('exit', () => cleanUpAndExit('exit'));
 process.on('SIGINT', () => cleanUpAndExit('sigint'));
 process.on('SIGTERM', () => cleanUpAndExit('sigterm'));
 process.on('SIGHUP', () => cleanUpAndExit('sighup'));
-process.on('uncaughtException', err => cleanUpAndExit('uncaught exception'));
+process.on('uncaughtException', () => cleanUpAndExit('uncaught exception'));
 
 // lets go
 http.listen(3000, () => {
