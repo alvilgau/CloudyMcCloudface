@@ -151,7 +151,7 @@ amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
 
   // assert exchange for keyword observation
   conn.createChannel((err, ch) => {
-    ch.assertExchange('keywords', 'fanout', {durable: true});
+    ch.assertExchange('keywords', 'fanout', {durable: false});
     ch.assertQueue('', {exclusive: true}, function(err, q) {
       ch.bindQueue(q.queue, 'keywords', '');
       ch.consume(q.queue, function(msg) {
