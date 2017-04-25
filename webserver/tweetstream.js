@@ -65,7 +65,7 @@ const connectToTwitter = function () {
 const handleRegisterMessage = function (msg) {
   const keyword = msg.keyword;
   // check if keyword is already tracked
-  if (registrations[keyword] == null) {
+  if (registrations[keyword] === null) {
     // keyword isn't tracked yet
     registrations[keyword] = 0;
     // reconnect to the twitter stream to track the new keyword
@@ -80,11 +80,11 @@ const handleRegisterMessage = function (msg) {
 const handleUnregisterMessage = function (msg) {
   const keyword = msg.keyword;
   // check if there is a registration for the given keyword
-  if (registrations[keyword] != null) {
+  if (registrations[keyword] !== null) {
     // decrement registration counter for this keyword
     registrations[keyword] -= 1;
     // check if any other client is still interested
-    if (registrations[keyword] == 0) {
+    if (registrations[keyword] === 0) {
       // no other client is interested in the keyword
       // make a reconnect to decrease traffic
       delete registrations[keyword];
