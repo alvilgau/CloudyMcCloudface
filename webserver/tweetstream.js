@@ -115,7 +115,7 @@ const reconnect = function () {
 
 amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
   // create a channel to publish the tweets from twitter stream
-  conn.createChannel((err, ch) => {
+  conn.createChannel((createChannelErr, ch) => {
     channel = ch;
     channel.assertQueue('tweets', { durable: false });
     connectToTwitter();
@@ -123,9 +123,9 @@ amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
   });
 
   // create an exchange for keyword observation
-  conn.createChannel((err, ch) => {
+  conn.createChannel((createChannelErr, ch) => {
     ch.assertExchange('keywords', 'fanout', { durable: true });
-    ch.assertQueue('', { exclusive: true }, (err, q) => {
+    ch.assertQueue('', { exclusive: true }, (assertQueueErr, q) => {
       ch.bindQueue(q.queue, 'keywords', '');
       ch.consume(q.queue, (msg) => {
         const message = JSON.parse(msg.content);
