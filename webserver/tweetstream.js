@@ -9,14 +9,14 @@ let stream = null;
 const registrations = {};
 let needReconnect = false;
 
-const installErrorHandler = function (stream) {
-  stream.on('error', (err) => {
+const installErrorHandler = function (s) {
+  s.on('error', (err) => {
     console.log('ERROR', err);
   });
 };
 
-const installResponseHandler = function (stream) {
-  stream.on('response', (res) => {
+const installResponseHandler = function (s) {
+  s.on('response', (res) => {
     let tweet = '';
     res.on('data', (bytes) => {
       // we received a new chunk from twitter
@@ -42,7 +42,7 @@ const installResponseHandler = function (stream) {
 };
 
 const createTwitterStream = function () {
-  const stream = request.post({
+  const s = request.post({
     url: 'https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true',
     oauth: {
       consumer_key: process.env.TWITTER_CONSUMER_KEY,
@@ -54,7 +54,7 @@ const createTwitterStream = function () {
       track: Object.keys(registrations).join(),
     },
   });
-  return stream;
+  return s;
 };
 
 const connectToTwitter = function () {
