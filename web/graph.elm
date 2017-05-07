@@ -13,14 +13,14 @@ viewGraph keywords data =
     in
         viewSeriesCustom
             plotCustomizations_
-            (List.map (\k -> lineColoredWhereKeyword k.keyword k.color) keywords)
+            (List.map (\k -> lineColoredWhereKeyword k.name k.color) keywords)
             data
 
 
-lineColoredWhereKeyword keyword colors =
+lineColoredWhereKeyword name colors =
     { axis = sometimesYouDoNotHaveAnAxis
     , interpolation = Monotone Nothing [ stroke colors ]
-    , toDataPoints = List.filter (\dp -> dp.keyword == keyword) >> List.map (\dp -> clear dp.time dp.y)
+    , toDataPoints = List.filter (\dp -> dp.keyword == name) >> List.map (\dp -> clear dp.time dp.value)
     }
 
 
