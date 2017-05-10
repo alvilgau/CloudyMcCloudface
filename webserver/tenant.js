@@ -23,9 +23,14 @@ subscriber.psubscribe(event + '*');
 
 const handleNewTenant = null;
 
-const battleForTenant = (tenant) => {
-    client.incrAsync(`battle:tenant:${tenant}`)
-        .then(battleCounter => {
+const battleForTenant = (tenant) => {    
+    client.multi()
+        .incr(`battle:tenant:${tenant}`)
+        .expire(`battle:tenant:${tenant}`, expirationInSeconds)        
+        .execAsync()
+        .then(res => {
+            // get result from incr command
+            const battleCounter = res[0];          
             // only one service will receive counter == 1
             if (battleCounter == 1) {
                 console.log(`won battle for tenant ${tenant}`);
@@ -35,8 +40,8 @@ const battleForTenant = (tenant) => {
                 }
             } else {
                 console.log(`lost battle for tenant ${tenant}`);
-            }        
-        });        
+            } 
+        });
 };
 
 const expired = (redisVar) => {    
