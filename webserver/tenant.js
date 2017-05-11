@@ -86,7 +86,7 @@ const lpush = (redisVar) => {
 };
 
 const handleKeywordRemoved = (tenant, keywordsVar) => {    
-    if (keywordRemovedCallback && tenant.includes(tenant)) {
+    if (keywordRemovedCallback && tenants.includes(tenant)) {
         // tenant belongs to us
         client.lrangeAsync(keywordsVar, 0, -1)
             .then(keywords => keywordRemovedCallback(tenant, keywords));
