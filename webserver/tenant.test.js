@@ -18,6 +18,10 @@ const getSampleTenant = () => {
     return t;
 }
 
+const getSampleUser = () => {
+    return "me-as-user";
+}
+
 afterEach((done) => {
     tenant.onNewTenant(null);    
     tenant.onKeywordRemoved(null);
@@ -26,12 +30,15 @@ afterEach((done) => {
 });
 
 test('battle for tenant', (done) => {
-    expect.assertions(1);
+    expect.assertions(1);    
+    const sampleTenant = getSampleTenant();
     tenant.onNewTenant((t) => {                        
-        expect(t).toBe('my-tenant-value');                
+        expect(t).toEqual(sampleTenant);                
         done();
     });    
-    redisClient.setAsync('tenant:my-tenant-key', 'my-tenant-value');
+    
+    const consumerKey = sampleTenant.consumerKey;
+    redisClient.setAsync(`tenant:${consumerKey}`, JSON.stringify(sampleTenant));
 });
 
 test('create tenant', (done) => {
@@ -47,7 +54,7 @@ test('create tenant', (done) => {
 test('add user', (done) => {
     expect.assertions(1);
     const t = getSampleTenant();
-    const u = 'me-as-user';
+    const u = getSampleUser();
     tenant.addUser(t, u)
         .then(res => {
             expect(res).toBe(true);
@@ -58,7 +65,7 @@ test('add user', (done) => {
 test('remove user', async () => {
     expect.assertions(2);
     const t = getSampleTenant();
-    const u = 'me-as-user';
+    const u = getSampleUser();
     const res1 = await tenant.addUser(t, u);
     expect(res1).toBe(true);
     const res2 = await tenant.removeUser(t, u);
@@ -68,7 +75,7 @@ test('remove user', async () => {
 test('add keyword', async () => {
     expect.assertions(2);
     const t = getSampleTenant();
-    const u = 'me-as-user';
+    const u = getSampleUser();
     const res1 = await tenant.addUser(t, u);    
     expect(res1).toBe(true);
     const res2 = await tenant.addKeyword(t, u, 'my-keyword')
@@ -78,7 +85,7 @@ test('add keyword', async () => {
 test('remove keyword', async () => {
     expect.assertions(3);
     const t = getSampleTenant();
-    const u = 'me-as-user';
+    const u = getSampleUser();
     const res1 = await tenant.addUser(t, u);    
     expect(res1).toBe(true);
     const res2 = await tenant.addKeyword(t, u, 'my-keyword')
@@ -90,7 +97,7 @@ test('remove keyword', async () => {
 test('add keyword callback', async (done) => {
     expect.assertions(1);
     const t = getSampleTenant();
-    const u = 'me-as-user';    
+    const u = getSampleUser();    
     const res1 = await tenant.createTenant(t);
     tenant.onKeywordAdded((theTenant, keywords) => {
         expect(keywords).toEqual(['my-keyword']);
@@ -102,12 +109,14 @@ test('add keyword callback', async (done) => {
 test('remove keyword callback', async (done) => {
     expect.assertions(1);
     const t = getSampleTenant();
-    const u = 'me-as-user';    
+    const u = getSampleUser();    
     const res1 = await tenant.createTenant(t);
-    tenant.onKeywordRemoved((theTenant, keywords) => {
+    tenant.onKeywordRemoved((theTenant, keywords) => {        
         expect(keywords).toEqual([]);
         done();
     });
     await tenant.addKeyword(t, u, 'my-keyword');
     await tenant.removeKeyword(t, u, 'my-keyword');
 });
+
+
