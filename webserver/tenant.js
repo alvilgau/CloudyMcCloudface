@@ -18,7 +18,7 @@ subscriber.config('set', 'notify-keyspace-events', 'KEA');
 const tenants = [];
 
 // callback when battle for tenant is won
-let cb = null;
+let newTenantCallback = null;
 
 // subscribe for all events
 const event = `__keyevent@${db}__:`;
@@ -36,9 +36,9 @@ const battleForTenant = (tenant) => {
             if (battleCounter == 1) {
                 console.log(`won battle for tenant ${tenant}`);
                 tenants.push(tenant);                
-                if (cb) {                    
+                if (newTenantCallback) {                    
                     client.getAsync(`tenant:${tenant}`)
-                          .then(tenantValue => cb(tenantValue));                    
+                          .then(tenantValue => newTenantCallback(tenantValue));                    
                 }                                
             } else {
                 console.log(`lost battle for tenant ${tenant}`);
@@ -47,22 +47,47 @@ const battleForTenant = (tenant) => {
 };
 
 const expired = (redisVar) => {    
-    if (redisVar.startsWith('battle:tenant:')) {
-        // other service is down probably
-        const tenant = redisVar.replace('battle:tenant:', '');
-        battleForTenant(tenant);
-    }
-};
-
-const set = (redisVar) => {
-    if (redisVar.startsWith('tenant:')) {
-        const tenant = redisVar.replace('tenant:', '');
+    if (/battle:tenant:\S+/.test(redisVar)) {
+        const splitted = redisVar.split(/(?:battle:tenant\:)/);
+        const tenant = splitted[1];
         battleForTenant(tenant);
     }    
 };
 
+const set = (redisVar) => {    
+    if (/tenant:\S+:user:\S+:keywords/.test(redisVar)) {
+        
+    } else if (/tenant:\S+:user:\S+/.test(redisVar)) {        
+        const splitted = redisVar.split(/(?:tenant\:|\:user\:)/);       
+        const tenant = splitted[1];
+        const user = splitted[2];        
+    } else if (/tenant:\w+/.test(redisVar)) {
+        const splitted = redisVar.split(/(?:tenant:)/);
+        const tenant = splitted[1];        
+        battleForTenant(tenant);
+    }
+};
+
+const lpush = (redisVar) => {
+    if (/tenant:\S+:user:\S+:keywords/.test(redisVar)) {
+        const splitted = redisVar.split(/(?:tenant\:|\:user\:|\:keywords)/);
+        const tenant = splitted[1];
+        const user = splitted[2];
+        console.log('add tenant -> user', tenant + ' -> ' + user);        
+    }    
+};
+
+const lrem = (redisVar) => {
+    if (/tenant:\S+:user:\S+:keywords/.test(redisVar)) {
+        const splitted = redisVar.split(/(?:tenant\:|\:user\:|\:keywords)/);
+        const tenant = splitted[1];
+        const user = splitted[2];
+        console.log('remove tenant -> user', tenant + ' -> ' + user);        
+    }
+};
+
 const pmessageHandlers = {
-    expired, set
+    expired, set, lpush, lrem
 };
 subscriber.on('pmessage', (pattern, channel, msg) => {            
     const msgType = channel.replace(event, '');    
@@ -154,7 +179,7 @@ const stop = () => {
 const tenant = {
     battleForFreeTenants,        
     handleNewTenant: (callback) => {
-        cb = callback;        
+        newTenantCallback = callback;        
     },
     start,
     stop,
