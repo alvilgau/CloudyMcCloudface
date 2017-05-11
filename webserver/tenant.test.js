@@ -19,13 +19,15 @@ const getSampleTenant = () => {
 }
 
 afterEach((done) => {
-    tenant.handleNewTenant(null);    
+    tenant.onNewTenant(null);    
+    tenant.onKeywordRemoved(null);
+    tenant.onKeywordAdded(null);
     redisClient.flushdb(done);        
 });
 
 test('battle for tenant', (done) => {
     expect.assertions(1);
-    tenant.handleNewTenant((t) => {                        
+    tenant.onNewTenant((t) => {                        
         expect(t).toBe('my-tenant-value');                
         done();
     });    
@@ -73,7 +75,7 @@ test('add keyword', async () => {
     expect(res2).toBe(true);    
 });
 
-test('remove keyword', async() => {
+test('remove keyword', async () => {
     expect.assertions(3);
     const t = getSampleTenant();
     const u = 'me-as-user';
@@ -83,4 +85,29 @@ test('remove keyword', async() => {
     expect(res2).toBe(true); 
     const res3 = await tenant.removeKeyword(t, u, 'my-keyword');
     expect(res3).toBe(true);
+});
+
+test('add keyword callback', async (done) => {
+    expect.assertions(1);
+    const t = getSampleTenant();
+    const u = 'me-as-user';    
+    const res1 = await tenant.createTenant(t);
+    tenant.onKeywordAdded((theTenant, keywords) => {
+        expect(keywords).toEqual(['my-keyword']);
+        done();
+    });
+    await tenant.addKeyword(t, u, 'my-keyword');    
+});
+
+test('remove keyword callback', async (done) => {
+    expect.assertions(1);
+    const t = getSampleTenant();
+    const u = 'me-as-user';    
+    const res1 = await tenant.createTenant(t);
+    tenant.onKeywordRemoved((theTenant, keywords) => {
+        expect(keywords).toEqual([]);
+        done();
+    });
+    await tenant.addKeyword(t, u, 'my-keyword');
+    await tenant.removeKeyword(t, u, 'my-keyword');
 });

@@ -19,6 +19,8 @@ const tenants = [];
 
 // callback when battle for tenant is won
 let newTenantCallback = null;
+let keywordAddedCallback = null;
+let keywordRemovedCallback = null;
 
 // subscribe for all events
 const event = `__keyevent@${db}__:`;
@@ -31,11 +33,11 @@ const battleForTenant = (tenant) => {
         .execAsync()
         .then(res => {
             // get result from incr command
-            const battleCounter = res[0];          
+            const battleCounter = res[0];       
             // only one service will receive counter == 1
             if (battleCounter == 1) {
                 console.log(`won battle for tenant ${tenant}`);
-                tenants.push(tenant);                
+                tenants.push(tenant);              
                 if (newTenantCallback) {                    
                     client.getAsync(`tenant:${tenant}`)
                           .then(tenantValue => newTenantCallback(tenantValue));                    
@@ -51,16 +53,15 @@ const expired = (redisVar) => {
         const splitted = redisVar.split(/(?:battle:tenant\:)/);
         const tenant = splitted[1];
         battleForTenant(tenant);
-    }    
+    }
 };
 
-const set = (redisVar) => {    
-    if (/tenant:\S+:user:\S+:keywords/.test(redisVar)) {
-        
-    } else if (/tenant:\S+:user:\S+/.test(redisVar)) {        
+const set = (redisVar) => {
+    if (/tenant:\S+:user:\S+/.test(redisVar)) {
         const splitted = redisVar.split(/(?:tenant\:|\:user\:)/);       
         const tenant = splitted[1];
-        const user = splitted[2];        
+        const user = splitted[2];
+        // is there nothing to do, when a new user is added?
     } else if (/tenant:\w+/.test(redisVar)) {
         const splitted = redisVar.split(/(?:tenant:)/);
         const tenant = splitted[1];        
@@ -68,21 +69,35 @@ const set = (redisVar) => {
     }
 };
 
+const handleKeywordAdded = (tenant, keywordsVar) => {
+    if (keywordAddedCallback && tenants.includes(tenant)) {
+        client.lrangeAsync(keywordsVar, 0, -1)
+            .then(keywords => keywordAddedCallback(tenant, keywords));
+    }
+};
+
 const lpush = (redisVar) => {
     if (/tenant:\S+:user:\S+:keywords/.test(redisVar)) {
         const splitted = redisVar.split(/(?:tenant\:|\:user\:|\:keywords)/);
         const tenant = splitted[1];
-        const user = splitted[2];
-        console.log('add tenant -> user', tenant + ' -> ' + user);        
+        const user = splitted[2];        
+        handleKeywordAdded(tenant, redisVar);
     }    
 };
 
+const handleKeywordRemoved = (tenant, keywordsVar) => {    
+    if (keywordRemovedCallback && tenant.includes(tenant)) {
+        // tenant belongs to us
+        client.lrangeAsync(keywordsVar, 0, -1)
+            .then(keywords => keywordRemovedCallback(tenant, keywords));
+    }
+}
+
 const lrem = (redisVar) => {
-    if (/tenant:\S+:user:\S+:keywords/.test(redisVar)) {
+    if (/tenant:\S+:user:\S+:keywords/.test(redisVar)) {        
         const splitted = redisVar.split(/(?:tenant\:|\:user\:|\:keywords)/);
-        const tenant = splitted[1];
-        const user = splitted[2];
-        console.log('remove tenant -> user', tenant + ' -> ' + user);        
+        const tenant = splitted[1];        
+        handleKeywordRemoved(tenant, redisVar);        
     }
 };
 
@@ -178,8 +193,14 @@ const stop = () => {
 
 const tenant = {
     battleForFreeTenants,        
-    handleNewTenant: (callback) => {
+    onNewTenant: (callback) => {
         newTenantCallback = callback;        
+    },
+    onKeywordAdded: (callback) => {
+        keywordAddedCallback = callback;
+    },
+    onKeywordRemoved: (callback) => {
+        keywordRemovedCallback = callback;
     },
     start,
     stop,
