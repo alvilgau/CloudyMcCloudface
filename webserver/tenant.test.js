@@ -18,6 +18,16 @@ const getSampleTenant = () => {
     return t;
 }
 
+const getSampleTenant2 = () => {
+    const t2 = {
+        consumerKey: 'my-consumerKey2',
+        token: 'my-token2',
+        consumerSecret: 'my-consumerSecret2',
+        tokenSecret: 'my-tokenSecret2'        
+    };
+    return t2;
+};
+
 const getSampleUser = () => {
     return "sample-user";
 }
@@ -53,6 +63,22 @@ test('create tenant', (done) => {
             expect(res).toBe(true);            
             done();
         });
+});
+
+test('get tenant keys', async (done) => {
+    expect.assertions(3);
+    const t1 = getSampleTenant();
+    const t2 = getSampleTenant2();
+    await tenant.createTenant(t1);
+    await tenant.createTenant(t2);
+    await tenant.createTenant(t2);
+    await tenant.createTenant(t2);
+    tenant.getTenantKeys().then(keys => {
+        expect(keys).toContain(t1.consumerKey);
+        expect(keys).toContain(t2.consumerKey);
+        expect(keys.size).toEqual(2);
+        done();
+    });
 });
 
 test('add user', (done) => {

@@ -125,9 +125,8 @@ subscriber.on('message', (channel, msg) => {
 });
 
 const battleForFreeTenants = () => {
-    client.scanAsync('0', 'MATCH', 'tenant:*')
-    .then(results => results[1])
-    .then(keys => keys.forEach(tenantKey => battleForTenant(tenantKey)));
+    getTenantKeys()
+    .then(keys => keys.forEach(tenantKey => battleForTenant(tenantKey)));    
 };
 
 /**
@@ -135,9 +134,18 @@ const battleForFreeTenants = () => {
  */
 const createTenant = (tenant) => {
     const tenantKey = tenant.consumerKey;
-    return client.setAsync(`tenant:${tenantKey}`, JSON.stringify(tenant))
+    const tenantAsString = JSON.stringify(tenant);
+    return client.multi()
+                .lpush(`tenantKeys`, tenantKey)                
+                .set(`tenant:${tenantKey}`, tenantAsString)
+                .execAsync()
                 .then(res => true)
-                .catch(err => false);
+                .catch(err => false);  
+};
+
+const getTenantKeys = () => {
+    return client.lrangeAsync(`tenantKeys`, 0, -1)
+                .then(tenantKeys => new Set(tenantKeys));
 };
 
 /**
@@ -146,7 +154,7 @@ const createTenant = (tenant) => {
  */
 const addUser = (tenant, user) => {
     const tenantKey = tenant.consumerKey;
-    return client.setAsync(`tenant:${tenantKey}:user:${user}`, user)
+    return client.setAsync(`tenant:${tenantKey}:users:${user}`, user)
                 .then(res => true)
                 .catch(err => false);
 };
@@ -154,7 +162,7 @@ const addUser = (tenant, user) => {
 const removeUser = (tenant, user) => {
     const tenantKey = tenant.consumerKey;
     return client.multi()
-                .del(`tenant:${tenantKey}:user:${user}`)
+                .del(`tenant:${tenantKey}:users:${user}`)
                 .del(`tenant:${tenantKey}:user:${user}:keywords`)
                 .execAsync()
                 .then(res => true)
@@ -185,6 +193,12 @@ const getKeywordsByTenant = (tenant) => {
     const tenantKey = tenant.consumerKey;    
     return client.lrangeAsync(`tenant:${tenantKey}:keywords`, 0, -1)                
                  .then(keywords => new Set(keywords));
+};
+
+const getUsersByTenant = (tenant) => {
+    const tenantKey = tenant.consumerKey;    
+    return client.lrangeAsync(`tenant:${tenantKey}:users`, 0, 1)
+                 .then(users => new Set(users));
 };
 
 const getKeywordsByUser = (tenant, user) => {
@@ -228,6 +242,8 @@ const tenant = {
     addKeyword,
     removeKeyword,
     getKeywordsByTenant,
-    getKeywordsByUser
+    getUsersByTenant,
+    getKeywordsByUser,
+    getTenantKeys
 };
 module.exports = tenant;
