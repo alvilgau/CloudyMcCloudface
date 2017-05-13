@@ -124,13 +124,13 @@ test('remove keyword', async () => {
     expect(res3).toBe(true);
 });
 
-test('add keyword callback', async (done) => {
-    expect.assertions(1);
+test('add keyword callback', async (done) => {    
     const t = getSampleTenant();
     const u = getSampleUser();    
     const res1 = await tenant.createTenant(t);
     tenant.onKeywordAdded((theTenant, keywords) => {
-        expect(keywords).toEqual(['my-keyword']);
+        expect(keywords.size).toBe(1);
+        expect(keywords).toContain('my-keyword');        
         done();
     });
     await tenant.addKeyword(t, u, 'my-keyword');        
@@ -142,7 +142,7 @@ test('remove keyword callback', async (done) => {
     const u = getSampleUser();    
     const res1 = await tenant.createTenant(t);
     tenant.onKeywordRemoved((theTenant, keywords) => {        
-        expect(keywords).toEqual([]);
+        expect(keywords.size).toBe(0);        
         done();
     });
     await tenant.addKeyword(t, u, 'my-keyword');

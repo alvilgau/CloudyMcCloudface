@@ -19,6 +19,8 @@ const tenantKeys = [];
 
 // callback when battle for tenant is won
 let newTenantCallback = null;
+let userAddedCallback = null;
+let userRemovedCallback = null;
 let keywordAddedCallback = null;
 let keywordRemovedCallback = null;
 
@@ -49,60 +51,86 @@ const battleForTenant = (tenantKey) => {
         });
 };
 
-const expired = (redisVar) => {    
-    if (/battle:tenant:\S+/.test(redisVar)) {
-        const splitted = redisVar.split(/(?:battle:tenant\:)/);
-        const tenantKey = splitted[1];
-        battleForTenant(tenantKey);
+const onUserAdded = (tenantKey, user) => {
+    if (userAddedCallback && tenantKeys.includes(tenantKey)) {
+        userAddedCallback(tenantKey, user);
     }
 };
 
-const set = (redisVar) => {
-    if (/tenant:\S+:user:\S+/.test(redisVar)) {
-        const splitted = redisVar.split(/(?:tenant\:|\:user\:)/);       
-        const tenantKey = splitted[1];
-        const user = splitted[2];
-        // is there nothing to do, when a new user is added?
-    } else if (/tenant:\w+/.test(redisVar)) {
-        const splitted = redisVar.split(/(?:tenant:)/);
-        const tenantKey = splitted[1];        
-        battleForTenant(tenantKey);
-    }
-};
-
-const handleKeywordAdded = (tenantKey, keywordsVar) => {    
+const onKeywordAdded = (tenantKey, keywordsVar) => {    
     if (keywordAddedCallback && tenantKeys.includes(tenantKey)) {        
-        client.lrangeAsync(keywordsVar, 0, -1)
+        getKeywordsByTenantKey(tenantKey)
             .then(keywords => keywordAddedCallback(tenantKey, keywords));            
     }
 };
 
-const lpush = (redisVar) => {
-    if (/tenant:\S+:keywords/.test(redisVar)) {        
-        const splitted = redisVar.split(/(?:tenant\:|\:keywords)/);
+const onKeywordRemoved = (tenantKey, keywordsVar) => {        
+    if (keywordRemovedCallback && tenantKeys.includes(tenantKey)) {                
+        getKeywordsByTenantKey(tenantKey)
+            .then(keywords => keywordRemovedCallback(tenantKey, keywords));
+    }
+};
+
+const onUserRemoved = (tenantKey, user) => {
+    if (userRemovedCallback && tenantKeys.includes(tenantKey)) {
+        userRemovedCallback(tenantKey, user);
+    }
+};
+
+// called when a redis key expired
+const expired = (redisKey) => {    
+    if (/battle:tenant:\S+/.test(redisKey)) {
+        const splitted = redisKey.split(/(?:battle:tenant\:)/);
+        const tenantKey = splitted[1];
+        battleForTenant(tenantKey);
+    }
+};
+
+// called when a redis key is set
+const set = (redisKey) => {
+    if (/tenant:\S+:user:\S+/.test(redisKey)) {
+        const splitted = redisKey.split(/(?:tenant\:|\:user\:)/);       
+        const tenantKey = splitted[1];
+        const user = splitted[2];
+        onUserAdded(tenantKey, user);
+        // is there nothing to do, when a new user is added?
+    } else if (/tenant:\w+/.test(redisKey)) {
+        const splitted = redisKey.split(/(?:tenant:)/);
         const tenantKey = splitted[1];        
-        handleKeywordAdded(tenantKey, redisVar);
+        battleForTenant(tenantKey);
+    }
+};
+
+// called when a value is pushed to a list
+const lpush = (redisKey) => {
+    if (/tenant:\S+:keywords/.test(redisKey)) {        
+        const splitted = redisKey.split(/(?:tenant\:|\:keywords)/);
+        const tenantKey = splitted[1];        
+        onKeywordAdded(tenantKey, redisKey);
     }    
 };
 
-const handleKeywordRemoved = (tenantKey, keywordsVar) => {        
-    if (keywordRemovedCallback && tenantKeys.includes(tenantKey)) {        
-        // tenant belongs to us
-        client.lrangeAsync(keywordsVar, 0, -1)
-            .then(keywords => keywordRemovedCallback(tenantKey, keywords));
-    }
-}
-
-const lrem = (redisVar) => {
-    if (/tenant:\S+:keywords/.test(redisVar)) {                
-        const splitted = redisVar.split(/(?:tenant\:|\:keywords)/);
+// called when a value is removed from a list
+const lrem = (redisKey) => {
+    if (/tenant:\S+:keywords/.test(redisKey)) {                
+        const splitted = redisKey.split(/(?:tenant\:|\:keywords)/);
         const tenantKey = splitted[1];        
-        handleKeywordRemoved(tenantKey, redisVar);        
+        onKeywordRemoved(tenantKey, redisKey);        
+    }
+};
+
+// called when a redis key is deleted
+const del = (redisKey) => {
+    if (/tenant:\S+:users:\S+/.test(redisKey)) {
+        const splitted = redisKey.split(/(?:tenant\:|\:users)/);
+        const tenantKey = splitted[1];
+        const user = splitted[2];
+        onUserRemoved(tenantKey, user);
     }
 };
 
 const pmessageHandlers = {
-    expired, set, lpush, lrem
+    expired, set, lpush, lrem, del
 };
 subscriber.on('pmessage', (pattern, channel, msg) => {            
     const msgType = channel.replace(event, '');    
@@ -125,15 +153,18 @@ subscriber.on('message', (channel, msg) => {
 });
 
 const battleForFreeTenants = () => {
-    getTenantKeys()
-    .then(keys => keys.forEach(tenantKey => battleForTenant(tenantKey)));    
+    getTenantKeys().then(keys => keys.forEach(key => battleForTenant(key)));    
 };
+
+const getKey = (tenant) => {
+    return tenant.consumerKey;
+}
 
 /**
  * @param  {consumerKey, token, consumerSecret, tokenSecret} tenant
  */
 const createTenant = (tenant) => {
-    const tenantKey = tenant.consumerKey;
+    const tenantKey = getKey(tenant);
     const tenantAsString = JSON.stringify(tenant);
     return client.multi()
                 .lpush(`tenantKeys`, tenantKey)                
@@ -141,6 +172,10 @@ const createTenant = (tenant) => {
                 .execAsync()
                 .then(res => true)
                 .catch(err => false);  
+};
+
+const removeTenant = (tenant) => {
+    
 };
 
 const getTenantKeys = () => {
@@ -153,14 +188,14 @@ const getTenantKeys = () => {
  * @param  {} user id
  */
 const addUser = (tenant, user) => {
-    const tenantKey = tenant.consumerKey;
+    const tenantKey = getKey(tenant);
     return client.setAsync(`tenant:${tenantKey}:users:${user}`, user)
                 .then(res => true)
                 .catch(err => false);
 };
 
 const removeUser = (tenant, user) => {
-    const tenantKey = tenant.consumerKey;
+    const tenantKey = getKey(tenant);
     return client.multi()
                 .del(`tenant:${tenantKey}:users:${user}`)
                 .del(`tenant:${tenantKey}:user:${user}:keywords`)
@@ -170,7 +205,7 @@ const removeUser = (tenant, user) => {
 };
 
 const addKeyword = (tenant, user, keyword) => {
-    const tenantKey = tenant.consumerKey;
+    const tenantKey = getKey(tenant);
     return client.multi()
                 .lpush(`tenant:${tenantKey}:user:${user}:keywords`, keyword)
                 .lpush(`tenant:${tenantKey}:keywords`, keyword)
@@ -180,7 +215,7 @@ const addKeyword = (tenant, user, keyword) => {
 };
 
 const removeKeyword = (tenant, user, keyword) => {
-    const tenantKey = tenant.consumerKey;
+    const tenantKey = getKey(tenant);
     return client.multi()
                 .lrem(`tenant:${tenantKey}:user:${user}:keywords`, 0, keyword)
                 .lrem(`tenant:${tenantKey}:keywords`, 1, keyword)    
@@ -189,20 +224,23 @@ const removeKeyword = (tenant, user, keyword) => {
                 .catch(err => false);
 }
 
-const getKeywordsByTenant = (tenant) => {
-    const tenantKey = tenant.consumerKey;    
+const getKeywordsByTenantKey = (tenantKey) => {
     return client.lrangeAsync(`tenant:${tenantKey}:keywords`, 0, -1)                
                  .then(keywords => new Set(keywords));
+}
+
+const getKeywordsByTenant = (tenant) => {    
+    return getKeywordsByTenantKey(getKey(tenant));
 };
 
 const getUsersByTenant = (tenant) => {
-    const tenantKey = tenant.consumerKey;    
+    const tenantKey = getKey(tenant);
     return client.lrangeAsync(`tenant:${tenantKey}:users`, 0, 1)
                  .then(users => new Set(users));
 };
 
 const getKeywordsByUser = (tenant, user) => {
-    const tenantKey = tenant.consumerKey;
+    const tenantKey = getKey(tenant);
     return client.lrangeAsync(`tenant:${tenantKey}:user:${user}:keywords`, 0, -1)
                  .then(keywords => new Set(keywords));
 };
@@ -227,6 +265,12 @@ const tenant = {
     battleForFreeTenants,        
     onNewTenant: (callback) => {
         newTenantCallback = callback;        
+    },
+    onUserAdded: (callback) => {
+        userAddedCallback = callback;
+    },
+    onUserRemoved: (callback) => {
+        userRemovedCallback = callback;
     },
     onKeywordAdded: (callback) => {
         keywordAddedCallback = callback;
