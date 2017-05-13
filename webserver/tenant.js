@@ -181,6 +181,18 @@ const removeKeyword = (tenant, user, keyword) => {
                 .catch(err => false);
 }
 
+const getKeywordsByTenant = (tenant) => {
+    const tenantKey = tenant.consumerKey;    
+    return client.lrangeAsync(`tenant:${tenantKey}:keywords`, 0, -1)                
+                 .then(keywords => new Set(keywords));
+};
+
+const getKeywordsByUser = (tenant, user) => {
+    const tenantKey = tenant.consumerKey;
+    return client.lrangeAsync(`tenant:${tenantKey}:user:${user}:keywords`, 0, -1)
+                 .then(keywords => new Set(keywords));
+};
+
 // install job for updating battles
 let interval;
 const start = () => {
@@ -214,6 +226,8 @@ const tenant = {
     addUser,
     removeUser,
     addKeyword,
-    removeKeyword
+    removeKeyword,
+    getKeywordsByTenant,
+    getKeywordsByUser
 };
 module.exports = tenant;

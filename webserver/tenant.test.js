@@ -19,8 +19,12 @@ const getSampleTenant = () => {
 }
 
 const getSampleUser = () => {
-    return "me-as-user";
+    return "sample-user";
 }
+
+const getSampleUser2 = () => {
+    return "sample-user2";
+};
 
 afterEach((done) => {
     tenant.onNewTenant(null);    
@@ -103,7 +107,7 @@ test('add keyword callback', async (done) => {
         expect(keywords).toEqual(['my-keyword']);
         done();
     });
-    await tenant.addKeyword(t, u, 'my-keyword');    
+    await tenant.addKeyword(t, u, 'my-keyword');        
 });
 
 test('remove keyword callback', async (done) => {
@@ -119,4 +123,34 @@ test('remove keyword callback', async (done) => {
     await tenant.removeKeyword(t, u, 'my-keyword');
 });
 
+test('get keywords by tenant', async (done) => {    
+    const t = getSampleTenant();
+    const u = getSampleUser();
+    await tenant.addKeyword(t, u, 'my-keyword');
+    await tenant.addKeyword(t, u, 'my-keyword');
+    await tenant.addKeyword(t, u, 'another-keyword');
+    await tenant.addKeyword(t, u, 'another-keyword');
+    tenant.getKeywordsByTenant(t).then(keywords => {
+        expect(keywords).toContain('my-keyword');
+        expect(keywords).toContain('another-keyword');        
+        done();
+    });    
+});
+
+test('get keywords by user', async (done) => {
+    const t = getSampleTenant();
+    const u1 = getSampleUser();
+    const u2 = getSampleUser2();
+    await tenant.addKeyword(t, u1, 'user1-keyword1');
+    await tenant.addKeyword(t, u1, 'user1-keyword2');
+    await tenant.addKeyword(t, u2, 'user2-keyword1');
+    await tenant.addKeyword(t, u2, 'user2-keyword2');
+    tenant.getKeywordsByUser(t, u2).then(keywords => {
+        expect(keywords).toContain('user2-keyword1');
+        expect(keywords).toContain('user2-keyword2');
+        expect(keywords).not.toContain('user1-keyword1');
+        expect(keywords).not.toContain('user1-keyword2');
+        done();
+    });    
+});
 
