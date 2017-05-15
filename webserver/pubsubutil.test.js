@@ -143,11 +143,3 @@ test('add user', () => {
     expect(pubsubutil.getUserIds(id).length).toBe(1);
     expect(pubsubutil.getUserIds(id)).toContain('userX');
 });
-
-test('tenant exists', () => {
-    const t = getSampleTenant();
-    const id = pubsubutil.getId(t);
-    expect(pubsubutil.tenantExists(id)).toBeFalsy();
-    pubsubutil.addTenant(t);
-    expect(pubsubutil.tenantExists(id)).toBeTruthy();
-});

@@ -46,10 +46,6 @@ const addTenant = (tenant) => {
     return t;
 };
 
-const tenantExists = (tenantId) => {
-    return getTenant(tenantId) !== undefined;
-};
-
 const addUser = (tenantId, userId) => {    
     let u = getUser(tenantId, userId);
     if (!u) {
@@ -164,8 +160,7 @@ const pubsubutil = {
     addTenant,
     getTenant,
     addUser,
-    getUser,
-    tenantExists
+    getUser
 };
 
 module.exports = pubsubutil;
