@@ -22,32 +22,54 @@ afterEach((done) => {
     redisClient.flushdb(done);        
 });
 
-test('track keyword', (done) => {
-    expect.assertions(1);
+test('track keyword', (done) => {    
     const t = getSampleTenant();
+    const id = publisher.pubsubutil.getId(t);
     publisher.trackKeyword(t, 'user1', 'obama')
-        .then(res => {            
-            expect(res).toBe(true);            
+        .then(ok => {            
+            expect(ok).toBe(true);               
+            expect(publisher.pubsubutil.getTenantIds().length).toBe(1);        
+            expect(publisher.pubsubutil.getUserIds(id).length).toBe(1);
+            expect(publisher.pubsubutil.getKeywordsByTenant(id).size).toBe(1);            
             done();
         });
 });
 
-test('untrack keyword', (done) => {
-    expect.assertions(1);
+test('untrack keyword', (done) => {    
     const t = getSampleTenant();    
-    publisher.untrackKeyword(t, 'user1', 'obama')
-        .then(res => {            
-            expect(res).toBe(true);            
+    const id = publisher.pubsubutil.getId(t);
+    publisher.trackKeyword(t, 'user1', 'obama')
+        .then(ok => publisher.untrackKeyword(t, 'user1', 'obama'))
+        .then(ok => {
+            expect(ok).toBe(true);            
+            expect(publisher.pubsubutil.getTenantIds().length).toBe(1);        
+            expect(publisher.pubsubutil.getUserIds(id).length).toBe(1);
+            expect(publisher.pubsubutil.getKeywordsByTenant(id).size).toBe(0);            
             done();
-        });
+        });   
 });
 
 test('remove user', (done) => {
-    expect.assertions(1);
     const t = getSampleTenant();    
-    publisher.removeUser(t, 'user1')
-        .then(res => {            
-            expect(res).toBe(true);            
+    const id = publisher.pubsubutil.getId(t);
+    publisher.trackKeyword(t, 'user1', 'obama')
+        .then(ok => publisher.trackKeyword(t, 'user2', 'clinton'))
+        .then(ok => {
+            expect(publisher.pubsubutil.getTenantIds().length).toBe(1);        
+            expect(publisher.pubsubutil.getUserIds(id).length).toBe(2);
+            expect(publisher.pubsubutil.getKeywordsByTenant(id).size).toBe(2);            
+            return publisher.removeUser(t, 'user1');
+        })
+        .then(ok => {
+            expect(publisher.pubsubutil.getTenantIds().length).toBe(1);        
+            expect(publisher.pubsubutil.getUserIds(id).length).toBe(1);
+            expect(publisher.pubsubutil.getKeywordsByTenant(id).size).toBe(1);            
+            return publisher.removeUser(t, 'user2');
+        })
+        .then(ok => {
+            expect(publisher.pubsubutil.getTenantIds().length).toBe(0);        
+            expect(publisher.pubsubutil.getUserIds(id).length).toBe(0);
+            expect(publisher.pubsubutil.getKeywordsByTenant(id).size).toBe(0);            
             done();
         });
 });

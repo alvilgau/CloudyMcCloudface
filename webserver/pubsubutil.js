@@ -85,7 +85,7 @@ const getKeywordsByUser = (tenantId, userId) => {
 const getKeywordsByTenant = (tenantId) => {
     const t = getTenant(tenantId);
     const keywords = new Set();    
-    if (t && t.users) {
+    if (t) {
         t.users.map(u => u.keywords).forEach(keywordSet => {
             keywordSet.forEach(keyword => keywords.add(keyword));
         });        
