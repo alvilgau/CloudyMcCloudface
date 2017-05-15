@@ -194,33 +194,40 @@ const battleForFreeTenants = () => {
 const redisGetTenantIds = () => {
     return client.scanAsync(0, 'MATCH', 'tenants->*')
                 .then(res => {
-                    const redisKeys = res[1];
-                    const tenantIds = new Set();
-                    redisKeys.forEach(key => {
-                        const tenantId = key.replace('tenants->', '');
-                        tenantIds.add(tenantId);
-                    });
-                    return tenantIds;
+                    const redisKeys = res[1];                    
+                    const tenantIds = redisKeys.map(key => key.replace('tenants->', ''));
+                    return new Set(tenantIds);
                 })
                 .catch(err => {
                     console.error('could not query tenant ids from redis');
+                    console.error(err);
                     return new Set();
                 });                              
 };
 
 const redisGetUserIds = (tenantId) => {
     return client.scanAsync(0, 'MATCH', `tenants:${tenantId}->users`)
-            .then(res => res[1]);
+            .then(res => {
+                const redisKeys = res[1];
+                const userIds = redisKeys.map(key => key.replace(`tenants:${tenantId}->users`, ''));
+                return userIds;
+            })
+            .catch(err => {
+                console.error(`could not query user ids for tenant ${tenantId} from redis`);
+                console.error(err);
+                return new Set();
+            });
 };
 
 const redisGetUserKeywords = (tenantId, userId) => {
-    return client.scanAsync(0, 'MATCH', `tenants:${tenantId}:users:${userId}->keywords`)
-            .then(res => res[1]);
+    return client.lrangeAsync(0, 'MATCH', `tenants:${tenantId}:users:${userId}->keywords`, 0, 1)
+            .then(res => res[1])
+            .catch(err => {
+                console.error(`could not query keywords for tenant ${tenandId} from redis`);
+                console.error(err);
+                return new Set();
+            });
 };
-
-const redisGetTenantKeywords = (tenantId) => {    
-    return redisGetUserKeywords(tenantId, '*');
-}
 
 // install job for updating battles
 setInterval(() => {
@@ -229,7 +236,6 @@ setInterval(() => {
         client.expireAsync(`battle:tenants->${tenantId}`, expiration);
     });
 }, keepAliveInterval);
-
 
 const tenant = {
     battleForFreeTenants,        

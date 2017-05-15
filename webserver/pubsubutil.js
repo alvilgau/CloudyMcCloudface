@@ -139,11 +139,9 @@ const getUserIds = (tenantId) => {
     return [];
 };
 
-
 const getTenant = (tenantId) => {
     return tenants.find(t => getId(t) === tenantId);
 };
-
 
 const pubsubutil = {
     clear,

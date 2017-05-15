@@ -39,40 +39,47 @@ structure of tenants-array:
 
 const trackKeyword = (tenant, userId, keyword) => {
     const tenantId = pubsubutil.getId(tenant);
-    client.multi()
-        .set(`tenants->${tenantId}`, JSON.stringify(tenant))
-        .expire(`tenants->${tenantId}`, expiration)
-        .lpush(`tenants:${tenantId}->users`, userId)
-        .expire(`tenants:${tenantId}->users`, expiration)
-        .lpush(`tenants:${tenantId}:users:${userId}->keywords`, keyword)
-        .expire(`tenants:${tenantId}:users:${userId}->keywords`, expiration)
-        .execAsync()
-        .then(ok => { 
-            pubsubutil.addKeyword(tenant, userId, keyword);            
-            return true;
-        })
-        .catch(err => false);
+    return client.multi()
+            .set(`tenants->${tenantId}`, JSON.stringify(tenant))
+            .expire(`tenants->${tenantId}`, expiration)
+            .lpush(`tenants:${tenantId}->users`, userId)
+            .expire(`tenants:${tenantId}->users`, expiration)
+            .lpush(`tenants:${tenantId}:users:${userId}->keywords`, keyword)
+            .expire(`tenants:${tenantId}:users:${userId}->keywords`, expiration)
+            .execAsync()
+            .then(ok => { 
+                pubsubutil.addKeyword(tenant, userId, keyword);            
+                return true;
+            })
+            .catch(err => false);
 };
 
 const untrackKeyword = (tenant, userId, keyword) => {    
     const tenantId = pubsubutil.getId(tenant);    
-    client.lremAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, keyword)
-          .then(ok => pubsubutil.removeKeyword(tenant, userId, keyword));
+    return client.lremAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, keyword)
+            .then(ok => {
+                pubsubutil.removeKeyword(tenantId, userId, keyword);
+                return true;
+            })
+            .catch(err => false);
 };
 
 const removeUser = (tenant, userId) => {             
-    client.multi()
-        .lrem(`tenants:${tenantId}->users`, userId)
-        .del(`tenants:${tenantId}:users:${userId}->keywords`)
-        .execAsync()
-        .then(ok => {   
-            pubsubutil.removeUser(tenant, userId);                            
-            if (!pubsubutil.hasUsers(tenant)) {
-                // there are no more users for this tenant -> remove tenant
-                // redis will do the rest ...
-                pubsubutil.removeTenant(tenant);
-            }            
-        });
+    const tenantId = pubsubutil.getId(tenant);
+    return client.multi()
+            .lrem(`tenants:${tenantId}->users`, 0, userId)
+            .del(`tenants:${tenantId}:users:${userId}->keywords`)
+            .execAsync()
+            .then(ok => {                   
+                pubsubutil.removeUser(tenantId, userId);                            
+                if (!pubsubutil.hasUsers(tenantId)) {
+                    // there are no more users for this tenant -> remove tenant
+                    // redis will do the rest ...
+                    pubsubutil.removeTenant(tenantId);
+                }            
+                return true;
+            })
+            .catch(err => false);
 };
 
 setInterval(() => {
@@ -88,6 +95,7 @@ setInterval(() => {
 const publisher = {
     trackKeyword,
     untrackKeyword,
-    removeTenant  
+    removeUser,
+    pubsubutil  
 };
 module.exports = publisher;
