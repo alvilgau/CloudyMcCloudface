@@ -54,17 +54,24 @@ test('remove user', (done) => {
     const id = publisher.pubsubutil.getId(t);
     publisher.trackKeyword(t, 'user1', 'obama')
         .then(ok => publisher.trackKeyword(t, 'user2', 'clinton'))
+        .then(ok => publisher.trackKeyword(t, 'user3', 'clinton'))
         .then(ok => {
             expect(publisher.pubsubutil.getTenantIds().length).toBe(1);        
-            expect(publisher.pubsubutil.getUserIds(id).length).toBe(2);
+            expect(publisher.pubsubutil.getUserIds(id).length).toBe(3);
             expect(publisher.pubsubutil.getKeywordsByTenant(id).size).toBe(2);            
             return publisher.removeUser(t, 'user1');
         })
         .then(ok => {
             expect(publisher.pubsubutil.getTenantIds().length).toBe(1);        
-            expect(publisher.pubsubutil.getUserIds(id).length).toBe(1);
+            expect(publisher.pubsubutil.getUserIds(id).length).toBe(2);
             expect(publisher.pubsubutil.getKeywordsByTenant(id).size).toBe(1);            
             return publisher.removeUser(t, 'user2');
+        })
+        .then(ok => {
+            expect(publisher.pubsubutil.getTenantIds().length).toBe(1);        
+            expect(publisher.pubsubutil.getUserIds(id).length).toBe(1);
+            expect(publisher.pubsubutil.getKeywordsByTenant(id).size).toBe(1);            
+            return publisher.removeUser(t, 'user3');
         })
         .then(ok => {
             expect(publisher.pubsubutil.getTenantIds().length).toBe(0);        
