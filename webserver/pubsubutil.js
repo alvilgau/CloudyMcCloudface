@@ -35,7 +35,6 @@ const getId = (tenant) => {
     return tenant.consumerKey;
 };
 
-
 const addTenant = (tenant) => {
     const tenantId = getId(tenant);
     let t = tenants.find(t => getId(t) === tenantId);
@@ -45,6 +44,10 @@ const addTenant = (tenant) => {
         tenants.push(t);
     }    
     return t;
+};
+
+const tenantExists = (tenantId) => {
+    return getTenant(tenantId) !== undefined;
 };
 
 const addUser = (tenantId, userId) => {    
@@ -161,7 +164,8 @@ const pubsubutil = {
     addTenant,
     getTenant,
     addUser,
-    getUser
+    getUser,
+    tenantExists
 };
 
 module.exports = pubsubutil;

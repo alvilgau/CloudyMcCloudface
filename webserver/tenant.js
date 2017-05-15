@@ -18,10 +18,10 @@ subscriber.config('set', 'notify-keyspace-events', 'KEA');
 
 // callback when battle for tenant is won
 let newTenantCallback = (tenant) => {};
-let userAddedCallback = (tenantId, userId) => {};
-let userRemovedCallback = (tenantId, userId) => {};
-let keywordAddedCallback = (tenantId, userId, keyword) => {};
-let keywordRemovedCallback = (tenantId, userId, keyword) => {};
+let userAddedCallback = (tenant, userId) => {};
+let userRemovedCallback = (tenant, userId) => {};
+let keywordAddedCallback = (tenant, userId, keyword) => {};
+let keywordRemovedCallback = (tenant, userId, keyword) => {};
 
 // subscribe for all events
 const event = `__keyevent@${db}__:`;
@@ -81,11 +81,12 @@ const handlePushKeywords = (tenantId, userId) => {
 const handlePushUser = (tenantId) => {    
     client.lrangeAsync(`tenants:${tenantId}->users`, 0, -1)
         .then(userIds => {
+            const tenant = pubsubutil.getTenant(tenantId);
             const knownUserIds = pubsubutil.getUserIds(tenantId);
             userIds.forEach(userId => {
                 if (!knownUserIds.includes(userId)) {
                     pubsubutil.addUser(tenantId, userId);
-                    userAddedCallback && userAddedCallback(tenantId, userId);                    
+                    userAddedCallback && userAddedCallback(tenant, userId);                    
                 }
             });
         });
@@ -106,39 +107,32 @@ const lpush = (redisKey) => {
     }     
 };
 
-const handleRemoveKeywords = (tenantId, userId) => {
-    
+const handleRemoveKeywords = (tenantId, userId) => {    
     client.lrangeAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, -1)
-        .then(keywords => {                    
-            u.keywords.forEach(kw => {
+        .then(keywords => {
+            const tenant = pubsubutil.getTenant(tenantId);
+            const userKeywords = pubsubutil.getKeywordsByUser(userId);                    
+            userKeywords.forEach(kw => {
                 if (!keywords.includes(kw)) {
-                    u.keywords.delete(kw);
-                    if (keywordRemovedCallback) {
-                        keywordRemovedCallback(tenantId, userId, kw);
-                    }
+                    pubsubutil.removeKeyword(tenantId, userId, kw);
+                    keywordRemovedCallback && keywordRemovedCallback(tenant, userId, kw);                                        
                 }
             });
         });     
 };
 
-const handleRemoveUser = (tenantId) => {
-    const t = tenants.find(t => getId(t) === tenantId);
-    if (t && t.users) {
-        client.lrangeAsync(`tenants:${tenantKey}->users`, 0, -1)
-            .then(userIds => {
-                t.users.forEach(u => {
-                    if (!userIds.includes(u.id)) {
-                        const index = t.users.indexOf(u);
-                        t.users.splice(index, 1);                        
-                        if (keywordRemovedCallback) {
-                            u.keywords.forEach(kw => {
-                                keywordRemovedCallback(tenantId, u, kw);
-                            });
-                        }
-                    }
-                });
-            });
-    }
+const handleRemoveUser = (tenantId) => {        
+    client.lrangeAsync(`tenants:${tenantKey}->users`, 0, -1)
+        .then(userIds => {
+            const tenant = pubsubutil.getTenant(tenantId);
+            const knownUserIds = pubsubutil.getUserIds(tenantId);
+            knownUserIds.forEach(userId => {
+                if (!userIds.includes(userId)) {
+                    pubsubutil.removeUser(tenantId, userId);
+                    userRemovedCallback && userRemovedCallback(tenant, userId);
+                }
+            });            
+        });
 };
 
 // called when a value is removed from a list
