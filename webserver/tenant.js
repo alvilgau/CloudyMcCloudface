@@ -1,5 +1,6 @@
 const redis = require('redis');
 const bluebird = require('bluebird');
+const pubsubutil = require('./pubsubutil');
 
 bluebird.promisifyAll(redis.RedisClient.prototype);
 bluebird.promisifyAll(redis.Multi.prototype);
@@ -15,22 +16,16 @@ const keepAliveInterval = ((expiration-1) * 1000) / 2;
 // enable keyspace events
 subscriber.config('set', 'notify-keyspace-events', 'KEA');
 
-const tenants = [];
-
 // callback when battle for tenant is won
-let newTenantCallback = null;
-let userAddedCallback = null;
-let userRemovedCallback = null;
-let keywordAddedCallback = null;
-let keywordRemovedCallback = null;
+let newTenantCallback = (tenant) => {};
+let userAddedCallback = (tenantId, userId) => {};
+let userRemovedCallback = (tenantId, userId) => {};
+let keywordAddedCallback = (tenantId, userId, keyword) => {};
+let keywordRemovedCallback = (tenantId, userId, keyword) => {};
 
 // subscribe for all events
 const event = `__keyevent@${db}__:`;
 subscriber.psubscribe(event + '*');
-
-const getId = (tenant) => {
-    return tenant.consumerKey;
-};
 
 const battleForTenant = (tenantId) => {    
     client.multi()
@@ -45,12 +40,9 @@ const battleForTenant = (tenantId) => {
                 console.log(`won battle for tenant ${tenantId}`);                
                 client.getAsync(`tenants->${tenantId}`)
                         .then(tenant => JSON.parse(tenant))
-                        .then(tenant => {        
-                            tenant.users = [];                    
-                            tenants.push(tenant);                            
-                            if (newTenantCallback) {
-                                newTenantCallback(tenant);
-                            }                              
+                        .then(tenant => {     
+                            pubsubutil.addTenant(tenant);
+                            newTenantCallback && newTenantCallback(tenant);                               
                         });                                      
             } else {
                 console.log(`lost battle for tenant ${tenant}`);
@@ -76,53 +68,27 @@ const set = (redisKey) => {
     }
 };
 
-const handlePushKeywords = (tenantId, userId) => {
-    const t = tenants.find(t => getId(t) === tenantId);
-    if (t) {
-        if (!t.users) {
-            t.users = [];
-        }
-        let u = t.users.find(u => u.id === userId);
-        if (!u) {
-            u = {id: userId};
-            u.keywords = new Set();
-            t.users.push(u);
-        }
-        client.lrangeAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, -1)
-            .then(keywords => {
-                keywords.forEach(keyword => {
-                    if (!u.keywords.has(keyword)) {
-                        u.keywords.add(keyword);
-                        if (keywordAddedCallback) {
-                            keywordAddedCallback(t, u, keyword);
-                        }
-                    }   
+const handlePushKeywords = (tenantId, userId) => {    
+    client.lrangeAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, -1)
+          .then(keywords => {
+                const t = pubsubutil.getTenant(tenantId);
+                keywords.forEach(keyword => {                    
+                    pubsubutil.addKeyword(t, userId, keyword);                    
                 })                
-            });                 
-    }
+           });                             
 };
 
-const handlePushUser = (tenantId) => {
-    const t = tenants.find(t => getId(t) === tenantId);
-    if (t) {
-        if (!t.users) {
-            t.users = [];
-        }
-        client.lrangeAsync(`tenants:${tenantId}->users`, 0, -1)
-            .then(userIds => {
-                const knownUserIds = t.users.map(u => u.id);
-                userIds.forEach(userId => {
-                    if (!knownUserIds.includes(userId)) {
-                        const user = {id: userId};
-                        user.keywords = new Set();
-                        t.users.push(user);
-                        if (userAddedCallback) {
-                            userAddedCallback(t, user);
-                        }
-                    }
-                });
+const handlePushUser = (tenantId) => {    
+    client.lrangeAsync(`tenants:${tenantId}->users`, 0, -1)
+        .then(userIds => {
+            const knownUserIds = pubsubutil.getUserIds(tenantId);
+            userIds.forEach(userId => {
+                if (!knownUserIds.includes(userId)) {
+                    pubsubutil.addUser(tenantId, userId);
+                    userAddedCallback && userAddedCallback(tenantId, userId);                    
+                }
             });
-    }
+        });
 };  
 
 // called when a value is pushed to a list
@@ -141,23 +107,18 @@ const lpush = (redisKey) => {
 };
 
 const handleRemoveKeywords = (tenantId, userId) => {
-    const t = tenants.find(t => getId(t) === tenantId);
-    if (t && t.users) {
-        const u = t.users.find(u => u.id === userId);
-        if (u && u.keywords) {
-            client.lrangeAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, -1)
-                .then(keywords => {                    
-                    u.keywords.forEach(kw => {
-                        if (!keywords.includes(kw)) {
-                            u.keywords.delete(kw);
-                            if (keywordRemovedCallback) {
-                                keywordRemovedCallback(tenantId, userId, kw);
-                            }
-                        }
-                    });
-                });
-        }
-    }
+    
+    client.lrangeAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, -1)
+        .then(keywords => {                    
+            u.keywords.forEach(kw => {
+                if (!keywords.includes(kw)) {
+                    u.keywords.delete(kw);
+                    if (keywordRemovedCallback) {
+                        keywordRemovedCallback(tenantId, userId, kw);
+                    }
+                }
+            });
+        });     
 };
 
 const handleRemoveUser = (tenantId) => {

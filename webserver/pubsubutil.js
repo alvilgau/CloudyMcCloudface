@@ -35,39 +35,57 @@ const getId = (tenant) => {
     return tenant.consumerKey;
 };
 
-const addKeyword = (tenant, userId, keyword) => {
+
+const addTenant = (tenant) => {
     const tenantId = getId(tenant);
     let t = tenants.find(t => getId(t) === tenantId);
     if (!t) {
         t = tenant;
         t.users = [];
         tenants.push(t);
-    }
-    let u = t.users.find(u => u.id === userId);
-    if (!u) {
-        u = {id: userId};
-        u.keywords = new Set();
-        t.users.push(u);
-    }
-    u.keywords.add(keyword);
+    }    
+    return t;
 };
 
-const getKeywordsByUser = (tenant, userId) => {
-    const tenantId = getId(tenant);
-    const t = tenants.find(t => getId(t) === tenantId);
-    if (t && t.users) {
-        const u = t.users.find(u => u.id === userId);
-        if (u && u.keywords) {
-            return u.keywords;
-        }
+const addUser = (tenantId, userId) => {    
+    let u = getUser(tenantId, userId);
+    if (!u) {
+        u = {id: userId};
+        u.keywords = new Set();        
+        const t = getTenant(tenantId);
+        if (t) {
+            t.users.push(u);
+        }        
     }
-    return new Set();
+    return u;
+};
+
+const getUser = (tenantId, userId) => {
+    const t = getTenant(tenantId);
+    if (t) {
+        return t.users.find(u => u.id === userId);        
+    }
+    return undefined;
 }
 
-const getKeywordsByTenant = (tenant) => {
+const addKeyword = (tenant, userId, keyword) => {
     const tenantId = getId(tenant);
-    const t = tenants.find(t => getId(t) === tenantId);
-    const keywords = new Set();
+    const t = addTenant(tenant);
+    const u = addUser(tenantId, userId);    
+    u.keywords.add(keyword);    
+};
+
+const getKeywordsByUser = (tenantId, userId) => {
+    const u = getUser(tenantId, userId);    
+    if (u) {
+        return u.keywords;        
+    }
+    return new Set();    
+}
+
+const getKeywordsByTenant = (tenantId) => {
+    const t = getTenant(tenantId);
+    const keywords = new Set();    
     if (t && t.users) {
         t.users.map(u => u.keywords).forEach(keywordSet => {
             keywordSet.forEach(keyword => keywords.add(keyword));
@@ -76,20 +94,15 @@ const getKeywordsByTenant = (tenant) => {
     return keywords;
 }
 
-const removeKeyword = (tenant, userId, keyword) => {
-    const tenantId = getId(tenant);
-    const t = tenants.find(t => getId(t) === tenantId);
-    if (t && t.users) {
-        const u = t.users.find(u => u.id === userId);
-        if (u && u.keywords) {
-            u.keywords.delete(keyword);            
-        }
-    }    
+const removeKeyword = (tenantId, userId, keyword) => {    
+    const u = getUser(tenantId, userId);
+    if (u) {
+        u.keywords.delete(keyword);
+    }
 };
 
-const removeUser = (tenant, userId) => {
-    const tenantId = getId(tenant);
-    const t = tenants.find(t => getId(t) === tenantId);
+const removeUser = (tenantId, userId) => {
+    const t = getTenant(tenantId);
     if (t && t.users) {
         const u = t.users.find(u => u.id === userId);
         if (u) {
@@ -99,18 +112,16 @@ const removeUser = (tenant, userId) => {
     }
 };
 
-const hasUsers = (tenant) => {
-    const tenantId = getId(tenant);
-    const t = tenants.find(t => getId(t) === tenantId);
+const hasUsers = (tenantId) => {    
+    const t = getTenant(tenantId);
     if (t && t.users) {
         return t.users.length > 0;
     }
     return false;
 }
 
-const removeTenant = (tenant) => {
-    const tenantId = getId(tenant);
-    const t = tenants.find(t => getId(t) === tenantId);
+const removeTenant = (tenantId) => {    
+    const t = getTenant(tenantId);
     if (t) {
         const index = tenants.indexOf(t);
         tenants.splice(index, 1);
@@ -122,11 +133,16 @@ const getTenantIds = () => {
 };
 
 const getUserIds = (tenantId) => {
-    const t = tenants.find(t => getId(t) === tenantId);
-    if (t && t.users) {
+    const t = getTenant(tenantId);
+    if (t) {
         return t.users.map(u => u.id);
     }
     return [];
+};
+
+
+const getTenant = (tenantId) => {
+    return tenants.find(t => getId(t) === tenantId);
 };
 
 
@@ -141,7 +157,11 @@ const pubsubutil = {
     hasUsers,
     removeTenant,
     getTenantIds,
-    getUserIds
+    getUserIds,
+    addTenant,
+    getTenant,
+    addUser,
+    getUser
 };
 
 module.exports = pubsubutil;
