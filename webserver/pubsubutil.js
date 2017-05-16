@@ -37,12 +37,12 @@ const getId = (tenant) => {
 
 const addTenant = (tenant) => {
     const tenantId = getId(tenant);
-    let t = tenants.find(t => getId(t) === tenantId);
-    if (!t) {
-        t = tenant;
+    let t = tenants.find(t => getId(t) === tenantId);    
+    if (!t) {        
+        t = tenant;        
         t.users = [];
         tenants.push(t);
-    }    
+    }        
     return t;
 };
 
@@ -127,7 +127,7 @@ const removeTenant = (tenantId) => {
     }
 };
 
-const getTenantIds = () => {
+const getTenantIds = () => {    
     return tenants.map(t => getId(t));
 };
 

@@ -31,8 +31,10 @@ const has = (tenantId) => {
     return pubsubutil.getTenantIds().includes(tenantId);
 };
 
-const battleForTenant = (tenantId) => {    
-    client.multi()
+const battleForTenant = (tenantId) => {   
+    console.log(`start a battle for tenant ${tenantId}`);
+    return new Promise((resolve, reject) => {
+        client.multi()
         .incr(`battle:tenants->${tenantId}`)
         .expire(`battle:tenants->${tenantId}`, expiration)        
         .execAsync()
@@ -40,35 +42,56 @@ const battleForTenant = (tenantId) => {
             // get result from incr command
             const battleCounter = res[0];       
             // only one service will receive counter == 1
-            if (battleCounter == 1) {
-                console.log(`won battle for tenant ${tenantId}`);                
-                client.getAsync(`tenants->${tenantId}`)
-                        .then(tenant => JSON.parse(tenant))
-                        .then(tenant => {     
-                            pubsubutil.addTenant(tenant);
-                            newTenantCallback && newTenantCallback(tenant);                               
-                        });                                      
+            const wonBattle = battleCounter == 1;
+            if (wonBattle) {
+                console.log(`won battle for tenant ${tenantId}`); 
+                redisGetTenant(tenantId)
+                    .then(tenant => {                        
+                        newTenantCallback && newTenantCallback(tenant);                               
+                        redisGetUserIds(tenantId).then(userIds => {
+                            userIds.map(userId => {
+                                redisGetUserKeywords(tenantId, userId).then(keywords => {
+                                    keywords.forEach(keyword => {
+                                        pubsubutil.addKeyword(tenant, userId, keyword);
+                                        keywordAddedCallback && keywordAddedCallback(tenant, userId, keyword);
+                                    });                                    
+                                });
+                                userAddedCallback && userAddedCallback(tenant, userId);
+                            });
+                        });
+                    })
+                    .catch(err => {
+                        console.log(`could not query tenant ${tenantId}`);
+                        reject(err);
+                    });                          
             } else {
+                // we also fulfill the promise when we lost
+                // because everything else went fine
+                resolve(wonBattle);
                 console.log(`lost battle for tenant ${tenant}`);
             } 
-        });
+        })
+        .catch(err => reject(err));
+    });
 };
 
 // called when a redis key expired
 const expired = (redisKey) => {  
+    console.log(`redis key expired: ${redisKey}`);
     if (/battle:tenants->\S+/.test(redisKey)) {
-        const splitted = redisKey.split(/(?:battle:tenant\:)/);
-        const tenandId = splitted[1];
-        battleForTenant(tenandId);
+        const splitted = redisKey.split(/(?:battle:tenants->)/);
+        const tenantId = splitted[1];        
+        battleForTenant(tenantId).catch(console.error);
     }
 };
 
 // called when a redis key is set
 const set = (redisKey) => {
+    console.log(`redis key was set: ${redisKey}`);
     if (/tenants->\S+/.test(redisKey)) {
         const splitted = redisKey.split(/(?:tenants->)/);
         const tenandId = splitted[1];
-        battleForTenant(tenandId);
+        battleForTenant(tenandId).catch(console.error);
     }
 };
 
@@ -78,7 +101,7 @@ const handlePushKeywords = (tenantId, userId) => {
                 const t = pubsubutil.getTenant(tenantId);
                 keywords.forEach(keyword => {                    
                     pubsubutil.addKeyword(t, userId, keyword);                    
-                })                
+                });                
            });                             
 };
 
@@ -98,6 +121,7 @@ const handlePushUser = (tenantId) => {
 
 // called when a value is pushed to a list
 const lpush = (redisKey) => {
+    console.log(`value to redis key was pushed: ${redisKey}`);
     if (/tenants:\S+:users:\S+->keywords/.test(redisKey)) {
         const splitted = redisKey.split(/(?:tenants\:|\:users\:|->keywords)/);
         const tenantId = splitted[1];
@@ -141,6 +165,7 @@ const handleRemoveUser = (tenantId) => {
 
 // called when a value is removed from a list
 const lrem = (redisKey) => {
+    console.log(`redis key was removed: ${redisKey}`);
     if (/tenants:\S+:users:\S+->keywords/.test(redisKey)) {                
         const splitted = redisKey.split(/(?:tenants\:|\:users\:|->keywords)/);
         const tenantId = splitted[1];        
@@ -156,6 +181,7 @@ const lrem = (redisKey) => {
 
 // called when a redis key is deleted
 const del = (redisKey) => {
+    console.log(`redis key was deleted: ${redisKey}`);
     if (/tenant:\S+:users:\S+->keywords/.test(redisKey)) {
         const splitted = redisKey.split(/(?:tenant\:|\:users\:|->keywords)/);
         const tenantId = splitted[1];
@@ -175,20 +201,15 @@ subscriber.on('pmessage', (pattern, channel, msg) => {
     }
 });
 
-// subscribe for custom messages
-const messageHandlers = {
-    /*'newTenant': battleForTenant*/
+const battleForFreeTenants = () => {    
+    return Promise.all(redisGetTenantIds().then(ids => {        
+        return ids.map(id => battleForTenant(id));
+    }));
 };
-Object.keys(messageHandlers).forEach(handler => subscriber.subscribe(handler));
-subscriber.on('message', (channel, msg) => {    
-    const handler = messageHandlers[channel];    
-    if (handler) {
-        handler(msg);
-    }
-});
 
-const battleForFreeTenants = () => {
-    redisGetTenantIds().then(ids => ids.forEach(id => battleForTenant(id)));    
+const redisGetTenant = (tenantId) => {
+    return client.getAsync(`tenants->${tenantId}`)
+                .then(res => JSON.parse(res));
 };
 
 const redisGetTenantIds = () => {
@@ -196,48 +217,56 @@ const redisGetTenantIds = () => {
                 .then(res => {
                     const redisKeys = res[1];                    
                     const tenantIds = redisKeys.map(key => key.replace('tenants->', ''));
-                    return new Set(tenantIds);
+                    return tenantIds;
                 })
                 .catch(err => {
                     console.error('could not query tenant ids from redis');
                     console.error(err);
-                    return new Set();
+                    return [];
                 });                              
 };
 
 const redisGetUserIds = (tenantId) => {
-    return client.scanAsync(0, 'MATCH', `tenants:${tenantId}->users`)
-            .then(res => {
-                const redisKeys = res[1];
-                const userIds = redisKeys.map(key => key.replace(`tenants:${tenantId}->users`, ''));
-                return userIds;
-            })
+    return client.lrangeAsync(`tenants:${tenantId}->users`, 0, -1)            
+            .then(ids => ids)
             .catch(err => {
                 console.error(`could not query user ids for tenant ${tenantId} from redis`);
                 console.error(err);
-                return new Set();
+                return [];
             });
 };
 
 const redisGetUserKeywords = (tenantId, userId) => {
-    return client.lrangeAsync(0, 'MATCH', `tenants:${tenantId}:users:${userId}->keywords`, 0, 1)
-            .then(res => res[1])
+    return client.lrangeAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, -1)
+            .then(keywords => new Set(keywords))
             .catch(err => {
-                console.error(`could not query keywords for tenant ${tenandId} from redis`);
+                console.error(`could not query keywords for tenant ${tenantId} from redis`);
                 console.error(err);
                 return new Set();
             });
 };
 
 // install job for updating battles
-setInterval(() => {
-    tenants.forEach(tenant => {      
-        const tenantId = pubsubutil.getId(tenant);
-        client.expireAsync(`battle:tenants->${tenantId}`, expiration);
-    });
-}, keepAliveInterval);
+let interval;
+const start = () => {
+    interval = setInterval(() => {        
+        pubsubutil.getTenantIds().forEach(tenantId => {              
+            console.log(`refresh: ${tenantId}`);
+            client.expireAsync(`battle:tenants->${tenantId}`, expiration);
+        });
+    }, keepAliveInterval);
+};
+const stop = () => {
+    clearInterval(interval);
+};
+
+start();
+battleForFreeTenants();
 
 const tenant = {
+    pubsubutil,
+    start,
+    stop,
     battleForFreeTenants,        
     onNewTenant: (callback) => {
         newTenantCallback = callback;        
