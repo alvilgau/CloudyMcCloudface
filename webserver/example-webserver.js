@@ -1,10 +1,10 @@
 const publisher = require('./publisher');
 
- const t = {
-    consumerKey: 'my-consumerKey',
-    token: 'my-token',
-    consumerSecret: 'my-consumerSecret',
-    tokenSecret: 'my-tokenSecret'        
+const t = {
+  consumerKey: 'my-consumerKey',
+  token: 'my-token',
+  consumerSecret: 'my-consumerSecret',
+  tokenSecret: 'my-tokenSecret',
 };
 
 publisher.trackKeyword(t, 'user1', 'obama');

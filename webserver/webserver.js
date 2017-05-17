@@ -16,12 +16,11 @@ const defaultTenant = {
   consumerKey: process.env.TWITTER_CONSUMER_KEY,
   token: process.env.TWITTER_TOKEN,
   consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
-  tokenSecret: process.env.TWITTER_TOKEN_SECRET        
+  tokenSecret: process.env.TWITTER_TOKEN_SECRET,
 };
 
 // new client connected
 io.on('connection', (socket) => {
-  
   sockets[socket] = {};
 
   socket.on('tenant', (tenant) => {
@@ -32,28 +31,28 @@ io.on('connection', (socket) => {
       sockets[socket].tenant = tenant;
     }
   });
-  
+
   socket.on('track', (keyword) => {
     let t = sockets[socket].tenant;
     if (!t) {
       t = defaultTenant;
       sockets[socket].tenant = t;
-    }    
+    }
     publisher.trackKeyword(t, socket.id, keyword);
   });
-  
+
   socket.on('untrack', (keyword) => {
     const t = sockets[socket].tenant;
     if (t) {
       publisher.untrackKeyword(t, socket.id, keyword);
-    }        
+    }
   });
-  
+
   socket.on('disconnect', () => {
     const t = sockets[socket].tenant;
     if (t) {
       publisher.removeUser(t, socket.id);
-    }        
+    }
   });
 });
 
