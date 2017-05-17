@@ -63,11 +63,11 @@
             if (subscriptions.indexOf(keyword) === -1) {
                 subscriptions.push(keyword);
                 counter[keyword] = 0;
-                socket.emit('subscribe', keyword);                
+                socket.emit('track', keyword);                
             } else {
                 subscriptions = subscriptions.filter((x) => x !== keyword);
                 counter[keyword] = 0;
-                socket.emit('unsubscribe', keyword);                
+                socket.emit('untrack', keyword);                
             }            
             $('#m').val('');            
             return false;
