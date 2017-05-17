@@ -150,7 +150,7 @@ const handleRemoveKeywords = (tenantId, userId) => {
 };
 
 const handleRemoveUser = (tenantId) => {        
-    client.lrangeAsync(`tenants:${tenantKey}->users`, 0, -1)
+    client.lrangeAsync(`tenants:${tenantId}->users`, 0, -1)
         .then(userIds => {
             const tenant = pubsubutil.getTenant(tenantId);
             const knownUserIds = pubsubutil.getUserIds(tenantId);
