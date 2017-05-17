@@ -35,26 +35,26 @@ const getId = (tenant) => {
     return tenant.consumerKey;
 };
 
+const deepCopy = (obj) => JSON.parse(JSON.stringify(obj));
+
 const addTenant = (tenant) => {
     const tenantId = getId(tenant);
-    let t = tenants.find(t => getId(t) === tenantId);    
-    if (!t) {        
-        t = tenant;        
-        t.users = [];
-        tenants.push(t);
+    let t = getTenant(tenantId);    
+    if (!t) {                
+        t = deepCopy(tenant);                       
+        t.users = [];        
+        tenants.push(t);        
     }        
     return t;
 };
 
 const addUser = (tenantId, userId) => {    
+    const t = getTenant(tenantId);
     let u = getUser(tenantId, userId);
-    if (!u) {
+    if (t && !u) {                        
         u = {id: userId};
         u.keywords = new Set();        
-        const t = getTenant(tenantId);
-        if (t) {
-            t.users.push(u);
-        }        
+        t.users.push(u);                
     }
     return u;
 };
@@ -102,7 +102,7 @@ const removeKeyword = (tenantId, userId, keyword) => {
 
 const removeUser = (tenantId, userId) => {
     const t = getTenant(tenantId);
-    if (t && t.users) {
+    if (t) {
         const u = t.users.find(u => u.id === userId);
         if (u) {
             const index = t.users.indexOf(u);
@@ -113,7 +113,7 @@ const removeUser = (tenantId, userId) => {
 
 const hasUsers = (tenantId) => {    
     const t = getTenant(tenantId);
-    if (t && t.users) {
+    if (t) {
         return t.users.length > 0;
     }
     return false;

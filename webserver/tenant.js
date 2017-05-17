@@ -35,36 +35,42 @@ const battleForTenant = (tenantId) => {
     console.log(`start a battle for tenant ${tenantId}`);
     return new Promise((resolve, reject) => {
         client.multi()
+        .get(`tenants->${tenantId}`)
         .incr(`battle:tenants->${tenantId}`)
         .expire(`battle:tenants->${tenantId}`, expiration)        
         .execAsync()
         .then(res => {
             // get result from incr command
-            const battleCounter = res[0];       
+            const tenant = JSON.parse(res[0]);                  
+            const battleCounter = res[1];       
             // only one service will receive counter == 1
             const wonBattle = battleCounter == 1;
-            if (wonBattle) {
-                console.log(`won battle for tenant ${tenantId}`); 
-                redisGetTenant(tenantId)
-                    .then(tenant => {                        
-                        newTenantCallback && newTenantCallback(tenant);                               
-                        redisGetUserIds(tenantId).then(userIds => {
-                            userIds.map(userId => {
-                                redisGetUserKeywords(tenantId, userId).then(keywords => {
-                                    keywords.forEach(keyword => {
-                                        pubsubutil.addKeyword(tenant, userId, keyword);
-                                        keywordAddedCallback && keywordAddedCallback(tenant, userId, keyword);
-                                    });                                    
-                                });
-                                userAddedCallback && userAddedCallback(tenant, userId);
-                            });
-                        });
-                    })
-                    .catch(err => {
-                        console.log(`could not query tenant ${tenantId}`);
-                        reject(err);
-                    });                          
+            if (tenant && wonBattle) {
+                console.log(`won battle for tenant ${tenantId}`);                     
+                console.log(`add tenant ${tenant}`);
+                pubsubutil.addTenant(tenant);                      
+                newTenantCallback && newTenantCallback(tenant);                               
+                redisGetUserIds(tenantId).then(userIds => {
+                    userIds.map(userId => {
+                        redisGetUserKeywords(tenantId, userId).then(keywords => {
+                            /*keywords.forEach(keyword => {
+                                pubsubutil.addKeyword(tenant, userId, keyword);
+                                keywordAddedCallback && keywordAddedCallback(tenant, userId, keyword);
+                            });                                    */
+                            userAddedCallback && userAddedCallback(tenant, userId);
+                        });                        
+                    });
+                })                
+                .catch(err => {
+                    console.error(err);
+                    reject(err);
+                });   
+                resolve(wonBattle);                       
             } else {
+                if (!tenant) {
+                    // we don't need more battles -> there is no such tenant
+                    client.delAsync(`battle:tenants->${tenantId}`);
+                }
                 // we also fulfill the promise when we lost
                 // because everything else went fine
                 resolve(wonBattle);
@@ -80,8 +86,13 @@ const expired = (redisKey) => {
     console.log(`redis key expired: ${redisKey}`);
     if (/battle:tenants->\S+/.test(redisKey)) {
         const splitted = redisKey.split(/(?:battle:tenants->)/);
-        const tenantId = splitted[1];        
-        battleForTenant(tenantId).catch(console.error);
+        const tenantId = splitted[1];
+        battleForTenant(tenantId);              
+    }
+    else if (/tenants->\S+/.test(redisKey)) {
+        const splitted = redisKey.split(/(?:tenants->)/);
+        const tenantId = splitted[1];
+        has(tenantId) && pubsubutil.removeTenant(tenantId);
     }
 };
 
@@ -250,7 +261,7 @@ const redisGetUserKeywords = (tenantId, userId) => {
 let interval;
 const start = () => {
     interval = setInterval(() => {        
-        pubsubutil.getTenantIds().forEach(tenantId => {              
+        pubsubutil.getTenantIds().forEach(tenantId => {                          
             console.log(`refresh: ${tenantId}`);
             client.expireAsync(`battle:tenants->${tenantId}`, expiration);
         });
