@@ -13,7 +13,10 @@ app.get('/', (req, res) => {
 const sockets = {};
 
 const defaultTenant = {
-
+  consumerKey: process.env.TWITTER_CONSUMER_KEY,
+  token: process.env.TWITTER_TOKEN,
+  consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
+  tokenSecret: process.env.TWITTER_TOKEN_SECRET        
 };
 
 // new client connected
