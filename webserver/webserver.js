@@ -31,9 +31,7 @@ io.on('connection', (socket) => {
     const keywords = publisher.pubsubutil.getKeywordsByUser(tenantId, socket.id);
     publisher.removeUser(sockets[socket].tenant, socket.id);
     sockets[socket].tenant = tenant;    
-    keywords.forEach(keyword => {
-      publisher.trackKeyword(tenant, socket.id, keyword);
-    });
+    keywords.forEach(keyword => publisher.trackKeyword(tenant, socket.id, keyword));    
   });
 
   socket.on('track', (keyword) => {       
