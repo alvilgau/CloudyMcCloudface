@@ -21,39 +21,28 @@ const defaultTenant = {
 
 // new client connected
 io.on('connection', (socket) => {
-  sockets[socket] = {};
 
-  socket.on('tenant', (tenant) => {
-    // we don't allow a socket to change tenant
-    // -> client must set the tenant before tracking any keyword,
-    //    otherwise default tenant credentials will be used
-    if (!sockets[socket].tenant) {
-      sockets[socket].tenant = tenant;
-    }
+  sockets[socket] = {
+    tenant: defaultTenant
+  };
+
+  socket.on('tenant', (tenant) => {    
+    publisher.removeUser(sockets[socket].tenant, socket.id);
+    sockets[socket].tenant = tenant;    
   });
 
-  socket.on('track', (keyword) => {
-    let t = sockets[socket].tenant;
-    if (!t) {
-      t = defaultTenant;
-      sockets[socket].tenant = t;
-    }
-    publisher.trackKeyword(t, socket.id, keyword);
+  socket.on('track', (keyword) => {       
+    publisher.trackKeyword(sockets[socket].tenant, socket.id, keyword);
   });
 
-  socket.on('untrack', (keyword) => {
-    const t = sockets[socket].tenant;
-    if (t) {
-      publisher.untrackKeyword(t, socket.id, keyword);
-    }
+  socket.on('untrack', (keyword) => {    
+    publisher.untrackKeyword(sockets[socket].tenant, socket.id, keyword);    
   });
 
-  socket.on('disconnect', () => {
-    const t = sockets[socket].tenant;
-    if (t) {
-      publisher.removeUser(t, socket.id);
-    }
+  socket.on('disconnect', () => {    
+    publisher.removeUser(sockets[socket].tenant, socket.id);    
   });
+  
 });
 
 // lets go
