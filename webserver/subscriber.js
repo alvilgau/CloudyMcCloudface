@@ -82,10 +82,10 @@ const battleForTenant = (tenantId) => {
             redisGetUserIds(tenantId).then((userIds) => {
               userIds.map((userId) => {
                 redisGetUserKeywords(tenantId, userId).then((keywords) => {
-                            /* keywords.forEach(keyword => {
+                            keywords.forEach(keyword => {
                                 pubsubutil.addKeyword(tenant, userId, keyword);
                                 keywordAddedCallback && keywordAddedCallback(tenant, userId, keyword);
-                            });                                    */
+                            });                                   
                   userAddedCallback && userAddedCallback(tenant, userId);
                 });
               });
