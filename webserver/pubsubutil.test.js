@@ -130,6 +130,8 @@ test('get tenant', () => {
   const t = getSampleTenant();
   pubsubutil.addTenant(t);
   const id = pubsubutil.getId(t);
+  // when you add a tenant, then it will create an empty user array
+  t.users = [];
   expect(pubsubutil.getTenant(id)).toEqual(t);
 });
 
