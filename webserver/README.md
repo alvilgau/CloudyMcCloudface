@@ -10,7 +10,7 @@ npm install
 
 ## Run
 
-1. run redis ()
+1. run redis
 ```bash
 redis-server
 ```
