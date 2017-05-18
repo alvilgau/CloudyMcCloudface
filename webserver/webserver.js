@@ -27,8 +27,13 @@ io.on('connection', (socket) => {
   };
 
   socket.on('tenant', (tenant) => {    
+    const tenantId = publisher.pubsubutil.getId(tenant);
+    const keywords = publisher.pubsubutil.getKeywordsByUser(tenantId, socket.id);
     publisher.removeUser(sockets[socket].tenant, socket.id);
     sockets[socket].tenant = tenant;    
+    keywords.forEach(keyword => {
+      publisher.trackKeyword(tenant, socket.id, keyword);
+    });
   });
 
   socket.on('track', (keyword) => {       
@@ -42,7 +47,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {    
     publisher.removeUser(sockets[socket].tenant, socket.id);    
   });
-  
+
 });
 
 // lets go
