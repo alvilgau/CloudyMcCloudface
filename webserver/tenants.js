@@ -124,6 +124,14 @@ const removeTenant = (tenantId) => {
   }
 };
 
+const getUsersByKeyword = (tenantId, keyword) => {  
+  const t = getTenant(tenantId);
+  if (t) {
+    return new Set(t.users.filter(user => user.keywords.has(keyword)));
+  };
+  return new Set();
+};
+
 const getTenantIds = () => tenants.map(t => getId(t));
 
 const getUserIds = (tenantId) => {
@@ -141,6 +149,7 @@ module.exports = {
   getId,
   addKeyword,
   getKeywordsByUser,
+  getUsersByKeyword,
   getKeywordsByTenant,
   removeKeyword,
   removeUser,

@@ -2,12 +2,6 @@ require('dotenv').config();
 const request = require('request');
 const isEqual = require('lodash.isequal');
 
-// number of tweets to collect (per keyword) before analysis starts
-const threshold = 10;
-
-// minimum time between reconnect
-const reconnectInterval = 15;
-
 const handleNewTweet = function (stream, tweet) {
   /* determine the keyword for the tweet
 
@@ -19,7 +13,7 @@ const handleNewTweet = function (stream, tweet) {
            this can be reached when we sort the string by length.
   */
 
-  const keyword = Object.keys(stream.registrations)
+  const keyword = Object.keys(stream.keywords)
     .sort((a, b) => b.length - a.length)
     .find(kw => tweet.toLowerCase().includes(kw));
   // no keyword found
@@ -35,7 +29,9 @@ const handleNewTweet = function (stream, tweet) {
   // store tweet
   tweets[keyword].push(tweet);
 
-  // check if exchangeChannel is set up and threshold is reached
+  // number of tweets to collect (per keyword) before analysis starts
+  const threshold = 10;
+  // check if exchangeChannel is set up and threshold is reached  
   if (tweets[keyword].length >= threshold) {
     // analyze a bunch of tweets
     stream.handleTweets(keyword, tweets);
@@ -46,7 +42,7 @@ const handleNewTweet = function (stream, tweet) {
 
 const installErrorHandler = function (stream) {
   stream.connection.on('error', (err) => {
-    console.log('ERROR', err);
+    console.error(err);
   });
 };
 
@@ -76,7 +72,7 @@ const installResponseHandler = function (stream, callback) {
   });
 };
 
-const createTwitterStream = (tenant, registrations) => request.post(
+const createTwitterStream = (tenant, keywords) => request.post(
   {
     url: 'https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true',
     oauth: {
@@ -86,13 +82,12 @@ const createTwitterStream = (tenant, registrations) => request.post(
       token_secret: tenant.tokenSecret,
     },
     form: {
-      track: registrations.join(),
+      track: keywords.join(),
     },
   });
 
-
 const connectToTwitter = (stream) => {
-  stream.connection = createTwitterStream(stream.tenant, stream.registrations);
+  stream.connection = createTwitterStream(stream.tenant, stream.keywords);
   installErrorHandler(stream);
   installResponseHandler(stream);
 };
@@ -102,29 +97,31 @@ const startPeriodicReconnect = (stream) => {
     // check if we really need to reconnect
     if (stream.needReconnect) {
       stream.needReconnect = false;
-      console.log(`reconnect to twitter: ${stream.registrations.join()}`);
+      console.log(`reconnect to twitter: ${stream.keywords.join()}`);
       // close current stream and connect again
       stream.connection.abort();
       connectToTwitter(stream);
     } else {
       console.log('no need to reconnect');
     }
-  }, reconnectInterval * 1000);
+  }, process.env.TWITTER_RECONNECT_INTERVAL * 1000);
 };
 
 const onTweets = (stream, tweetHandler) => {
   stream.handleTweets = tweetHandler;
 };
 
-const setKeywords = (stream, keywords) => {
-  stream.needReconnect = !isEqual(stream.registrations.sort(), keywords.sort());
-  stream.registrations = keywords;
+const setKeywords = (stream, keywords) => {    
+  const before = stream.keywords;
+  const after = Array.from(keywords);
+  stream.needReconnect = !isEqual(before.sort(), after.sort());
+  stream.keywords = after;
 }
 
 const startStream = (tenant) => {
   const stream = {
-    tweets: {},
-    registrations: [],
+    tweets: {},    
+    keywords: [],
     needReconnect: false,
     handleTweets: () => { },
     tenant: tenant
@@ -134,7 +131,13 @@ const startStream = (tenant) => {
   return stream;
 };
 
+const stopStream = (stream) => {
+  stream.connection.abort();
+};
+
 module.exports = {
   startStream,
+  stopStream,
+  setKeywords,
   onTweets
 };

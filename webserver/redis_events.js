@@ -24,7 +24,14 @@ let userRemovedCallback = (tenant, userId) => {};
 let keywordAddedCallback = (tenant, userId, keyword) => {};
 let keywordRemovedCallback = (tenant, userId, keyword) => {};
 
+// handler for analyzed keywords
+const subscriptions = [];
+const getSubscription = (tenantId, userId) => {
+  return subscriptions.filter(s => s.tenantId === tenantId && s.userId === userId);
+};
+
 // subscribe for all events
+let doBattle = false;
 const event = `__keyevent@${db}__:`;
 subscriber.psubscribe(`${event}*`);
 
@@ -174,7 +181,7 @@ const expired = (redisKey) => {
   if (/battle:tenants->\S+/.test(redisKey)) {
     const splitted = redisKey.split(/(?:battle:tenants->)/);
     const tenantId = splitted[1];
-    battleForTenant(tenantId);
+    doBattle && battleForTenant(tenantId);
   } else if (/tenants->\S+/.test(redisKey)) {
     const splitted = redisKey.split(/(?:tenants->)/);
     const tenantId = splitted[1];
@@ -187,7 +194,7 @@ const set = (redisKey) => {
   if (/tenants->\S+/.test(redisKey)) {
     const splitted = redisKey.split(/(?:tenants->)/);
     const tenandId = splitted[1];
-    battleForTenant(tenandId).catch(console.error);
+    doBattle && battleForTenant(tenandId).catch(console.error);
   }
 };
 
@@ -240,7 +247,20 @@ subscriber.on('pmessage', (pattern, channel, msg) => {
   }
 });
 
+subscriber.on('message', (channel, message) => {
+  if (/tenants:\S+:users:\S+->analyzedTweets->/.test(channel)) {
+    const splitted = redisKey.split(/(?:tenants\:|\:users\:|->analyzedTweets)/);
+    const tenantId = splitted[1];
+    const userId = splitted[2];
+    const subscription = getSubscription(tenantId, userId);
+    if (subscription) {
+      subscription.callback(tenantId, userId, JSON.parse(message));
+    }
+  }
+});
+
 const battleForFreeTenants = () => {
+  doBattle = true;
   Promise.all(redisGetTenantIds().then(ids => ids.map(id => battleForTenant(id))));
 };
 
@@ -249,6 +269,19 @@ const refreshBattles = () => {
     console.log(`refresh battle for ${tenantId}`);
     client.expireAsync(`battle:tenants->${tenantId}`, expiration);
   });
+};
+
+const doUnsubscribe = (tenantId, userId) => {
+  const subscription = getSubscription(tenantId, userId);
+  if (subscription) {
+    const index = subscriptions.indexOf(subscription);
+    subscriptions.splice(index, 1);
+  }
+};
+
+const doSubscribe = (tenantId, userId, callback) => {
+  doUnsubscribe(tenantId, userId);
+  subscriptions.push({tenantId, userId, callback});
 };
 
 module.exports = {
@@ -272,5 +305,11 @@ module.exports = {
   },
   onKeywordRemoved: (callback) => {
     keywordRemovedCallback = callback;
+  },
+  unsubscribe: (tenantId, userId) => {
+    doUnsubscribe(tenantId, userId);    
+  },
+  subscribe: (tenantId, userId, callback) => {        
+    doSubscribe(tenantId, userId, callback);    
   }
 };

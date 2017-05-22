@@ -65,11 +65,16 @@ const refreshExpirations = () => {
   })  
 };
 
-const redisCommands = {
+const publishAnalyzedTweets = (tenantId, userId, analyzedTweets) => {
+  const str = JSON.stringify(analyzedTweets);
+  client.publishAsync(`tenants:{tenantId}:users:${userId}->analyzedTweets`, str);
+};
+
+module.exports = {
   trackKeyword,
   untrackKeyword,
   removeUser,
   refreshExpirations,  
-  tenants,
+  publishAnalyzedTweets,
+  tenants
 };
-module.exports = redisCommands;
