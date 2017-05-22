@@ -18,6 +18,7 @@ subscriber.config('set', 'notify-keyspace-events', 'KEA');
 
 // callback when battle for tenant is won
 let newTenantCallback = (tenant) => {};
+let tenantRemovedCallback = (tenant) => {};
 let userAddedCallback = (tenant, userId) => {};
 let userRemovedCallback = (tenant, userId) => {};
 let keywordAddedCallback = (tenant, userId, keyword) => {};
@@ -162,6 +163,12 @@ const handleRemoveKeywords = (tenantId, userId) => {
         });
 };
 
+const handleRemoveTenant = (tenantId) => {
+  const tenant = tenants.getTenant(tenantId);
+  tenants.removeTenant(tenant);
+  tenantRemovedCallback && tenantRemovedCallback(tenant);
+};
+
 const expired = (redisKey) => {
   console.log(`redis key expired: ${redisKey}`);
   if (/battle:tenants->\S+/.test(redisKey)) {
@@ -171,7 +178,7 @@ const expired = (redisKey) => {
   } else if (/tenants->\S+/.test(redisKey)) {
     const splitted = redisKey.split(/(?:tenants->)/);
     const tenantId = splitted[1];
-    has(tenantId) && tenants.removeTenant(tenantId);
+    has(tenantId) && handleRemoveTenant(tenantId);
   }
 };
 
@@ -233,38 +240,26 @@ subscriber.on('pmessage', (pattern, channel, msg) => {
   }
 });
 
-const battleForFreeTenants = () => Promise.all(redisGetTenantIds().then(ids => ids.map(id => battleForTenant(id))));
+const battleForFreeTenants = () => {
+  Promise.all(redisGetTenantIds().then(ids => ids.map(id => battleForTenant(id))));
+};
 
 const refreshBattles = () => {
   tenants.getTenantIds().forEach((tenantId) => {
+    console.log(`refresh battle for ${tenantId}`);
     client.expireAsync(`battle:tenants->${tenantId}`, expiration);
   });
 };
 
-// install job for updating battles
-let interval;
-const start = () => {
-  interval = setInterval(() => {
-    tenants.getTenantIds().forEach((tenantId) => {
-      console.log(`refresh: ${tenantId}`);
-      client.expireAsync(`battle:tenants->${tenantId}`, expiration);
-    });
-  }, keepAliveInterval);
-};
-const stop = () => {
-  clearInterval(interval);
-};
-
-start();
-battleForFreeTenants();
-
-const redisEvents = {
+module.exports = {
   tenants,
-  start,
-  stop,
   battleForFreeTenants,
+  refreshBattles,
   onNewTenant: (callback) => {
     newTenantCallback = callback;
+  },
+  onTenantRemoved: (callback) => {
+    tenantRemovedCallback = callback;
   },
   onUserAdded: (callback) => {
     userAddedCallback = callback;
@@ -277,6 +272,5 @@ const redisEvents = {
   },
   onKeywordRemoved: (callback) => {
     keywordRemovedCallback = callback;
-  },
+  }
 };
-module.exports = redisEvents;
