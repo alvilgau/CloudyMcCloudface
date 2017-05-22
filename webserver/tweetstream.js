@@ -83,7 +83,7 @@ const createTwitterStream = (tenant, keywords) => request.post(
     },
     form: {
       track: keywords.join(),
-    },
+    }
   });
 
 const connectToTwitter = (stream) => {
@@ -111,12 +111,14 @@ const onTweets = (stream, tweetHandler) => {
   stream.handleTweets = tweetHandler;
 };
 
-const setKeywords = (stream, keywords) => {    
-  const before = stream.keywords;
-  const after = Array.from(keywords);
-  stream.needReconnect = !isEqual(before.sort(), after.sort());
-  stream.keywords = after;
-}
+const setKeywords = (stream, keywords) => {     
+  const oldKeywords = stream.keywords;
+  const newKeywords = Array.from(keywords);
+  console.log(`old keywords ${oldKeywords.sort()}`);
+  console.log(`new keywords ${newKeywords.sort()}`);
+  stream.needReconnect = !isEqual(oldKeywords.sort(), newKeywords.sort());
+  stream.keywords = newKeywords;
+};
 
 const startStream = (tenant) => {
   const stream = {

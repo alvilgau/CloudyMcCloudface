@@ -24,6 +24,7 @@ const publishAnalyzedTweets = (tenant, analyzedTweets) => {
 };
 
 const handlePossibleKeywordChange = (tenant) => {
+  console.log(`possible keyword change`);
   const tenantId = redisEvents.tenants.getId(tenant);
   const stream = streams[tenantId];
   if (stream) {
@@ -51,10 +52,21 @@ redisEvents.onTenantRemoved((tenant) => {
   }
 });
 
-redisEvents.onKeywordAdded(handlePossibleKeywordChange);
-redisEvents.onKeywordRemoved(handlePossibleKeywordChange);
-redisEvents.onUserAdded(handlePossibleKeywordChange);
-redisEvents.onUserRemoved(handlePossibleKeywordChange);
+redisEvents.onKeywordAdded((tenant, userId, keyword) => {
+  handlePossibleKeywordChange(tenant);
+});
+
+redisEvents.onKeywordRemoved((tenant, userId, keyword) => {
+  handlePossibleKeywordChange(tenant);
+});
+
+redisEvents.onUserAdded((tenant, userId) => {
+  handlePossibleKeywordChange(tenant);
+});
+
+redisEvents.onUserRemoved((tenant, userId) => {
+  handlePossibleKeywordChange(tenant);
+});
 
 redisEvents.battleForFreeTenants();
 

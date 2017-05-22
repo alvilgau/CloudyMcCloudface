@@ -98,18 +98,18 @@ const battleForTenant = (tenantId) => {
                 });
               });
             })
-                .catch((err) => {
-                  console.error(err);
-                  reject(err);
-                });
+            .catch((err) => {
+              console.error(err);
+              reject(err);
+            });
             resolve(wonBattle);
           } else {
             if (!tenant) {
-                    // we don't need more battles -> there is no such tenant
+              // we don't need more battles -> there is no such tenant
               client.delAsync(`battle:tenants->${tenantId}`);
             }
-                // we also fulfill the promise when we lost
-                // because everything else went fine
+            // we also fulfill the promise when we lost
+            // because everything else went fine
             resolve(wonBattle);
             console.log(`lost battle for tenant ${tenant}`);
           }
@@ -122,8 +122,12 @@ const handlePushKeywords = (tenantId, userId) => {
   client.lrangeAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, -1)
           .then((keywords) => {
             const t = tenants.getTenant(tenantId);
-            keywords.forEach((keyword) => {
-              tenants.addKeyword(t, userId, keyword);
+            const trackedKeywords = tenants.getKeywordsByUser(tenantId, userId);
+            keywords.forEach((keyword) => {              
+              if (!trackedKeywords.has(keyword)) {
+                tenants.addKeyword(t, userId, keyword);
+                keywordAddedCallback && keywordAddedCallback(t, userId, keyword);
+              }              
             });
           });
 };
