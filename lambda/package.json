@@ -5,7 +5,7 @@
   "main": "main.js",
   "dependencies": {
     "sentiment": "^4.0.0",
-    "stats": "^1.0.0"
+    "stats-lite": "^2.0.4"
   },
   "devDependencies": {},
   "scripts": {

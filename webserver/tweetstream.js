@@ -60,6 +60,7 @@ const installResponseHandler = function (stream, callback) {
         try {
           // publish tweet
           const tweetAsJson = JSON.parse(tweet);
+          console.log(`received new tweet ${tweet.text}`);
           handleNewTweet(stream, tweetAsJson);
         } catch (ignored) { /* should never happen */ }
         // now the new tweet message
@@ -72,19 +73,18 @@ const installResponseHandler = function (stream, callback) {
   });
 };
 
-const createTwitterStream = (tenant, keywords) => request.post(
-  {
-    url: 'https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true',
-    oauth: {
-      consumer_key: tenant.consumerKey,
-      token: tenant.token,
-      consumer_secret: tenant.consumerSecret,
-      token_secret: tenant.tokenSecret,
-    },
-    form: {
-      track: keywords.join(),
-    }
-  });
+const createTwitterStream = (tenant, keywords) => request.post({
+  url: 'https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true',
+  oauth: {
+    consumer_key: tenant.consumerKey,
+    token: tenant.token,
+    consumer_secret: tenant.consumerSecret,
+    token_secret: tenant.tokenSecret,
+  },
+  form: {
+    track: keywords.join(),
+  }
+});
 
 const connectToTwitter = (stream) => {
   stream.connection = createTwitterStream(stream.tenant, stream.keywords);
@@ -114,8 +114,6 @@ const onTweets = (stream, tweetHandler) => {
 const setKeywords = (stream, keywords) => {     
   const oldKeywords = stream.keywords;
   const newKeywords = Array.from(keywords);
-  console.log(`old keywords ${oldKeywords.sort()}`);
-  console.log(`new keywords ${newKeywords.sort()}`);
   stream.needReconnect = !isEqual(oldKeywords.sort(), newKeywords.sort());
   stream.keywords = newKeywords;
 };

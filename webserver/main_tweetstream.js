@@ -23,8 +23,7 @@ const publishAnalyzedTweets = (tenant, analyzedTweets) => {
   });    
 };
 
-const handlePossibleKeywordChange = (tenant) => {
-  console.log(`possible keyword change`);
+const handlePossibleKeywordChange = (tenant) => {  
   const tenantId = redisEvents.tenants.getId(tenant);
   const stream = streams[tenantId];
   if (stream) {

@@ -88,9 +88,9 @@ const battleForTenant = (tenantId) => {
             tenants.addTenant(tenant);
             newTenantCallback && newTenantCallback(tenant);
             redisGetUserIds(tenantId).then((userIds) => {
-              userIds.map((userId) => {
+              userIds.map((userId) => {                
                 redisGetUserKeywords(tenantId, userId).then((keywords) => {
-                            keywords.forEach(keyword => {
+                            keywords.forEach(keyword => {                              
                                 tenants.addKeyword(tenant, userId, keyword);
                                 keywordAddedCallback && keywordAddedCallback(tenant, userId, keyword);
                             });                                   
