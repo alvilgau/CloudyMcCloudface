@@ -4,7 +4,7 @@ const app = require('express')();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const Joi = require('joi');
-const publisher = require('./publisher');
+const redisCommands = require('./redis_commands');
 
 // serve index.html
 app.get('/', (req, res) => {
@@ -36,27 +36,35 @@ io.on('connection', (socket) => {
 
   socket.on('tenant', (tenant) => {    
     if (!Joi.validate(tenant, tenantSchema).error) {
-      const tenantId = publisher.pubsubutil.getId(tenant);
-      const keywords = publisher.pubsubutil.getKeywordsByUser(tenantId, socket.id);
-      publisher.removeUser(sockets[socket].tenant, socket.id);
+      const tenantId = redisCommands.tenants.getId(tenant);
+      const keywords = redisCommands.tenants.getKeywordsByUser(tenantId, socket.id);
+      redisCommands.removeUser(sockets[socket].tenant, socket.id);
       sockets[socket].tenant = tenant;    
-      keywords.forEach(keyword => publisher.trackKeyword(tenant, socket.id, keyword));    
+      keywords.forEach(keyword => redisCommands.trackKeyword(tenant, socket.id, keyword));    
     }    
   });
 
   socket.on('track', (keyword) => {       
-    publisher.trackKeyword(sockets[socket].tenant, socket.id, keyword);
+    redisCommands.trackKeyword(sockets[socket].tenant, socket.id, keyword);
   });
 
   socket.on('untrack', (keyword) => {    
-    publisher.untrackKeyword(sockets[socket].tenant, socket.id, keyword);    
+    redisCommands.untrackKeyword(sockets[socket].tenant, socket.id, keyword);    
   });
 
   socket.on('disconnect', () => {    
-    publisher.removeUser(sockets[socket].tenant, socket.id);    
+    redisCommands.removeUser(sockets[socket].tenant, socket.id);    
   });
 
 });
+
+
+setInterval(() => {
+  redisCommands.tenants.getTenantIds().forEach((tenantId) => {
+    redisCommands.refreshExpiration(tenantId);    
+  });
+}, redisCommands.keepAliveInterval);
+
 
 // lets go
 http.listen(3000, () => {

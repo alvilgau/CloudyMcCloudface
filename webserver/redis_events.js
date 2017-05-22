@@ -1,3 +1,4 @@
+require('dotenv').config();
 const redis = require('redis');
 const bluebird = require('bluebird');
 const tenants = require('./tenants');
@@ -8,10 +9,9 @@ bluebird.promisifyAll(redis.Multi.prototype);
 const client = redis.createClient();
 const subscriber = redis.createClient();
 
-// todo: read from env
-const db = 0;
-const expiration = 3;
-const keepAliveInterval = ((expiration - 1) * 1000) / 2;
+const db = process.env.REDIS_DB || 0;
+const expiration = process.env.EXPIRATION || 3;
+const keepAliveInterval = process.env.KEEP_ALIVE_INTERVAL || 1000;
 
 // enable keyspace events
 subscriber.config('set', 'notify-keyspace-events', 'KEA');

@@ -1,7 +1,6 @@
-const subscriber = require('./subscriber');
+const redisEvents = require('./redis_events');
 const lambda = require('../lambda/main');
 const ts = require('./tweetstream');
-const pubsubutil = require('./pubsubutil');
 
 const streams = {};
 
@@ -19,29 +18,29 @@ const saveToRedis = (tenant, analyzedTweets) => {
 };
 
 const handlePossibleKeywordChange = (tenant) => {
-  const tenantId = pubsubutil.getId(tenant);
+  const tenantId = redisEvents.tenants.getId(tenant);
   const stream = streams[tenantId];
   if(stream){
-    const keywords = pubsubutil.getKeywordsByTenant(tenantId);
+    const keywords = redisEvents.tenants.getKeywordsByTenant(tenantId);
     stream.setKeywords(keywords);
   }
 }
 
-subscriber.onNewTenant((tenant) => {
+redisEvents.onNewTenant((tenant) => {
   const stream = ts.startStream(tenant);
-  streams[pubsubutil.getId(tenant)] = stream;
+  streams[redisEvents.tenants.getId(tenant)] = stream;
   // stream.onClose(() => { streams[tenant.id] = undefined; });
   ts
     .onTweets(stream, (keyword, tweets) => analyzeTweets(keyword, tweets))
     .then(analyzedTweets => saveToRedis(tenant, analyzedTweets));
 });
 
-subscriber.onKeywordAdded(handlePossibleKeywordChange);
-subscriber.onKeywordRemoved(handlePossibleKeywordChange);
-subscriber.onUserAdded(handlePossibleKeywordChange);
-subscriber.onUserRemoved(handlePossibleKeywordChange);
+redisEvents.onKeywordAdded(handlePossibleKeywordChange);
+redisEvents.onKeywordRemoved(handlePossibleKeywordChange);
+redisEvents.onUserAdded(handlePossibleKeywordChange);
+redisEvents.onUserRemoved(handlePossibleKeywordChange);
 
 
 
-subscriber.start();
-subscriber.battleForFreeTenants();
+redisEvents.start();
+redisEvents.battleForFreeTenants();

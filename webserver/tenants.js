@@ -1,5 +1,4 @@
 
-
 /*
 structure of tenants-array:
 [

@@ -1,3 +1,4 @@
+require('dotenv').config();
 const redis = require('redis');
 const bluebird = require('bluebird');
 const tenants = require('./tenants');
@@ -7,35 +8,8 @@ bluebird.promisifyAll(redis.Multi.prototype);
 
 const client = redis.createClient();
 
-// todo: read from env
-const expiration = 3; // in seconds
-const keepAliveInterval = ((expiration - 1) * 1000) / 2;
-
-
-/*
-structure of tenants-array:
-[
-    { // tenant1
-
-        consumerKey: ...,
-        consumerToken: ...,
-        ..., // oauth / twitter credentials
-        users: [
-            {
-                id: 0,
-                keywords: ['a', 'b', 'c']
-            },
-            {
-                id: 1,
-                keywords: ['x', 'y', 'z']
-            }
-        ]
-    },
-    { // tenant2
-        ...
-    }
-]
-*/
+const expiration = process.env.EXPIRATION || 3;
+const keepAliveInterval = process.env.KEEP_ALIVE_INTERVAL || 1000;
 
 const trackKeyword = (tenant, userId, keyword) => {
   const tenantId = tenants.getId(tenant);
@@ -82,20 +56,20 @@ const removeUser = (tenant, userId) => {
             .catch(err => false);
 };
 
-setInterval(() => {
-  tenants.getTenantIds().forEach((tenantId) => {
-    client.expireAsync(`tenants->${tenantId}`, expiration);
-    client.expireAsync(`tenants:${tenantId}->users`, expiration);
-    tenants.getUserIds(tenantId).forEach((userId) => {
+const refreshExpiration = (tenantId) => {
+  client.expireAsync(`tenants->${tenantId}`, expiration);
+  client.expireAsync(`tenants:${tenantId}->users`, expiration);
+  tenants.getUserIds(tenantId).forEach((userId) => {
       client.expireAsync(`tenants:${tenantId}:users:${userId}->keywords`, expiration);
     });
-  });
-}, keepAliveInterval);
+};
 
 const redisCommands = {
   trackKeyword,
   untrackKeyword,
   removeUser,
+  refreshExpiration,
+  keepAliveInterval,
   tenants,
 };
 module.exports = redisCommands;
