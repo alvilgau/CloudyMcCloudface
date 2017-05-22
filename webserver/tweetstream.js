@@ -1,21 +1,57 @@
 require('dotenv').config();
 const request = require('request');
-const amqp = require('amqplib/callback_api');
+const isEqual = require('lodash.isequal');
 
-let channel = null;
-let stream = null;
-// key = keyword, value=number of registrations for this keyword
-const registrations = {};
-let needReconnect = false;
+// number of tweets to collect (per keyword) before analysis starts
+const threshold = 10;
 
-const installErrorHandler = function (s) {
-  s.on('error', (err) => {
+// minimum time between reconnect
+const reconnectInterval = 15;
+
+const handleNewTweet = function (stream, tweet) {
+  /* determine the keyword for the tweet
+
+     note: we have to sort the keywords by length (longest first),
+           otherwise more generic words would match first!
+           imagine the tweet: "we have a new doghouse :-)"
+           as well as the keywords = ['dog', 'doghouse'].
+           this sould match 'doghouse' instead of 'dog'.
+           this can be reached when we sort the string by length.
+  */
+
+  const keyword = Object.keys(stream.registrations)
+    .sort((a, b) => b.length - a.length)
+    .find(kw => tweet.toLowerCase().includes(kw));
+  // no keyword found
+  if (!keyword) {
+    console.log(`no keyword found for: ${tweet}`);
+    return;
+  }
+  const tweets = stream.tweets;
+  // create key for keyword if not already exists
+  if (!tweets[keyword]) {
+    tweets[keyword] = [];
+  }
+  // store tweet
+  tweets[keyword].push(tweet);
+
+  // check if exchangeChannel is set up and threshold is reached
+  if (tweets[keyword].length >= threshold) {
+    // analyze a bunch of tweets
+    stream.handleTweets(keyword, tweets);
+    // clear tweets for the keyword
+    tweets[keyword] = [];
+  }
+};
+
+const installErrorHandler = function (stream) {
+  stream.connection.on('error', (err) => {
     console.log('ERROR', err);
   });
 };
 
-const installResponseHandler = function (s) {
-  s.on('response', (res) => {
+const installResponseHandler = function (stream, callback) {
+  stream.connection.on('response', (res) => {
     let tweet = '';
     res.on('data', (bytes) => {
       // we received a new chunk from twitter
@@ -28,7 +64,7 @@ const installResponseHandler = function (s) {
         try {
           // publish tweet
           const tweetAsJson = JSON.parse(tweet);
-          channel.sendToQueue('tweets', Buffer.from(tweetAsJson.text));
+          handleNewTweet(stream, tweetAsJson);
         } catch (ignored) { /* should never happen */ }
         // now the new tweet message
         tweet = splitted[1];
@@ -40,102 +76,65 @@ const installResponseHandler = function (s) {
   });
 };
 
-const createTwitterStream = function () {
-  const s = request.post({
+const createTwitterStream = (tenant, registrations) => request.post(
+  {
     url: 'https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true',
     oauth: {
-      consumer_key: process.env.TWITTER_CONSUMER_KEY,
-      token: process.env.TWITTER_TOKEN,
-      consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
-      token_secret: process.env.TWITTER_TOKEN_SECRET,
+      consumer_key: tenant.consumerKey,
+      token: tenant.token,
+      consumer_secret: tenant.consumerSecret,
+      token_secret: tenant.tokenSecret,
     },
     form: {
-      track: Object.keys(registrations).join(),
+      track: registrations.join(),
     },
   });
-  return s;
-};
 
-const connectToTwitter = function () {
-  stream = createTwitterStream();
+
+const connectToTwitter = (stream) => {
+  stream.connection = createTwitterStream(stream.tenant, stream.registrations);
   installErrorHandler(stream);
   installResponseHandler(stream);
 };
 
-const handleRegisterMessage = function (msg) {
-  const keyword = msg.keyword;
-  // check if keyword is already tracked
-  if (registrations[keyword] === null) {
-    // keyword isn't tracked yet
-    registrations[keyword] = 0;
-    // reconnect to the twitter stream to track the new keyword
-    needReconnect = true;
-  }
-  // increment registration counter for this keyword
-  registrations[keyword] += 1;
-
-  console.log(`received registration for keyword: ${keyword}`);
-};
-
-const handleUnregisterMessage = function (msg) {
-  const keyword = msg.keyword;
-  // check if there is a registration for the given keyword
-  if (registrations[keyword] !== null) {
-    // decrement registration counter for this keyword
-    registrations[keyword] -= 1;
-    // check if any other client is still interested
-    if (registrations[keyword] === 0) {
-      // no other client is interested in the keyword
-      // make a reconnect to decrease traffic
-      delete registrations[keyword];
-      needReconnect = true;
-    }
-  }
-
-  console.log(`received unregistration for keyword: ${keyword}`);
-};
-
-const reconnect = function () {
-  // when we received new keywords, we have to create a new connection to twitter
-  // but we dont want to do this too often because we are afraid of being blocked!
-  const timeoutInSeconds = 15;
+const startPeriodicReconnect = (stream) => {
   setInterval(() => {
     // check if we really need to reconnect
-    if (needReconnect) {
-      needReconnect = false;
-      console.log(`reconnect to twitter: ${Object.keys(registrations).join()}`);
+    if (stream.needReconnect) {
+      stream.needReconnect = false;
+      console.log(`reconnect to twitter: ${stream.registrations.join()}`);
       // close current stream and connect again
-      stream.abort();
-      connectToTwitter();
+      stream.connection.abort();
+      connectToTwitter(stream);
     } else {
       console.log('no need to reconnect');
     }
-  }, timeoutInSeconds * 1000);
+  }, reconnectInterval * 1000);
 };
 
-amqp.connect(process.env.RABBITMQ_URL, (err, conn) => {
-  // create a channel to publish the tweets from twitter stream
-  conn.createChannel((createChannelErr, ch) => {
-    channel = ch;
-    channel.assertQueue('tweets', { durable: false });
-    connectToTwitter();
-    reconnect();
-  });
+const onTweets = (stream, tweetHandler) => {
+  stream.handleTweets = tweetHandler;
+};
 
-  // create an exchange for keyword observation
-  conn.createChannel((createChannelErr, ch) => {
-    ch.assertExchange('keywords', 'fanout', { durable: false });
-    ch.assertQueue('', { exclusive: true }, (assertQueueErr, q) => {
-      ch.bindQueue(q.queue, 'keywords', '');
-      ch.consume(q.queue, (msg) => {
-        const message = JSON.parse(msg.content);
-        if (message.type === 'register') {
-          handleRegisterMessage(message);
-        } else if (message.type === 'unregister') {
-          handleUnregisterMessage(message);
-        }
-      }, { noAck: true });
-    });
-  });
-});
+const setKeywords = (stream, keywords) => {
+  stream.needReconnect = !isEqual(stream.registrations.sort(), keywords.sort());
+  stream.registrations = keywords;
+}
 
+const startStream = (tenant) => {
+  const stream = {
+    tweets: {},
+    registrations: [],
+    needReconnect: false,
+    handleTweets: () => { },
+    tenant: tenant
+  };
+  connectToTwitter(stream);
+  startPeriodicReconnect(stream);
+  return stream;
+};
+
+module.exports = {
+  startStream,
+  onTweets
+};
