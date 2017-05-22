@@ -1,6 +1,6 @@
 const redis = require('redis');
 const bluebird = require('bluebird');
-const pubsubutil = require('./pubsubutil');
+const tenants = require('./tenants');
 
 bluebird.promisifyAll(redis.RedisClient.prototype);
 bluebird.promisifyAll(redis.Multi.prototype);
@@ -38,7 +38,7 @@ structure of tenants-array:
 */
 
 const trackKeyword = (tenant, userId, keyword) => {
-  const tenantId = pubsubutil.getId(tenant);
+  const tenantId = tenants.getId(tenant);
   return client.multi()
             .set(`tenants->${tenantId}`, JSON.stringify(tenant))
             .expire(`tenants->${tenantId}`, expiration)
@@ -48,34 +48,34 @@ const trackKeyword = (tenant, userId, keyword) => {
             .expire(`tenants:${tenantId}:users:${userId}->keywords`, expiration)
             .execAsync()
             .then((ok) => {
-              pubsubutil.addKeyword(tenant, userId, keyword);
+              tenants.addKeyword(tenant, userId, keyword);
               return true;
             })
             .catch(err => false);
 };
 
 const untrackKeyword = (tenant, userId, keyword) => {
-  const tenantId = pubsubutil.getId(tenant);
+  const tenantId = tenants.getId(tenant);
   return client.lremAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, keyword)
             .then((ok) => {
-              pubsubutil.removeKeyword(tenantId, userId, keyword);
+              tenants.removeKeyword(tenantId, userId, keyword);
               return true;
             })
             .catch(err => false);
 };
 
 const removeUser = (tenant, userId) => {
-  const tenantId = pubsubutil.getId(tenant);
+  const tenantId = tenants.getId(tenant);
   return client.multi()
             .lrem(`tenants:${tenantId}->users`, 0, userId)
             .del(`tenants:${tenantId}:users:${userId}->keywords`)
             .execAsync()
             .then((ok) => {
-              pubsubutil.removeUser(tenantId, userId);
-              if (!pubsubutil.hasUsers(tenantId)) {
+              tenants.removeUser(tenantId, userId);
+              if (!tenants.hasUsers(tenantId)) {
                     // there are no more users for this tenant -> remove tenant
                     // redis will do the rest ...
-                pubsubutil.removeTenant(tenantId);
+                tenants.removeTenant(tenantId);
               }
               return true;
             })
@@ -83,19 +83,19 @@ const removeUser = (tenant, userId) => {
 };
 
 setInterval(() => {
-  pubsubutil.getTenantIds().forEach((tenantId) => {
+  tenants.getTenantIds().forEach((tenantId) => {
     client.expireAsync(`tenants->${tenantId}`, expiration);
     client.expireAsync(`tenants:${tenantId}->users`, expiration);
-    pubsubutil.getUserIds(tenantId).forEach((userId) => {
+    tenants.getUserIds(tenantId).forEach((userId) => {
       client.expireAsync(`tenants:${tenantId}:users:${userId}->keywords`, expiration);
     });
   });
 }, keepAliveInterval);
 
-const publisher = {
+const redisCommands = {
   trackKeyword,
   untrackKeyword,
   removeUser,
-  pubsubutil,
+  tenants,
 };
-module.exports = publisher;
+module.exports = redisCommands;

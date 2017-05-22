@@ -1,6 +1,6 @@
 const redis = require('redis');
 const bluebird = require('bluebird');
-const pubsubutil = require('./pubsubutil');
+const tenants = require('./tenants');
 
 bluebird.promisifyAll(redis.RedisClient.prototype);
 bluebird.promisifyAll(redis.Multi.prototype);
@@ -27,7 +27,7 @@ let keywordRemovedCallback = (tenant, userId, keyword) => {};
 const event = `__keyevent@${db}__:`;
 subscriber.psubscribe(`${event}*`);
 
-const has = tenantId => pubsubutil.getTenantIds().includes(tenantId);
+const has = tenantId => tenants.getTenantIds().includes(tenantId);
 
 const redisGetTenant = tenantId => client.getAsync(`tenants->${tenantId}`)
                 .then(res => JSON.parse(res));
@@ -77,13 +77,13 @@ const battleForTenant = (tenantId) => {
           if (tenant && wonBattle) {
             console.log(`won battle for tenant ${tenantId}`);
             console.log(`add tenant ${tenant}`);
-            pubsubutil.addTenant(tenant);
+            tenants.addTenant(tenant);
             newTenantCallback && newTenantCallback(tenant);
             redisGetUserIds(tenantId).then((userIds) => {
               userIds.map((userId) => {
                 redisGetUserKeywords(tenantId, userId).then((keywords) => {
                             keywords.forEach(keyword => {
-                                pubsubutil.addKeyword(tenant, userId, keyword);
+                                tenants.addKeyword(tenant, userId, keyword);
                                 keywordAddedCallback && keywordAddedCallback(tenant, userId, keyword);
                             });                                   
                   userAddedCallback && userAddedCallback(tenant, userId);
@@ -113,9 +113,9 @@ const battleForTenant = (tenantId) => {
 const handlePushKeywords = (tenantId, userId) => {
   client.lrangeAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, -1)
           .then((keywords) => {
-            const t = pubsubutil.getTenant(tenantId);
+            const t = tenants.getTenant(tenantId);
             keywords.forEach((keyword) => {
-              pubsubutil.addKeyword(t, userId, keyword);
+              tenants.addKeyword(t, userId, keyword);
             });
           });
 };
@@ -123,11 +123,11 @@ const handlePushKeywords = (tenantId, userId) => {
 const handlePushUser = (tenantId) => {
   client.lrangeAsync(`tenants:${tenantId}->users`, 0, -1)
         .then((userIds) => {
-          const tenant = pubsubutil.getTenant(tenantId);
-          const knownUserIds = pubsubutil.getUserIds(tenantId);
+          const tenant = tenants.getTenant(tenantId);
+          const knownUserIds = tenants.getUserIds(tenantId);
           userIds.forEach((userId) => {
             if (!knownUserIds.includes(userId)) {
-              pubsubutil.addUser(tenantId, userId);
+              tenants.addUser(tenantId, userId);
               userAddedCallback && userAddedCallback(tenant, userId);
             }
           });
@@ -137,11 +137,11 @@ const handlePushUser = (tenantId) => {
 const handleRemoveUser = (tenantId) => {
   client.lrangeAsync(`tenants:${tenantId}->users`, 0, -1)
         .then((userIds) => {
-          const tenant = pubsubutil.getTenant(tenantId);
-          const knownUserIds = pubsubutil.getUserIds(tenantId);
+          const tenant = tenants.getTenant(tenantId);
+          const knownUserIds = tenants.getUserIds(tenantId);
           knownUserIds.forEach((userId) => {
             if (!userIds.includes(userId)) {
-              pubsubutil.removeUser(tenantId, userId);
+              tenants.removeUser(tenantId, userId);
               userRemovedCallback && userRemovedCallback(tenant, userId);
             }
           });
@@ -151,11 +151,11 @@ const handleRemoveUser = (tenantId) => {
 const handleRemoveKeywords = (tenantId, userId) => {
   client.lrangeAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, -1)
         .then((keywords) => {
-          const tenant = pubsubutil.getTenant(tenantId);
-          const userKeywords = pubsubutil.getKeywordsByUser(userId);
+          const tenant = tenants.getTenant(tenantId);
+          const userKeywords = tenants.getKeywordsByUser(userId);
           userKeywords.forEach((kw) => {
             if (!keywords.includes(kw)) {
-              pubsubutil.removeKeyword(tenantId, userId, kw);
+              tenants.removeKeyword(tenantId, userId, kw);
               keywordRemovedCallback && keywordRemovedCallback(tenant, userId, kw);
             }
           });
@@ -171,7 +171,7 @@ const expired = (redisKey) => {
   } else if (/tenants->\S+/.test(redisKey)) {
     const splitted = redisKey.split(/(?:tenants->)/);
     const tenantId = splitted[1];
-    has(tenantId) && pubsubutil.removeTenant(tenantId);
+    has(tenantId) && tenants.removeTenant(tenantId);
   }
 };
 
@@ -239,7 +239,7 @@ const battleForFreeTenants = () => Promise.all(redisGetTenantIds().then(ids => i
 let interval;
 const start = () => {
   interval = setInterval(() => {
-    pubsubutil.getTenantIds().forEach((tenantId) => {
+    tenants.getTenantIds().forEach((tenantId) => {
       console.log(`refresh: ${tenantId}`);
       client.expireAsync(`battle:tenants->${tenantId}`, expiration);
     });
@@ -252,8 +252,8 @@ const stop = () => {
 start();
 battleForFreeTenants();
 
-const tenant = {
-  pubsubutil,
+const redisEvents = {
+  tenants,
   start,
   stop,
   battleForFreeTenants,
@@ -273,4 +273,4 @@ const tenant = {
     keywordRemovedCallback = callback;
   },
 };
-module.exports = tenant;
+module.exports = redisEvents;

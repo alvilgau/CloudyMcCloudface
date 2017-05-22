@@ -137,7 +137,7 @@ const getUserIds = (tenantId) => {
 
 const getTenant = tenantId => tenants.find(t => getId(t) === tenantId);
 
-const pubsubutil = {
+module.exports = {
   clear,
   getId,
   addKeyword,
@@ -154,5 +154,3 @@ const pubsubutil = {
   addUser,
   getUser,
 };
-
-module.exports = pubsubutil;
