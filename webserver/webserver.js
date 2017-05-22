@@ -3,6 +3,7 @@ require('dotenv').config();
 const app = require('express')();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
+const Joi = require('joi');
 const publisher = require('./publisher');
 
 // serve index.html
@@ -19,6 +20,13 @@ const defaultTenant = {
   tokenSecret: process.env.TWITTER_TOKEN_SECRET,
 };
 
+const tenantSchema = Joi.object().keys({
+    consumerKey: Joi.string().alphanum().min(3).max(30).required(),
+    token: Joi.string().alphanum().min(3).max(30).required(),
+    consumerSecret: Joi.string().alphanum().min(3).max(30).required(),
+    tokenSecret: Joi.string().alphanum().min(3).max(30).required(),
+});
+
 // new client connected
 io.on('connection', (socket) => {
 
@@ -27,11 +35,13 @@ io.on('connection', (socket) => {
   };
 
   socket.on('tenant', (tenant) => {    
-    const tenantId = publisher.pubsubutil.getId(tenant);
-    const keywords = publisher.pubsubutil.getKeywordsByUser(tenantId, socket.id);
-    publisher.removeUser(sockets[socket].tenant, socket.id);
-    sockets[socket].tenant = tenant;    
-    keywords.forEach(keyword => publisher.trackKeyword(tenant, socket.id, keyword));    
+    if (!Joi.validate(tenant, tenantSchema).error) {
+      const tenantId = publisher.pubsubutil.getId(tenant);
+      const keywords = publisher.pubsubutil.getKeywordsByUser(tenantId, socket.id);
+      publisher.removeUser(sockets[socket].tenant, socket.id);
+      sockets[socket].tenant = tenant;    
+      keywords.forEach(keyword => publisher.trackKeyword(tenant, socket.id, keyword));    
+    }    
   });
 
   socket.on('track', (keyword) => {       
