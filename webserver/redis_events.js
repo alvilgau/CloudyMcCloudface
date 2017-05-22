@@ -235,6 +235,12 @@ subscriber.on('pmessage', (pattern, channel, msg) => {
 
 const battleForFreeTenants = () => Promise.all(redisGetTenantIds().then(ids => ids.map(id => battleForTenant(id))));
 
+const refreshBattles = () => {
+  tenants.getTenantIds().forEach((tenantId) => {
+    client.expireAsync(`battle:tenants->${tenantId}`, expiration);
+  });
+};
+
 // install job for updating battles
 let interval;
 const start = () => {

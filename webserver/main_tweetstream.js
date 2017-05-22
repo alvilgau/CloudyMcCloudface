@@ -1,3 +1,4 @@
+require('dotenv').config();
 const redisEvents = require('./redis_events');
 const lambda = require('../lambda/main');
 const ts = require('./tweetstream');
@@ -41,6 +42,8 @@ redisEvents.onUserAdded(handlePossibleKeywordChange);
 redisEvents.onUserRemoved(handlePossibleKeywordChange);
 
 
-
-redisEvents.start();
 redisEvents.battleForFreeTenants();
+
+setInterval(() => {
+  redisEvents.refreshBattles();   
+}, process.env.KEEP_ALIVE_INTERVAL);

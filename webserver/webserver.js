@@ -58,13 +58,9 @@ io.on('connection', (socket) => {
 
 });
 
-
 setInterval(() => {
-  redisCommands.tenants.getTenantIds().forEach((tenantId) => {
-    redisCommands.refreshExpiration(tenantId);    
-  });
-}, redisCommands.keepAliveInterval);
-
+  redisCommands.refreshExpirations();  
+}, process.env.KEEP_ALIVE_INTERVAL);
 
 // lets go
 http.listen(3000, () => {

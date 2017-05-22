@@ -8,8 +8,7 @@ bluebird.promisifyAll(redis.Multi.prototype);
 
 const client = redis.createClient();
 
-const expiration = process.env.EXPIRATION || 3;
-const keepAliveInterval = process.env.KEEP_ALIVE_INTERVAL || 1000;
+const expiration = process.env.EXPIRATION;
 
 const trackKeyword = (tenant, userId, keyword) => {
   const tenantId = tenants.getId(tenant);
@@ -56,20 +55,21 @@ const removeUser = (tenant, userId) => {
             .catch(err => false);
 };
 
-const refreshExpiration = (tenantId) => {
-  client.expireAsync(`tenants->${tenantId}`, expiration);
-  client.expireAsync(`tenants:${tenantId}->users`, expiration);
-  tenants.getUserIds(tenantId).forEach((userId) => {
+const refreshExpirations = () => {
+  tenants.getTenantIds().forEach(tenantId => {
+    client.expireAsync(`tenants->${tenantId}`, expiration);
+    client.expireAsync(`tenants:${tenantId}->users`, expiration);
+    tenants.getUserIds(tenantId).forEach((userId) => {
       client.expireAsync(`tenants:${tenantId}:users:${userId}->keywords`, expiration);
     });
+  })  
 };
 
 const redisCommands = {
   trackKeyword,
   untrackKeyword,
   removeUser,
-  refreshExpiration,
-  keepAliveInterval,
+  refreshExpirations,  
   tenants,
 };
 module.exports = redisCommands;
