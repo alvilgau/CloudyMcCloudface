@@ -18,13 +18,12 @@ const publishAnalyzedTweets = (tenant, analyzedTweets) => {
   const tenantId = redisCommands.getId(tenant);
   const keyword = analyzedTweets.keyword;
   redisCommands.getUserIdsByKeyword(tenantId, keyword)
-               .then(userIds => userIds.forEach(userId => {
-                 redisCommands.publishAnalyzedTweets(tenantId, userId, analyzedTweets);
-               }));
+    .then(userIds => userIds.forEach(userId => {
+        redisCommands.publishAnalyzedTweets(tenantId, userId, analyzedTweets);
+    }));
 };
 
-const handlePossibleKeywordChange = (tenant) => {  
-  const tenantId = redisCommands.getId(tenant);
+const handlePossibleKeywordChange = (tenantId) => {    
   const stream = streams[tenantId];
   if (stream) {
     redisCommands.getKeywordsByTenant(tenantId)
@@ -44,11 +43,10 @@ redisEvents.onNewTenant((tenantId) => {
     });
 });
 
-redisEvents.onTenantRemoved((tenant) => {
-  const id = redisEvents.tenants.getId(tenant);
-  const stream = streams[id];
+redisEvents.onTenantRemoved((tenantId) => {  
+  const stream = streams[tenantId];
   if (stream) {
-    delete streams[id];
+    delete streams[tenantId];
     ts.stopStream(stream);    
   }
 });
