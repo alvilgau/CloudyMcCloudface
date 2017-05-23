@@ -22,61 +22,95 @@ afterEach((done) => {
   redisClient.flushdb(done);
 });
 
-test('track keyword', (done) => {
+
+test('track keyword', async () => {
   const t = getSampleTenant();
-  const id = redisCommands.tenants.getId(t);
-  redisCommands.trackKeyword(t, 'user1', 'obama')
-        .then((ok) => {
-          expect(ok).toBe(true);
-          expect(redisCommands.tenants.getTenantIds().length).toBe(1);
-          expect(redisCommands.tenants.getUserIds(id).length).toBe(1);
-          expect(redisCommands.tenants.getKeywordsByTenant(id).size).toBe(1);
-          done();
-        });
+
+  let ok = await redisCommands.trackKeyword(t, 'user1', 'obama');
+  expect(ok).toBeTruthy();
+
+  ok = await redisCommands.trackKeyword(t, 'user2', 'obama');
+  expect(ok).toBeTruthy();
 });
 
-test('untrack keyword', (done) => {
+test('untrack keyword', async () => {
   const t = getSampleTenant();
-  const id = redisCommands.tenants.getId(t);
-  redisCommands.trackKeyword(t, 'user1', 'obama')
-        .then(ok => redisCommands.untrackKeyword(t, 'user1', 'obama'))
-        .then((ok) => {
-          expect(ok).toBe(true);
-          expect(redisCommands.tenants.getTenantIds().length).toBe(1);
-          expect(redisCommands.tenants.getUserIds(id).length).toBe(1);
-          expect(redisCommands.tenants.getKeywordsByTenant(id).size).toBe(0);
-          done();
-        });
+  const id = redisCommands.getId(t);
+
+  await redisCommands.trackKeyword(t, 'user1', 'obama');
+  const ok = await redisCommands.untrackKeyword(id, 'user1', 'obama');
+  expect(ok).toBeTruthy();
+
 });
 
-test('remove user', (done) => {
+test('get tenant ids', async () => {
   const t = getSampleTenant();
-  const id = redisCommands.tenants.getId(t);
-  redisCommands.trackKeyword(t, 'user1', 'obama')
-        .then(ok => redisCommands.trackKeyword(t, 'user2', 'clinton'))
-        .then(ok => redisCommands.trackKeyword(t, 'user3', 'clinton'))
-        .then((ok) => {
-          expect(redisCommands.tenants.getTenantIds().length).toBe(1);
-          expect(redisCommands.tenants.getUserIds(id).length).toBe(3);
-          expect(redisCommands.tenants.getKeywordsByTenant(id).size).toBe(2);
-          return redisCommands.removeUser(t, 'user1');
-        })
-        .then((ok) => {
-          expect(redisCommands.tenants.getTenantIds().length).toBe(1);
-          expect(redisCommands.tenants.getUserIds(id).length).toBe(2);
-          expect(redisCommands.tenants.getKeywordsByTenant(id).size).toBe(1);
-          return redisCommands.removeUser(t, 'user2');
-        })
-        .then((ok) => {
-          expect(redisCommands.tenants.getTenantIds().length).toBe(1);
-          expect(redisCommands.tenants.getUserIds(id).length).toBe(1);
-          expect(redisCommands.tenants.getKeywordsByTenant(id).size).toBe(1);
-          return redisCommands.removeUser(t, 'user3');
-        })
-        .then((ok) => {
-          expect(redisCommands.tenants.getTenantIds().length).toBe(0);
-          expect(redisCommands.tenants.getUserIds(id).length).toBe(0);
-          expect(redisCommands.tenants.getKeywordsByTenant(id).size).toBe(0);
-          done();
-        });
+
+  let ids = await redisCommands.getTenantIds();
+  expect(ids.length).toBe(0);
+
+  await redisCommands.trackKeyword(t, 'user', 'keyword');
+  ids = await redisCommands.getTenantIds();
+  expect(ids.length).toBe(1);
+});
+
+test('get user ids', async () => {
+  const t = getSampleTenant();
+  const id = redisCommands.getId(t);
+
+  let ids = await redisCommands.getUserIds(id);
+  expect(ids.length).toBe(0);
+
+  await redisCommands.trackKeyword(t, 'user', 'keyword');
+  ids = await redisCommands.getUserIds(id);
+  expect(ids.length).toBe(1);
+
+  await redisCommands.trackKeyword(t, 'user2', 'keyword');
+  ids = await redisCommands.getUserIds(id);
+  expect(ids.length).toBe(2);
+
+  await redisCommands.trackKeyword(t, 'user2', 'another-keyword');
+  ids = await redisCommands.getUserIds(id);
+  expect(ids.length).toBe(2);
+});
+
+test('get user keywords', async () => {
+  const t = getSampleTenant();
+  const id = redisCommands.getId(t);
+
+  let keywords = await redisCommands.getUserKeywords(id, 'user');
+  expect(keywords.length).toBe(0);
+
+  await redisCommands.trackKeyword(t, 'user', 'my-keyword');
+  keywords = await redisCommands.getUserKeywords(id, 'user');
+  expect(keywords.length).toBe(1);
+});
+
+test('remove user', async () => {
+  const t = getSampleTenant();
+  const id = redisCommands.getId(t);
+
+  await redisCommands.trackKeyword(t, 'user1', 'obama');
+  let userIds = await redisCommands.getUserIds(id);
+  expect(userIds.length).toBe(1);
+
+  await redisCommands.removeUser(id, 'user1');
+  userIds = await redisCommands.getUserIds(id);
+  expect(userIds.length).toBe(0);
+});
+
+test('get keywords by tenant', async () => {
+  const t = getSampleTenant();
+  const id = redisCommands.getId(t);
+
+  let keywords = await redisCommands.getKeywordsByTenant(id);
+  expect(keywords.length).toBe(0);
+
+  await redisCommands.trackKeyword(t, 'user1', 'kw1');
+  await redisCommands.trackKeyword(t, 'user2', 'kw1');
+  await redisCommands.trackKeyword(t, 'user2', 'kw2');
+  keywords = await redisCommands.getKeywordsByTenant(id);
+  expect(keywords.length).toBe(2);
+  expect(keywords).toContain('kw1');
+  expect(keywords).toContain('kw2');
 });

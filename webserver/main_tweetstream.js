@@ -15,30 +15,28 @@ const analyzeTweets = (keyword, tweets) => new Promise(
   });
 
 const publishAnalyzedTweets = (tenant, analyzedTweets) => {
-  const tenantId = redisEvents.tenants.getId(tenant);
+  const tenantId = redisCommands.getId(tenant);
   const keyword = analyzedTweets.keyword;
-  const userIds = redisEvents.tenants.getUsersByKeyword(tenantId, keyword);
-  userIds.forEach(userId => {
-    redisCommands.publishAnalyzedTweets(tenantId, userId, analyzedTweets);
-  });    
+  redisCommands.getUserIdsByKeyword(tenantId, keyword)
+               .then(userIds => userIds.forEach(userId => {
+                 redisCommands.publishAnalyzedTweets(tenantId, userId, analyzedTweets);
+               }));
 };
 
 const handlePossibleKeywordChange = (tenant) => {  
-  const tenantId = redisEvents.tenants.getId(tenant);
+  const tenantId = redisCommands.getId(tenant);
   const stream = streams[tenantId];
   if (stream) {
-    const keywords = redisEvents.tenants.getKeywordsByTenant(tenantId);
-    ts.setKeywords(stream, keywords);
+    redisCommands.getKeywordsByTenant(tenantId).then(keywords => ts.setKeywords(stream, keywords));
   }
 };
 
 redisEvents.onNewTenant((tenant) => {
   const stream = ts.startStream(tenant);
-  streams[redisEvents.tenants.getId(tenant)] = stream;  
+  streams[redisCommands.getId(tenant)] = stream;
   ts.onTweets(stream, (keyword, tweets) => {
-      analyzeTweets(keyword, tweets).then(analyzedTweets => {
-        publishAnalyzedTweets(tenant, analyzedTweets);
-      });
+      analyzeTweets(keyword, tweets)
+        .then(analyzedTweets => publishAnalyzedTweets(tenant, analyzedTweets));
   });  
 });
 
@@ -51,24 +49,27 @@ redisEvents.onTenantRemoved((tenant) => {
   }
 });
 
-redisEvents.onKeywordAdded((tenant, userId, keyword) => {
-  handlePossibleKeywordChange(tenant);
+redisEvents.onKeywordAdded((tenantId, userId) => {
+  handlePossibleKeywordChange(tenantId);
 });
 
-redisEvents.onKeywordRemoved((tenant, userId, keyword) => {
-  handlePossibleKeywordChange(tenant);
+redisEvents.onKeywordRemoved((tenantId, userId) => {
+  handlePossibleKeywordChange(tenantId);
 });
 
-redisEvents.onUserAdded((tenant, userId) => {
-  handlePossibleKeywordChange(tenant);
+redisEvents.onUserAdded((tenantId) => {
+  handlePossibleKeywordChange(tenantId);
 });
 
-redisEvents.onUserRemoved((tenant, userId) => {
-  handlePossibleKeywordChange(tenant);
+redisEvents.onUserRemoved((tenantId) => {
+  handlePossibleKeywordChange(tenantId);
 });
 
-redisEvents.battleForFreeTenants();
+redisCommands.battleForFreeTenants();
 
 setInterval(() => {
-  redisEvents.refreshBattles();   
+  Object.values(streams).map(value => value.tenant)
+    .filter(tenant => tenant !== undefined)
+    .map(tenant => redisCommands.getId(tenant))
+    .forEach(tenantId => redisCommands.refreshBattle(tenantId));
 }, process.env.KEEP_ALIVE_INTERVAL);

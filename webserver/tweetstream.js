@@ -118,6 +118,10 @@ const setKeywords = (stream, keywords) => {
   stream.keywords = newKeywords;
 };
 
+const getKeywords = (stream) => {
+  return stream.keywords;
+};
+
 const startStream = (tenant) => {
   const stream = {
     tweets: {},    

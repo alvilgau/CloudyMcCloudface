@@ -1,7 +1,7 @@
 require('dotenv').config();
 const redis = require('redis');
 const bluebird = require('bluebird');
-const tenants = require('./tenants');
+const _ = require('lodash');
 
 bluebird.promisifyAll(redis.RedisClient.prototype);
 bluebird.promisifyAll(redis.Multi.prototype);
@@ -10,8 +10,12 @@ const client = redis.createClient();
 
 const expiration = process.env.EXPIRATION;
 
+const getId = (tenant) => {
+  return tenant.consumerKey;
+};
+
 const trackKeyword = (tenant, userId, keyword) => {
-  const tenantId = tenants.getId(tenant);
+  const tenantId = getId(tenant);
   return client.multi()
             .set(`tenants->${tenantId}`, JSON.stringify(tenant))
             .expire(`tenants->${tenantId}`, expiration)
@@ -20,49 +24,114 @@ const trackKeyword = (tenant, userId, keyword) => {
             .lpush(`tenants:${tenantId}:users:${userId}->keywords`, keyword)
             .expire(`tenants:${tenantId}:users:${userId}->keywords`, expiration)
             .execAsync()
-            .then((ok) => {
-              tenants.addKeyword(tenant, userId, keyword);
-              return true;
-            })
+            .then(ok => true)
             .catch(err => false);
 };
 
-const untrackKeyword = (tenant, userId, keyword) => {
-  const tenantId = tenants.getId(tenant);
+const untrackKeyword = (tenantId, userId, keyword) => {
   return client.lremAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, keyword)
-            .then((ok) => {
-              tenants.removeKeyword(tenantId, userId, keyword);
-              return true;
-            })
+            .then(ok => true)
             .catch(err => false);
 };
 
-const removeUser = (tenant, userId) => {
-  const tenantId = tenants.getId(tenant);
+const removeUser = (tenantId, userId) => {
   return client.multi()
             .lrem(`tenants:${tenantId}->users`, 0, userId)
             .del(`tenants:${tenantId}:users:${userId}->keywords`)
             .execAsync()
-            .then((ok) => {
-              tenants.removeUser(tenantId, userId);
-              if (!tenants.hasUsers(tenantId)) {
-                    // there are no more users for this tenant -> remove tenant
-                    // redis will do the rest ...
-                tenants.removeTenant(tenantId);
-              }
-              return true;
-            })
+            .then(ok => true)
             .catch(err => false);
 };
 
-const refreshExpirations = () => {
-  tenants.getTenantIds().forEach(tenantId => {
-    client.expireAsync(`tenants->${tenantId}`, expiration);
-    client.expireAsync(`tenants:${tenantId}->users`, expiration);
-    tenants.getUserIds(tenantId).forEach((userId) => {
-      client.expireAsync(`tenants:${tenantId}:users:${userId}->keywords`, expiration);
+const getTenantIds = () => {
+  return client.scanAsync(0, 'MATCH', 'tenants->*')
+    .then((res) => {
+      const redisKeys = res[1];
+      return redisKeys.map(key => key.replace('tenants->', ''));
+    })
+    .catch((err) => {
+      console.error('could not query tenant ids from redis');
+      console.error(err);
+      return [];
     });
-  })  
+};
+
+const getUserIds = (tenantId) => {
+  return client.lrangeAsync(`tenants:${tenantId}->users`, 0, -1)
+            .then(ids => Array.from(new Set(ids)))
+            .catch((err) => {
+              console.error(`could not query user ids for tenant ${tenantId} from redis`);
+              console.error(err);
+              return [];
+            });
+};
+
+const getUserKeywords = (tenantId, userId) => {
+  return client.lrangeAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, -1)
+    .then(keywords => Array.from(new Set(keywords)))
+    .catch(err => {
+      console.error(`could not query keywords for tenant ${tenantId} from redis`);
+      console.error(err);
+      return [];
+    });
+};
+
+const battleForTenant = (tenantId) => {
+  console.log(`start a battle for tenant ${tenantId}`);
+  return new Promise((resolve, reject) => {
+    client.multi()
+      .get(`tenants->${tenantId}`)
+      .incr(`battle:tenants->${tenantId}`)
+      .expire(`battle:tenants->${tenantId}`, expiration)
+      .execAsync()
+      .then((res) => {
+        // get result from incr command
+        const tenant = JSON.parse(res[0]);
+        const battleCounter = res[1];
+        // only one service will receive counter == 1
+        const wonBattle = battleCounter == 1;
+        if (tenant && wonBattle) {
+          console.log(`won battle for tenant ${tenantId}`);
+          resolve({tenant, wonBattle});
+        } else {
+          if (!tenant) {
+            // we don't need more battles -> there is no such tenant
+            client.delAsync(`battle:tenants->${tenantId}`);
+          }
+          // we also fulfill the promise when we lost
+          // because everything else went fine
+          resolve({tenant, wonBattle});
+          console.log(`lost battle for tenant ${tenant}`);
+        }
+      })
+      .catch(err => reject(err));
+  });
+};
+
+const getKeywordsByTenant = (tenantId) => {
+      return getUserIds(tenantId)
+        .then(userIds => userIds.map(userId => getUserKeywords(tenantId, userId)))
+        .then(promises => Promise.all(promises))
+        .then(values => _.flatten(values))
+        .then(values => Array.from(new Set(values)));
+};
+
+const battleForFreeTenants = () => {
+  getTenantIds().then(ids => ids.map(id => battleForTenant(id)));
+};
+
+const refreshBattle = (tenantId) => {
+    return client.expireAsync(`battle:tenants->${tenantId}`, expiration)
+                .then(ok => true)
+                .catch(err => false);
+};
+
+const refreshTenantExpiration = (tenantId) => {
+  client.expireAsync(`tenants->${tenantId}`, expiration);
+  client.expireAsync(`tenants:${tenantId}->users`, expiration);
+  getUserIds(tenantId).then(userIds => userIds.forEach(userId => {
+    client.expireAsync(`tenants:${tenantId}:users:${userId}->keywords`, expiration);
+  }));
 };
 
 const publishAnalyzedTweets = (tenantId, userId, analyzedTweets) => {
@@ -74,7 +143,13 @@ module.exports = {
   trackKeyword,
   untrackKeyword,
   removeUser,
-  refreshExpirations,  
   publishAnalyzedTweets,
-  tenants
+  getId,
+  refreshTenantExpiration,
+  battleForFreeTenants,
+  refreshBattle,
+  getKeywordsByTenant,
+  getTenantIds,
+  getUserIds,
+  getUserKeywords
 };
