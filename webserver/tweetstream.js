@@ -30,6 +30,7 @@ const handleNewTweet = function (stream, tweet) {
   }
   // store tweet
   tweets[keyword].push(tweet);
+  console.log(`new tweet for ${keyword}`);
 
   // number of tweets to collect (per keyword) before analysis starts
   const threshold = 10;
@@ -48,7 +49,7 @@ const installErrorHandler = function (stream) {
   });
 };
 
-const installResponseHandler = function (stream, callback) {
+const installResponseHandler = function (stream) {
   stream.connection.on('response', (res) => {
     let tweet = '';
     res.on('data', (bytes) => {
@@ -62,7 +63,7 @@ const installResponseHandler = function (stream, callback) {
         try {
           // publish tweet
           const tweetAsJson = JSON.parse(tweet);
-          console.log(`received new tweet ${tweetAsJson.text}`);
+          console.log(`new tweet arrived...`);
           handleNewTweet(stream, tweetAsJson);
         } catch (ignored) { /* should never happen */ }
         // now the new tweet message
@@ -115,7 +116,8 @@ const onTweets = (stream, tweetHandler) => {
 
 const setKeywords = (stream, keywords) => {  
   stream.needReconnect = !_.isEqual(stream.keywords.sort(), keywords.sort());    
-  stream.keywords = keywords;
+  // todo: what to do, when keywords is an empty list?
+  stream.keywords = keywords;  
 };
 
 const startStream = (tenant) => {

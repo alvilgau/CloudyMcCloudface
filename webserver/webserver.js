@@ -63,7 +63,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('untrack', (keyword) => {
-    const tenantId = redisCommands(sockets[socket].tenant);
+    const tenantId = redisCommands.getId(sockets[socket].tenant);
     redisCommands.untrackKeyword(tenantId, socket.id, keyword);
   });
 

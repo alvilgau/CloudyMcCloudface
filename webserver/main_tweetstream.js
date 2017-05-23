@@ -36,20 +36,24 @@ const createStreamForTenant = tenant => {
   const stream = ts.startStream(tenant);
   streams[tenantId] = stream;
   ts.onTweets(stream, (keyword, tweets) => {
+    console.log(`trying to send tweets to webserver.js`);
     analyzeTweets(keyword, tweets)
       .then(analyzedTweets => publishAnalyzedTweets(tenant, analyzedTweets));
   });
   handlePossibleKeywordChange(tenantId);
 };
 
-redisEvents.onNewTenant(tenantId => {
+const battleForTenant = (tenantId) => {
   redisCommands.battleForTenant(tenantId)
     .then(battle => {
       if (battle.wonBattle && battle.tenant) {
         createStreamForTenant(battle.tenant);
       }
-    });  
-});
+    });
+};
+
+redisEvents.onNewTenant(tenantId => battleForTenant(tenantId));
+redisEvents.onBattleExpired(tenantId => battleForTenant(tenantId));
 
 redisEvents.onTenantRemoved(tenantId => {  
   const stream = streams[tenantId];

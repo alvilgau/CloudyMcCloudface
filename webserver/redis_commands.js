@@ -19,6 +19,7 @@ const getId = (tenant) => {
 
 const trackKeyword = (tenant, userId, keyword) => {
   const tenantId = getId(tenant);
+  console.log(`track keyword for tenant ${tenantId}`);
   return client.multi()
             .set(`tenants->${tenantId}`, JSON.stringify(tenant))
             .expire(`tenants->${tenantId}`, expiration)
@@ -104,7 +105,7 @@ const battleForTenant = (tenantId) => {
           // we also fulfill the promise when we lost
           // because everything else went fine
           resolve({tenant, wonBattle});
-          console.log(`lost battle for tenant ${tenant}`);
+          console.log(`lost battle for tenant ${tenantId}`);
         }
       })
       .catch(err => reject(err));

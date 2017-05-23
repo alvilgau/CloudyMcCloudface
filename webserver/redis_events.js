@@ -114,7 +114,7 @@ const getSubscription = (tenantId, userId) => {
 };
 
 subscriber.on('message', (channel, message) => {
-  if (/tenants:\S+:users:\S+->analyzedTweets->/.test(channel)) {
+  if (/tenants:\S+:users:\S+->analyzedTweets/.test(channel)) {
     const splitted = redisKey.split(/(?:tenants\:|\:users\:|->analyzedTweets)/);
     const tenantId = splitted[1];
     const userId = splitted[2];
@@ -162,5 +162,8 @@ module.exports = {
   },
   subscribe: (tenantId, userId, callback) => {        
     doSubscribe(tenantId, userId, callback);    
+  },
+  onBattleExpired: (callback) => {
+    battleExpiredCallback = callback;
   }
 };
