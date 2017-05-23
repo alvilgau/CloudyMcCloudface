@@ -125,7 +125,10 @@ const getKeywordsByTenant = (tenantId) => {
 };
 
 const battleForFreeTenants = () => {
-  return getTenantIds().then(tenantIds => tenantIds.map(tenantId => battleForTenant(tenantId)));
+  return getTenantIds()
+          .then(tenantIds => tenantIds.map(tenantId => battleForTenant(tenantId)))
+          .then(promises => Promise.all(promises))
+          .then(results => _.flatten(results));
 };
 
 const refreshTenantBattle = (tenantId) => {

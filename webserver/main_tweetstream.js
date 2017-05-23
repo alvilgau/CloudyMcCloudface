@@ -23,7 +23,7 @@ const publishAnalyzedTweets = (tenant, analyzedTweets) => {
     }));
 };
 
-const handlePossibleKeywordChange = (tenantId) => {    
+const handlePossibleKeywordChange = tenantId => {    
   const stream = streams[tenantId];
   if (stream) {
     redisCommands.getKeywordsByTenant(tenantId)
@@ -31,19 +31,27 @@ const handlePossibleKeywordChange = (tenantId) => {
   }
 };
 
-redisEvents.onNewTenant((tenantId) => {
-  redisCommands.getTenant(tenantId)
-    .then(tenant => {        
-      const stream = ts.startStream(tenant);
-      streams[redisCommands.getId(tenant)] = stream;
-      ts.onTweets(stream, (keyword, tweets) => {
-        analyzeTweets(keyword, tweets)
-          .then(analyzedTweets => publishAnalyzedTweets(tenant, analyzedTweets));
-      });
-    });
+const createStreamForTenant = tenant => {  
+  const tenantId = redisCommands.getId(tenant);
+  const stream = ts.startStream(tenant);
+  streams[tenantId] = stream;
+  ts.onTweets(stream, (keyword, tweets) => {
+    analyzeTweets(keyword, tweets)
+      .then(analyzedTweets => publishAnalyzedTweets(tenant, analyzedTweets));
+  });
+  handlePossibleKeywordChange(tenantId);
+};
+
+redisEvents.onNewTenant(tenantId => {
+  redisCommands.battleForTenant(tenantId)
+    .then(battle => {
+      if (battle.wonBattle && battle.tenant) {
+        createStreamForTenant(battle.tenant);
+      }
+    });  
 });
 
-redisEvents.onTenantRemoved((tenantId) => {  
+redisEvents.onTenantRemoved(tenantId => {  
   const stream = streams[tenantId];
   if (stream) {
     delete streams[tenantId];
@@ -56,10 +64,13 @@ redisEvents.onKeywordRemoved((tenantId, userId) => handlePossibleKeywordChange(t
 redisEvents.onUserAdded((tenantId) => handlePossibleKeywordChange(tenantId));
 redisEvents.onUserRemoved((tenantId) => handlePossibleKeywordChange(tenantId));
 
-redisCommands.battleForFreeTenants();
+redisCommands.battleForFreeTenants()
+  .then(battles => battles.filter(battle => battle.wonBattle && battle.tenant))
+  .then(battles => battles.map(battle => battle.tenant))
+  .then(tenants => tenants.forEach(tenant => createStreamForTenant(tenant)));
 
-setInterval(() => {
+setInterval(() => {  
   Object.values(streams)    
     .map(value => redisCommands.getId(value.tenant))
-    .forEach(tenantId => redisCommands.refreshTenantBattle(tenantId));
+    .forEach(tenantId => redisCommands.refreshTenantBattle(tenantId));    
 }, process.env.KEEP_ALIVE_INTERVAL);

@@ -62,7 +62,7 @@ const installResponseHandler = function (stream, callback) {
         try {
           // publish tweet
           const tweetAsJson = JSON.parse(tweet);
-          console.log(`received new tweet ${tweet.text}`);
+          console.log(`received new tweet ${tweetAsJson.text}`);
           handleNewTweet(stream, tweetAsJson);
         } catch (ignored) { /* should never happen */ }
         // now the new tweet message
@@ -76,7 +76,7 @@ const installResponseHandler = function (stream, callback) {
 };
 
 const createTwitterStream = (tenant, keywords) => request.post({
-  url: 'https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true',
+  url: twitterUrl,
   oauth: {
     consumer_key: tenant.consumerKey,
     token: tenant.token,
@@ -113,8 +113,8 @@ const onTweets = (stream, tweetHandler) => {
   stream.handleTweets = tweetHandler;
 };
 
-const setKeywords = (stream, keywords) => {
-  stream.needReconnect = !_.isEqual(stream.keywords, keywords);
+const setKeywords = (stream, keywords) => {  
+  stream.needReconnect = !_.isEqual(stream.keywords.sort(), keywords.sort());    
   stream.keywords = keywords;
 };
 
@@ -124,7 +124,8 @@ const startStream = (tenant) => {
     keywords: [],
     needReconnect: false,
     handleTweets: () => { },
-    tenant: tenant
+    tenant: tenant,
+    connection: undefined
   };
   connectToTwitter(stream);
   startPeriodicReconnect(stream);
