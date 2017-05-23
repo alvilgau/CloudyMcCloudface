@@ -5,6 +5,7 @@ const _ = require('lodash');
 const twitterUrl = process.env.TWITTER_URL;
 
 const handleNewTweet = function (stream, tweet) {
+
   /* determine the keyword for the tweet
 
      note: we have to sort the keywords by length (longest first),
@@ -15,12 +16,11 @@ const handleNewTweet = function (stream, tweet) {
            this can be reached when we sort the string by length.
   */
 
-  const keyword = Object.keys(stream.keywords)
-    .sort((a, b) => b.length - a.length)
-    .find(kw => tweet.toLowerCase().includes(kw));
+  const keyword = stream.keywords
+                        .sort((a, b) => b.length - a.length)
+                        .find(kw => tweet.toLowerCase().includes(kw));
   // no keyword found
   if (!keyword) {
-    console.log(`no keyword found for: ${tweet}`);
     return;
   }
   const tweets = stream.tweets;
@@ -30,14 +30,13 @@ const handleNewTweet = function (stream, tweet) {
   }
   // store tweet
   tweets[keyword].push(tweet);
-  console.log(`new tweet for ${keyword}`);
 
   // number of tweets to collect (per keyword) before analysis starts
   const threshold = 10;
   // check if exchangeChannel is set up and threshold is reached  
   if (tweets[keyword].length >= threshold) {
     // analyze a bunch of tweets
-    stream.handleTweets(keyword, tweets);
+    stream.handleTweets(keyword, tweets[keyword]);
     // clear tweets for the keyword
     tweets[keyword] = [];
   }
@@ -63,8 +62,9 @@ const installResponseHandler = function (stream) {
         try {
           // publish tweet
           const tweetAsJson = JSON.parse(tweet);
-          console.log(`new tweet arrived...`);
-          handleNewTweet(stream, tweetAsJson);
+          if (tweetAsJson.text) {
+            handleNewTweet(stream, tweetAsJson.text);
+          }
         } catch (ignored) { /* should never happen */ }
         // now the new tweet message
         tweet = splitted[1];

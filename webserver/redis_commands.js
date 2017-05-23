@@ -70,6 +70,14 @@ const getUserIds = (tenantId) => {
             });
 };
 
+const getUserIdsByKeyword = (tenantId, keyword) => {
+  return getUserIds(tenantId)
+          .then(userIds => userIds.map(userId => getUserKeywords(tenantId, userIds).then(keywords => {return {userId, keywords};})))
+          .then(promises => Promise.all(promises))
+          .then(results => results.filter(result => result.keywords.includes(keyword)))
+          .then(results => results.map(result => result.userId));
+};
+
 const getUserKeywords = (tenantId, userId) => {
   return client.lrangeAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, -1)
     .then(keywords => _.uniq(keywords))
@@ -79,6 +87,7 @@ const getUserKeywords = (tenantId, userId) => {
       return [];
     });
 };
+
 
 const battleForTenant = (tenantId) => {
   console.log(`start a battle for tenant ${tenantId}`);
@@ -148,7 +157,7 @@ const refreshTenantExpiration = (tenantId) => {
 
 const publishAnalyzedTweets = (tenantId, userId, analyzedTweets) => {
   const str = JSON.stringify(analyzedTweets);
-  client.publishAsync(`tenants:{tenantId}:users:${userId}->analyzedTweets`, str);
+  client.publishAsync(`tenants:${tenantId}:users:${userId}->analyzedTweets`, str);
 };
 
 module.exports = {
@@ -165,5 +174,6 @@ module.exports = {
   getKeywordsByTenant,
   getTenantIds,
   getUserIds,
-  getUserKeywords
+  getUserKeywords,
+  getUserIdsByKeyword
 };

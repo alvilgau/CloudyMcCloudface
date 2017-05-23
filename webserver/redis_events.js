@@ -5,11 +5,13 @@ const bluebird = require('bluebird');
 bluebird.promisifyAll(redis.RedisClient.prototype);
 bluebird.promisifyAll(redis.Multi.prototype);
 
-const client = redis.createClient({
+
+const subscriber = redis.createClient({
   host: process.env.REDIS_HOST,
   port: process.env.REDIS_PORT
 });
-const subscriber = redis.createClient({
+
+const psubscriber = redis.createClient({
   host: process.env.REDIS_HOST,
   port: process.env.REDIS_PORT
 });
@@ -19,7 +21,7 @@ const expiration = process.env.EXPIRATION || 3;
 const keepAliveInterval = process.env.KEEP_ALIVE_INTERVAL || 1000;
 
 // enable keyspace events
-subscriber.config('set', 'notify-keyspace-events', 'KEA');
+psubscriber.config('set', 'notify-keyspace-events', 'KEA');
 
 // callback when battle for tenant is won
 let newTenantCallback = (tenantId) => {};
@@ -33,7 +35,7 @@ let tenantExpiredCallback = (tenantId) => {};
 
 // subscribe for all events
 const event = `__keyevent@${db}__:`;
-subscriber.psubscribe(`${event}*`);
+psubscriber.psubscribe(`${event}*`);
 
 const expired = (redisKey) => {
   console.log(`redis key expired: ${redisKey}`);
@@ -98,7 +100,7 @@ const del = (redisKey) => {
 const pmessageHandlers = {
   expired, set, lpush, lrem, del,
 };
-subscriber.on('pmessage', (pattern, channel, msg) => {
+psubscriber.on('pmessage', (pattern, channel, msg) => {
   const msgType = channel.replace(event, '');
   const handler = pmessageHandlers[msgType];
   if (handler) {
@@ -109,12 +111,12 @@ subscriber.on('pmessage', (pattern, channel, msg) => {
 // handler for analyzed keywords
 const subscriptions = [];
 const getSubscription = (tenantId, userId) => {
-  return subscriptions.filter(s => s.tenantId === tenantId && s.userId === userId);
+  return subscriptions.find(s => s.tenantId === tenantId && s.userId === userId);
 };
 
 subscriber.on('message', (channel, message) => {
   if (/tenants:\S+:users:\S+->analyzedTweets/.test(channel)) {
-    const splitted = redisKey.split(/(?:tenants\:|\:users\:|->analyzedTweets)/);
+    const splitted = channel.split(/(?:tenants\:|\:users\:|->analyzedTweets)/);
     const tenantId = splitted[1];
     const userId = splitted[2];
     const subscription = getSubscription(tenantId, userId);
@@ -135,6 +137,7 @@ const doUnsubscribe = (tenantId, userId) => {
 const doSubscribe = (tenantId, userId, callback) => {
   doUnsubscribe(tenantId, userId);
   subscriptions.push({tenantId, userId, callback});
+  subscriber.subscribe(`tenants:${tenantId}:users:${userId}->analyzedTweets`);
 };
 
 module.exports = {

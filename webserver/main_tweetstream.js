@@ -18,9 +18,12 @@ const publishAnalyzedTweets = (tenant, analyzedTweets) => {
   const tenantId = redisCommands.getId(tenant);
   const keyword = analyzedTweets.keyword;
   redisCommands.getUserIdsByKeyword(tenantId, keyword)
-    .then(userIds => userIds.forEach(userId => {
+    .then(userIds => {
+      userIds.forEach(userId => {
+        console.log(`send message to ${tenantId}->${userId}->${keyword}`);
         redisCommands.publishAnalyzedTweets(tenantId, userId, analyzedTweets);
-    }));
+      });
+    });
 };
 
 const handlePossibleKeywordChange = tenantId => {    
@@ -36,7 +39,6 @@ const createStreamForTenant = tenant => {
   const stream = ts.startStream(tenant);
   streams[tenantId] = stream;
   ts.onTweets(stream, (keyword, tweets) => {
-    console.log(`trying to send tweets to webserver.js`);
     analyzeTweets(keyword, tweets)
       .then(analyzedTweets => publishAnalyzedTweets(tenant, analyzedTweets));
   });
