@@ -23,7 +23,6 @@ subscriber.config('set', 'notify-keyspace-events', 'KEA');
 
 // callback when battle for tenant is won
 let newTenantCallback = (tenantId) => {};
-let tenantRemovedCallback = (tenantId) => {};
 let userAddedCallback = (tenantId) => {};
 let userRemovedCallback = (tenantId) => {};
 let keywordAddedCallback = (tenantId, userId) => {};
@@ -143,7 +142,7 @@ module.exports = {
     newTenantCallback = callback;
   },
   onTenantRemoved: (callback) => {
-    tenantRemovedCallback = callback;
+    tenantExpiredCallback = callback;
   },
   onUserAdded: (callback) => {
     userAddedCallback = callback;

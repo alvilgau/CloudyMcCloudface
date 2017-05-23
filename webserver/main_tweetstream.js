@@ -58,8 +58,8 @@ redisEvents.onBattleExpired(tenantId => battleForTenant(tenantId));
 redisEvents.onTenantRemoved(tenantId => {  
   const stream = streams[tenantId];
   if (stream) {
+    ts.stopStream(stream);
     delete streams[tenantId];
-    ts.stopStream(stream);    
   }
 });
 

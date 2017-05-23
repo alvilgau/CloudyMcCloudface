@@ -115,9 +115,8 @@ const onTweets = (stream, tweetHandler) => {
 };
 
 const setKeywords = (stream, keywords) => {  
-  stream.needReconnect = !_.isEqual(stream.keywords.sort(), keywords.sort());    
-  // todo: what to do, when keywords is an empty list?
-  stream.keywords = keywords;  
+  stream.needReconnect = !_.isEqual(stream.keywords.sort(), keywords.sort());
+  stream.keywords = keywords;
 };
 
 const startStream = (tenant) => {
