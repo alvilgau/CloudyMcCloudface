@@ -2,6 +2,8 @@ require('dotenv').config();
 const request = require('request');
 const _ = require('lodash');
 
+const twitterUrl = process.env.TWITTER_URL;
+
 const handleNewTweet = function (stream, tweet) {
   /* determine the keyword for the tweet
 

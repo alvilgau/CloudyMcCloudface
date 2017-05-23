@@ -143,3 +143,13 @@ test('get keywords by tenant', async () => {
   expect(keywords).toContain('kw1');
   expect(keywords).toContain('kw2');
 });
+
+test('get tenant', async() => {
+  const t = getSampleTenant();
+  const id = redisCommands.getId(t);
+
+  await redisCommands.trackKeyword(t, 'user', 'keyword');
+
+  const tenant = await redisCommands.getTenant(id);
+  expect(tenant).toEqual(t); 
+});

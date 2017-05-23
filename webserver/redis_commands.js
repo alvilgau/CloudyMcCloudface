@@ -112,9 +112,8 @@ const battleForTenant = (tenantId) => {
 };
 
 const getTenant = (tenantId) => {
-  return client.getAsync(`tenant->${tenantId}`)
-      .then(res => JSON.parse(res));
-
+  return client.getAsync(`tenants->${tenantId}`)
+    .then(res => JSON.parse(res));
 };
 
 const getKeywordsByTenant = (tenantId) => {

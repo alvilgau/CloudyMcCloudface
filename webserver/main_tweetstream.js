@@ -33,7 +33,7 @@ const handlePossibleKeywordChange = (tenantId) => {
 
 redisEvents.onNewTenant((tenantId) => {
   redisCommands.getTenant(tenantId)
-    .then(tenant => {      
+    .then(tenant => {        
       const stream = ts.startStream(tenant);
       streams[redisCommands.getId(tenant)] = stream;
       ts.onTweets(stream, (keyword, tweets) => {
@@ -51,27 +51,15 @@ redisEvents.onTenantRemoved((tenantId) => {
   }
 });
 
-redisEvents.onKeywordAdded((tenantId, userId) => {
-  handlePossibleKeywordChange(tenantId);
-});
-
-redisEvents.onKeywordRemoved((tenantId, userId) => {
-  handlePossibleKeywordChange(tenantId);
-});
-
-redisEvents.onUserAdded((tenantId) => {
-  handlePossibleKeywordChange(tenantId);
-});
-
-redisEvents.onUserRemoved((tenantId) => {
-  handlePossibleKeywordChange(tenantId);
-});
+redisEvents.onKeywordAdded((tenantId, userId) => handlePossibleKeywordChange(tenantId));
+redisEvents.onKeywordRemoved((tenantId, userId) => handlePossibleKeywordChange(tenantId));
+redisEvents.onUserAdded((tenantId) => handlePossibleKeywordChange(tenantId));
+redisEvents.onUserRemoved((tenantId) => handlePossibleKeywordChange(tenantId));
 
 redisCommands.battleForFreeTenants();
 
 setInterval(() => {
-  Object.values(streams)
-    .filter(value => value.tenant)
+  Object.values(streams)    
     .map(value => redisCommands.getId(value.tenant))
     .forEach(tenantId => redisCommands.refreshTenantBattle(tenantId));
 }, process.env.KEEP_ALIVE_INTERVAL);
