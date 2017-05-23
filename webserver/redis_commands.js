@@ -58,7 +58,7 @@ const getTenantIds = () => {
 
 const getUserIds = (tenantId) => {
   return client.lrangeAsync(`tenants:${tenantId}->users`, 0, -1)
-            .then(ids => Array.from(new Set(ids)))
+            .then(ids => _.uniq(ids))
             .catch((err) => {
               console.error(`could not query user ids for tenant ${tenantId} from redis`);
               console.error(err);
@@ -68,7 +68,7 @@ const getUserIds = (tenantId) => {
 
 const getUserKeywords = (tenantId, userId) => {
   return client.lrangeAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, -1)
-    .then(keywords => Array.from(new Set(keywords)))
+    .then(keywords => _.uniq(keywords))
     .catch(err => {
       console.error(`could not query keywords for tenant ${tenantId} from redis`);
       console.error(err);
@@ -112,15 +112,15 @@ const getKeywordsByTenant = (tenantId) => {
       return getUserIds(tenantId)
         .then(userIds => userIds.map(userId => getUserKeywords(tenantId, userId)))
         .then(promises => Promise.all(promises))
-        .then(values => _.flatten(values))
-        .then(values => Array.from(new Set(values)));
+        .then(keywords => _.flatten(keywords))
+        .then(keywords => _.uniq(keywords));
 };
 
 const battleForFreeTenants = () => {
   getTenantIds().then(ids => ids.map(id => battleForTenant(id)));
 };
 
-const refreshBattle = (tenantId) => {
+const refreshTenantBattle = (tenantId) => {
     return client.expireAsync(`battle:tenants->${tenantId}`, expiration)
                 .then(ok => true)
                 .catch(err => false);
@@ -147,7 +147,7 @@ module.exports = {
   getId,
   refreshTenantExpiration,
   battleForFreeTenants,
-  refreshBattle,
+  refreshTenantBattle,
   getKeywordsByTenant,
   getTenantIds,
   getUserIds,

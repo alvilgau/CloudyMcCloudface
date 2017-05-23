@@ -1,6 +1,6 @@
 require('dotenv').config();
 const request = require('request');
-const isEqual = require('lodash.isequal');
+const _ = require('lodash');
 
 const handleNewTweet = function (stream, tweet) {
   /* determine the keyword for the tweet
@@ -111,10 +111,8 @@ const onTweets = (stream, tweetHandler) => {
   stream.handleTweets = tweetHandler;
 };
 
-const setKeywords = (stream, keywords) => {     
-  const oldKeywords = stream.keywords;
-  const newKeywords = Array.from(keywords);
-  stream.needReconnect = !isEqual(oldKeywords.sort(), newKeywords.sort());
+const setKeywords = (stream, keywords) => {
+  stream.needReconnect = !_.isEqual(stream.keywords, keywords);
   stream.keywords = newKeywords;
 };
 

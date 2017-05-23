@@ -68,8 +68,8 @@ redisEvents.onUserRemoved((tenantId) => {
 redisCommands.battleForFreeTenants();
 
 setInterval(() => {
-  Object.values(streams).map(value => value.tenant)
-    .filter(tenant => tenant !== undefined)
-    .map(tenant => redisCommands.getId(tenant))
-    .forEach(tenantId => redisCommands.refreshBattle(tenantId));
+  Object.values(streams)
+    .filter(value => value.tenant)
+    .map(value => redisCommands.getId(value.tenant))
+    .forEach(tenantId => redisCommands.refreshTenantBattle(tenantId));
 }, process.env.KEEP_ALIVE_INTERVAL);
