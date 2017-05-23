@@ -59,7 +59,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('track', (keyword) => {
-    const tenantId = redisCommands(sockets[socket].tenant);
+    const tenantId = redisCommands.getId(sockets[socket].tenant);
     redisCommands.trackKeyword(tenantId, socket.id, keyword);
   });
 

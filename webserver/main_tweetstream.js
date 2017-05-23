@@ -27,17 +27,21 @@ const handlePossibleKeywordChange = (tenant) => {
   const tenantId = redisCommands.getId(tenant);
   const stream = streams[tenantId];
   if (stream) {
-    redisCommands.getKeywordsByTenant(tenantId).then(keywords => ts.setKeywords(stream, keywords));
+    redisCommands.getKeywordsByTenant(tenantId)
+      .then(keywords => ts.setKeywords(stream, keywords));
   }
 };
 
-redisEvents.onNewTenant((tenant) => {
-  const stream = ts.startStream(tenant);
-  streams[redisCommands.getId(tenant)] = stream;
-  ts.onTweets(stream, (keyword, tweets) => {
-      analyzeTweets(keyword, tweets)
-        .then(analyzedTweets => publishAnalyzedTweets(tenant, analyzedTweets));
-  });  
+redisEvents.onNewTenant((tenantId) => {
+  redisCommands.getTenant(tenantId)
+    .then(tenant => {      
+      const stream = ts.startStream(tenant);
+      streams[redisCommands.getId(tenant)] = stream;
+      ts.onTweets(stream, (keyword, tweets) => {
+        analyzeTweets(keyword, tweets)
+          .then(analyzedTweets => publishAnalyzedTweets(tenant, analyzedTweets));
+      });
+    });
 });
 
 redisEvents.onTenantRemoved((tenant) => {

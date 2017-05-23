@@ -5,8 +5,14 @@ const bluebird = require('bluebird');
 bluebird.promisifyAll(redis.RedisClient.prototype);
 bluebird.promisifyAll(redis.Multi.prototype);
 
-const client = redis.createClient();
-const subscriber = redis.createClient();
+const client = redis.createClient({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT
+});
+const subscriber = redis.createClient({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT
+});
 
 const db = process.env.REDIS_DB || 0;
 const expiration = process.env.EXPIRATION || 3;

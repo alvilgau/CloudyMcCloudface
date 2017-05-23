@@ -6,7 +6,10 @@ const _ = require('lodash');
 bluebird.promisifyAll(redis.RedisClient.prototype);
 bluebird.promisifyAll(redis.Multi.prototype);
 
-const client = redis.createClient();
+const client = redis.createClient({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT
+});
 
 const expiration = process.env.EXPIRATION;
 
@@ -108,6 +111,12 @@ const battleForTenant = (tenantId) => {
   });
 };
 
+const getTenant = (tenantId) => {
+  return client.getAsync(`tenant->${tenantId}`)
+      .then(res => JSON.parse(res));
+
+};
+
 const getKeywordsByTenant = (tenantId) => {
       return getUserIds(tenantId)
         .then(userIds => userIds.map(userId => getUserKeywords(tenantId, userId)))
@@ -145,6 +154,7 @@ module.exports = {
   removeUser,
   publishAnalyzedTweets,
   getId,
+  getTenant,
   refreshTenantExpiration,
   battleForFreeTenants,
   battleForTenant,
