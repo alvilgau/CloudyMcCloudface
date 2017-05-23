@@ -117,7 +117,7 @@ const getKeywordsByTenant = (tenantId) => {
 };
 
 const battleForFreeTenants = () => {
-  getTenantIds().then(ids => ids.map(id => battleForTenant(id)));
+  return getTenantIds().then(tenantIds => tenantIds.map(tenantId => battleForTenant(tenantId)));
 };
 
 const refreshTenantBattle = (tenantId) => {
@@ -147,6 +147,7 @@ module.exports = {
   getId,
   refreshTenantExpiration,
   battleForFreeTenants,
+  battleForTenant,
   refreshTenantBattle,
   getKeywordsByTenant,
   getTenantIds,

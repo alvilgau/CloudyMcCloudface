@@ -99,6 +99,35 @@ test('remove user', async () => {
   expect(userIds.length).toBe(0);
 });
 
+test('battle for tenant', async() => {
+  const t = getSampleTenant();
+  const id = redisCommands.getId(t);
+
+  await redisCommands.trackKeyword(t, 'user', 'keyword');
+  let result = await redisCommands.battleForTenant(id);
+  expect(result.wonBattle).toBeTruthy();
+  expect(result.tenant).toEqual(t);
+
+  // only one battle will be successful
+  result = await redisCommands.battleForTenant(id);
+  expect(result.wonBattle).toBeFalsy();
+  expect(result.tenant).toEqual(t);
+
+});
+
+test('battle for free tenants', async() => {
+
+  const t = getSampleTenant();
+  const id = redisCommands.getId(t);
+
+  await redisCommands.trackKeyword(t, 'user', 'keyword');
+  await redisCommands.battleForFreeTenants();
+
+  const result = await redisCommands.battleForTenant(id);
+  expect(result.wonBattle).toBeFalsy();
+
+});
+
 test('get keywords by tenant', async () => {
   const t = getSampleTenant();
   const id = redisCommands.getId(t);
