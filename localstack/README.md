@@ -3,7 +3,7 @@
 
 This guide describes how to setup LocalStack within a docker container and how to use the various AWS services locally.
 
-## Precoditions
+## Preconditions
 1. Docker must be installed
 2. AWS CLI must be installed.
 
