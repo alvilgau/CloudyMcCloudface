@@ -34,7 +34,7 @@ aws --endpoint-url=http://localhost:4574 lambda create-function --function-name 
 
 2. Execute the Lambda function:
 ```
-aws lambda --endpoint-url=http://localhost:4574 invoke --function-name f1 response.log
+aws --endpoint-url=http://localhost:4574 lambda invoke --function-name f1 response.log
 ```
 The response of the lambda function should be in the file ``response.log`` now.
 The following response is expected:
