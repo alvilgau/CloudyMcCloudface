@@ -1,10 +1,10 @@
 # LocalStack Guide
-[LocalStack](https://www.google.com ) provides a fully functional local AWS cloud stack.
+[LocalStack](https://github.com/atlassian/localstack) provides a fully functional local AWS cloud stack.
 
 This guide describes how to setup LocalStack within a docker container and how to use the various AWS services locally.
 
 ## Preconditions
-1. Docker must be installed
+1. Docker must be installed.
 2. AWS CLI must be installed.
 
 ## Setup LocalStack
