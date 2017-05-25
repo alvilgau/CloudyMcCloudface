@@ -8,13 +8,17 @@ This guide describes how to setup LocalStack within a docker container and how t
 2. AWS CLI must be installed.
 
 ## Setup LocalStack
-1. Run LocalStack in a docker container:
+1. Get LocalStack from github:
 ```
-docker run --name aws-cloud -p 4567-4580:4567-4580 -p 8080:8080 atlassianlabs/localstack
+git clone https://github.com/atlassian/localstack.git
 ```
 
-2. Make sure that LocalStack runs correctly.
+2. Run LocalStack using docker-compose:
+```
+docker-compose up
+```
 
+3. Make sure that LocalStack runs correctly.
 The following command:
 ```
 aws --endpoint-url=http://localhost:4574 lambda list-functions 
@@ -27,20 +31,24 @@ should return:
 ```
 
 ## Lambda Functions
-1. Create a Lambda function:
+1. To execute Node.js Lambda functions the ``lambci/lambda:build-nodejs6.10`` docker image is required.
 ```
-aws --endpoint-url=http://localhost:4574 lambda create-function --function-name f1 --runtime python2.7 --role r1 --handler lambda.handler --zip-file fileb://lambda/lambda.zip
+docker pull lambci/lambda:nodejs6.10
 ```
 
-2. Execute the Lambda function:
+2. Create a Lambda function by using ``lambda/helloworld.zip``:
 ```
-aws --endpoint-url=http://localhost:4574 lambda invoke --function-name f1 response.log
+aws --endpoint-url=http://localhost:4574 lambda create-function --function-name helloworld --runtime nodejs6.10 --role r1 --handler helloworld.handler --zip-file fileb://lambda/helloworld.zip
 ```
-The response of the lambda function should be in the file ``response.log`` now.
-The following response is expected:
+
+3. Execute the Lambda function:
+```
+aws --endpoint-url=http://localhost:4574 lambda invoke --function-name helloworld --payload "{}" response.log
+```
+If the call was successful, the following response will be shown on the commandline:
 ```
 {
-  "foo": "bar"
+    "StatusCode": 200
 }
 ```
 
