@@ -29,8 +29,8 @@ const tenantSchema = Joi.object().keys({
 });
 
 const handleAnalyzedTweets = (socket, analyzedTweets) => {
-  console.log(`received new analyzed tweets for socket ${socket.id} ${analyzedTweets}`);
-  socket.emit('analyzedTweets', analyzedTweets);
+  console.log(analyzedTweets);
+  socket.emit('tweets', analyzedTweets);
 };
 
 // new client connected
@@ -41,6 +41,7 @@ io.on('connection', (socket) => {
   };
 
   redisEvents.subscribe(redisCommands.getId(defaultTenant), socket.id, (analyzedTweets) => {
+    console.log(`received some analyzed tweets ${analyzedTweets.keyword}`);
     handleAnalyzedTweets(socket, analyzedTweets);
   });
 
@@ -72,7 +73,7 @@ io.on('connection', (socket) => {
     const tenantId = redisCommands.getId(sockets[socket].tenant);
     redisEvents.unsubscribe(tenantId, userId);
     redisCommands.removeUser(tenantId, userId)
-                 .then(ok => delete sockets[socket]);
+                 .then(ok => ok && delete sockets[socket]);
   });
 
 });

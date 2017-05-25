@@ -88,7 +88,6 @@ const getUserKeywords = (tenantId, userId) => {
     });
 };
 
-
 const battleForTenant = (tenantId) => {
   console.log(`start a battle for tenant ${tenantId}`);
   return new Promise((resolve, reject) => {
@@ -156,7 +155,7 @@ const refreshTenantExpiration = (tenantId) => {
 };
 
 const publishAnalyzedTweets = (tenantId, userId, analyzedTweets) => {
-  const str = JSON.stringify(analyzedTweets);
+  const str = JSON.stringify(analyzedTweets);  
   client.publishAsync(`tenants:${tenantId}:users:${userId}->analyzedTweets`, str);
 };
 

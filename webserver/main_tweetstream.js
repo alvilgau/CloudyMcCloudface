@@ -9,7 +9,7 @@ const streams = {};
 const analyzeTweets = (keyword, tweets) => new Promise(
   (resolve) => {
     lambda({ tweets }, null, (res) => {
-      res.keyword = keyword;
+      res.keyword = keyword;      
       resolve(res);            
     });
   });
@@ -20,7 +20,7 @@ const publishAnalyzedTweets = (tenant, analyzedTweets) => {
   redisCommands.getUserIdsByKeyword(tenantId, keyword)
     .then(userIds => {
       userIds.forEach(userId => {
-        console.log(`send message to ${tenantId}->${userId}->${keyword}`);
+        console.log(`analyzed tweets: ${analyzedTweets}`);
         redisCommands.publishAnalyzedTweets(tenantId, userId, analyzedTweets);
       });
     });
