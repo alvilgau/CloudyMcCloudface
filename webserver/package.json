@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "start": "redis-server & node main_tweetstream.js | node log_service.js tweetstream & node webserver.js | node log_service.js websvr"
   },
   "keywords": [
     "node",
