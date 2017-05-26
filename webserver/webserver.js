@@ -75,7 +75,6 @@ io.on('connection', (socket) => {
     redisCommands.removeUser(tenantId, userId)
                  .then(ok => ok && delete sockets[socket]);
   });
-
 });
 
 setInterval(() => {

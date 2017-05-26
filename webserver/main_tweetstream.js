@@ -54,21 +54,19 @@ const battleForTenant = (tenantId) => {
     });
 };
 
-redisEvents.onNewTenant(tenantId => battleForTenant(tenantId));
-redisEvents.onBattleExpired(tenantId => battleForTenant(tenantId));
-
-redisEvents.onTenantRemoved(tenantId => {  
+redisEvents.on('newTenant', (tenantId) => battleForTenant(tenantId));
+redisEvents.on('battleExpired', (tenantId) => battleForTenant(tenantId));
+redisEvents.on('keywordAdded', (tenantId, userId) => handlePossibleKeywordChange(tenantId));
+redisEvents.on('keywordRemoved', (tenantId, userId) => handlePossibleKeywordChange(tenantId));
+redisEvents.on('userAdded', (tenantId) => handlePossibleKeywordChange(tenantId));
+redisEvents.on('userRemoved', (tenantId) => handlePossibleKeywordChange(tenantId));
+redisEvents.on('tenantRemoved', (tenantId) => {
   const stream = streams[tenantId];
   if (stream) {
     ts.stopStream(stream);
     delete streams[tenantId];
   }
 });
-
-redisEvents.onKeywordAdded((tenantId, userId) => handlePossibleKeywordChange(tenantId));
-redisEvents.onKeywordRemoved((tenantId, userId) => handlePossibleKeywordChange(tenantId));
-redisEvents.onUserAdded((tenantId) => handlePossibleKeywordChange(tenantId));
-redisEvents.onUserRemoved((tenantId) => handlePossibleKeywordChange(tenantId));
 
 redisCommands.battleForFreeTenants()
   .then(battles => battles.filter(battle => battle.wonBattle && battle.tenant))

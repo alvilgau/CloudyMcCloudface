@@ -1,4 +1,5 @@
 require('dotenv').config();
+const EventEmitter = require('events');
 const redis = require('redis');
 const bluebird = require('bluebird');
 
@@ -17,21 +18,11 @@ const psubscriber = redis.createClient({
 });
 
 const db = process.env.REDIS_DB || 0;
-const expiration = process.env.EXPIRATION || 3;
-const keepAliveInterval = process.env.KEEP_ALIVE_INTERVAL || 1000;
 
 // enable keyspace events
 psubscriber.config('set', 'notify-keyspace-events', 'KEA');
 
-// callback when battle for tenant is won
-let newTenantCallback = (tenantId) => {};
-let userAddedCallback = (tenantId) => {};
-let userRemovedCallback = (tenantId) => {};
-let keywordAddedCallback = (tenantId, userId) => {};
-let keywordRemovedCallback = (tenantId, userId) => {};
-let battleExpiredCallback = (tenantId) => {};
-let tenantExpiredCallback = (tenantId) => {};
-
+const eventEmitter = new EventEmitter();
 
 // subscribe for all events
 const event = `__keyevent@${db}__:`;
@@ -42,11 +33,11 @@ const expired = (redisKey) => {
   if (/battle:tenants->\S+/.test(redisKey)) {
     const splitted = redisKey.split(/(?:battle:tenants->)/);
     const tenantId = splitted[1];
-    battleExpiredCallback && battleExpiredCallback(tenantId);
+    eventEmitter.emit('battleExpired', tenantId);
   } else if (/tenants->\S+/.test(redisKey)) {
     const splitted = redisKey.split(/(?:tenants->)/);
     const tenantId = splitted[1];
-    tenantExpiredCallback && tenantExpiredCallback(tenantId);
+    eventEmitter.emit('tenantExpired', tenantId);
   }
 };
 
@@ -55,7 +46,7 @@ const set = (redisKey) => {
   if (/tenants->\S+/.test(redisKey)) {
     const splitted = redisKey.split(/(?:tenants->)/);
     const tenantId = splitted[1];
-    newTenantCallback && newTenantCallback(tenantId);
+    eventEmitter.emit('newTenant', tenantId);
   }
 };
 
@@ -65,11 +56,11 @@ const lpush = (redisKey) => {
     const splitted = redisKey.split(/(?:tenants\:|\:users\:|->keywords)/);
     const tenantId = splitted[1];
     const userId = splitted[2];
-    keywordAddedCallback && keywordAddedCallback(tenantId, userId);
+    eventEmitter.emit('keywordAdded', tenantId, userId);
   } else if (/tenants:\S+->users/.test(redisKey)) {
     const splitted = redisKey.split(/(?:tenants\:|->users)/);
     const tenantId = splitted[1];
-    userAddedCallback && userAddedCallback(tenantId);
+    eventEmitter.emit('userAdded', tenantId);
   }
 };
 
@@ -79,11 +70,11 @@ const lrem = (redisKey) => {
     const splitted = redisKey.split(/(?:tenants\:|\:users\:|->keywords)/);
     const tenantId = splitted[1];
     const userId = splitted[2];
-    keywordRemovedCallback && keywordAddedCallback(tenantId, userId);
+    eventEmitter.emit('keywordAdded', tenantId, userId);
   } else if (/tenants:\S+->users/.test(redisKey)) {
     const splitted = redisKey.split(/(?:tenants\:|->users)/);
     const tenantId = splitted[1];
-    userRemovedCallback && userRemovedCallback(tenantId);
+    eventEmitter.emit('userRemoved', tenantId);
   }
 };
 
@@ -93,7 +84,7 @@ const del = (redisKey) => {
     const splitted = redisKey.split(/(?:tenant\:|\:users\:|->keywords)/);
     const tenantId = splitted[1];
     const userId = splitted[2];
-    keywordRemovedCallback && keywordRemovedCallback(tenantId, userId);
+    eventEmitter.emit('keywordRemoved', tenantId, userId);
   }
 };
 
@@ -126,7 +117,7 @@ subscriber.on('message', (channel, message) => {
   }
 });
 
-const doUnsubscribe = (tenantId, userId) => {
+eventEmitter.unsubscribe = (tenantId, userId) => {
   const subscription = getSubscription(tenantId, userId);
   if (subscription) {
     const index = subscriptions.indexOf(subscription);
@@ -134,38 +125,10 @@ const doUnsubscribe = (tenantId, userId) => {
   }
 };
 
-const doSubscribe = (tenantId, userId, callback) => {
-  doUnsubscribe(tenantId, userId);
+eventEmitter.subscribe = (tenantId, userId, callback) => {
+  eventEmitter.unsubscribe(tenantId, userId);
   subscriptions.push({tenantId, userId, callback});
   subscriber.subscribe(`tenants:${tenantId}:users:${userId}->analyzedTweets`);
 };
 
-module.exports = {
-  onNewTenant: (callback) => {
-    newTenantCallback = callback;
-  },
-  onTenantRemoved: (callback) => {
-    tenantExpiredCallback = callback;
-  },
-  onUserAdded: (callback) => {
-    userAddedCallback = callback;
-  },
-  onUserRemoved: (callback) => {
-    userRemovedCallback = callback;
-  },
-  onKeywordAdded: (callback) => {
-    keywordAddedCallback = callback;
-  },
-  onKeywordRemoved: (callback) => {
-    keywordRemovedCallback = callback;
-  },
-  unsubscribe: (tenantId, userId) => {
-    doUnsubscribe(tenantId, userId);    
-  },
-  subscribe: (tenantId, userId, callback) => {        
-    doSubscribe(tenantId, userId, callback);    
-  },
-  onBattleExpired: (callback) => {
-    battleExpiredCallback = callback;
-  }
-};
+module.exports = eventEmitter;
