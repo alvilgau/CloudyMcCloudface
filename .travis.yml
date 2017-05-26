@@ -3,3 +3,5 @@ node_js:
   - "node"
   - "7"
 script: cd webserver && npm install && npm test
+services:
+  - redis-server
