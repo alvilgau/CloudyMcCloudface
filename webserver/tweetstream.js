@@ -1,8 +1,11 @@
 require('dotenv').config();
 const request = require('request');
-const isEqual = require('lodash.isequal');
+const _ = require('lodash');
+
+const twitterUrl = process.env.TWITTER_URL;
 
 const handleNewTweet = function (stream, tweet) {
+
   /* determine the keyword for the tweet
 
      note: we have to sort the keywords by length (longest first),
@@ -13,12 +16,11 @@ const handleNewTweet = function (stream, tweet) {
            this can be reached when we sort the string by length.
   */
 
-  const keyword = Object.keys(stream.keywords)
-    .sort((a, b) => b.length - a.length)
-    .find(kw => tweet.toLowerCase().includes(kw));
+  const keyword = stream.keywords
+                        .sort((a, b) => b.length - a.length)
+                        .find(kw => tweet.toLowerCase().includes(kw));
   // no keyword found
   if (!keyword) {
-    console.log(`no keyword found for: ${tweet}`);
     return;
   }
   const tweets = stream.tweets;
@@ -34,7 +36,7 @@ const handleNewTweet = function (stream, tweet) {
   // check if exchangeChannel is set up and threshold is reached  
   if (tweets[keyword].length >= threshold) {
     // analyze a bunch of tweets
-    stream.handleTweets(keyword, tweets);
+    stream.handleTweets(keyword, tweets[keyword]);
     // clear tweets for the keyword
     tweets[keyword] = [];
   }
@@ -46,7 +48,7 @@ const installErrorHandler = function (stream) {
   });
 };
 
-const installResponseHandler = function (stream, callback) {
+const installResponseHandler = function (stream) {
   stream.connection.on('response', (res) => {
     let tweet = '';
     res.on('data', (bytes) => {
@@ -60,8 +62,9 @@ const installResponseHandler = function (stream, callback) {
         try {
           // publish tweet
           const tweetAsJson = JSON.parse(tweet);
-          console.log(`received new tweet ${tweet.text}`);
-          handleNewTweet(stream, tweetAsJson);
+          if (tweetAsJson.text) {
+            handleNewTweet(stream, tweetAsJson.text);
+          }
         } catch (ignored) { /* should never happen */ }
         // now the new tweet message
         tweet = splitted[1];
@@ -74,7 +77,7 @@ const installResponseHandler = function (stream, callback) {
 };
 
 const createTwitterStream = (tenant, keywords) => request.post({
-  url: 'https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true',
+  url: twitterUrl,
   oauth: {
     consumer_key: tenant.consumerKey,
     token: tenant.token,
@@ -111,11 +114,9 @@ const onTweets = (stream, tweetHandler) => {
   stream.handleTweets = tweetHandler;
 };
 
-const setKeywords = (stream, keywords) => {     
-  const oldKeywords = stream.keywords;
-  const newKeywords = Array.from(keywords);
-  stream.needReconnect = !isEqual(oldKeywords.sort(), newKeywords.sort());
-  stream.keywords = newKeywords;
+const setKeywords = (stream, keywords) => {  
+  stream.needReconnect = !_.isEqual(stream.keywords.sort(), keywords.sort());
+  stream.keywords = keywords;
 };
 
 const startStream = (tenant) => {
@@ -124,7 +125,8 @@ const startStream = (tenant) => {
     keywords: [],
     needReconnect: false,
     handleTweets: () => { },
-    tenant: tenant
+    tenant: tenant,
+    connection: undefined
   };
   connectToTwitter(stream);
   startPeriodicReconnect(stream);

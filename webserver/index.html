@@ -83,7 +83,8 @@
 
         var counter = 0;
 
-        socket.on('tweets', function (msg) {                        
+        socket.on('tweets', function (msg) {
+            console.log(msg);
             counter += msg.tweets.length;
             document.title = "tweets: " + counter;
             msg.tweets.forEach(tweet => {                
