@@ -36,14 +36,14 @@ should return:
 docker pull lambci/lambda:nodejs6.10
 ```
 
-2. Create a Lambda function by using ``lambda/helloworld.zip``:
+2. Create a Lambda function by using ``lambda/sum.zip``:
 ```
-aws --endpoint-url=http://localhost:4574 lambda create-function --function-name helloworld --runtime nodejs6.10 --role r1 --handler helloworld.handler --zip-file fileb://lambda/helloworld.zip
+aws --endpoint-url=http://localhost:4574 lambda create-function --function-name sum --runtime nodejs6.10 --role r1 --handler sum.handler --zip-file fileb://lambda/sum.zip
 ```
 
 3. Execute the Lambda function:
 ```
-aws --endpoint-url=http://localhost:4574 lambda invoke --function-name helloworld --payload "{}" response.log
+aws --endpoint-url=http://localhost:4574 lambda invoke --function-name sum --payload '{""val1"":5, ""val2"":3}' response.log
 ```
 If the call was successful, the following response will be shown on the commandline:
 ```
@@ -51,6 +51,7 @@ If the call was successful, the following response will be shown on the commandl
     "StatusCode": 200
 }
 ```
+The sum of the two entered entered values will be in the ``response.log``.
 
 
  
