@@ -31,6 +31,7 @@ should return:
 ```
 
 ## Lambda Functions
+### Setup & Test
 1. To execute Node.js Lambda functions the ``lambci/lambda:build-nodejs6.10`` docker image is required.
 ```
 docker pull lambci/lambda:nodejs6.10
@@ -53,5 +54,7 @@ If the call was successful, the following response will be shown on the commandl
 ```
 The sum of the two entered entered values will be in the ``response.log``.
 
-
- 
+### Invoke with Node.js
+To execute the Lambda function with Node.js:
+1. Enter ``lambda_invoke``
+2. Run ``npm install`` and ``node invoke.js``
