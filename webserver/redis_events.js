@@ -1,12 +1,6 @@
 require('dotenv').config();
 const EventEmitter = require('events');
 const redis = require('redis');
-/*const bluebird = require('bluebird');
-
-bluebird.promisifyAll(redis.RedisClient.prototype);
-bluebird.promisifyAll(redis.Multi.prototype);
-*/
-
 
 const subscriber = redis.createClient({
   host: process.env.REDIS_HOST,
