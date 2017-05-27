@@ -159,6 +159,12 @@ const publishAnalyzedTweets = (tenantId, userId, analyzedTweets) => {
   return client.publishAsync(`tenants:${tenantId}:users:${userId}->analyzedTweets`, str);
 };
 
+const flushDb = () => {
+  return client.flushdbAsync()
+          .then(res => true)
+          .catch(err => false);
+};
+
 module.exports = {
   trackKeyword,
   untrackKeyword,
@@ -174,5 +180,6 @@ module.exports = {
   getTenantIds,
   getUserIds,
   getUserKeywords,
-  getUserIdsByKeyword
+  getUserIdsByKeyword,
+  flushDb
 };

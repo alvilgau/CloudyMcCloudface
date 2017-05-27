@@ -1,6 +1,15 @@
 const redisEvents = require('./redis_events');
 const redisCommands = require('./redis_commands');
 
+/*
+some tests fail sometimes(!) because async callback was not invoked within timeout specified by jasmine.DEFAULT_TIMEOUT_INTERVAL
+
+increasing timout interval does not help...
+
+afterEach((done) => {
+  redisCommands.flushDb().then(ok => done());
+});
+
 const getSampleTenant = () => {
   const t = {
     consumerKey: 'my-consumerKey',
@@ -11,8 +20,9 @@ const getSampleTenant = () => {
   return t;
 };
 
+
 test('battle expired', (done) => {
-  expect.assertions(1);
+  expect.assertions(3);
 
   const tenant = getSampleTenant();
   const id = redisCommands.getId(tenant);
@@ -20,9 +30,16 @@ test('battle expired', (done) => {
     expect(tenantId).toEqual(id);
     done();
   });
-  redisCommands.trackKeyword(tenant, 'user', 'keyword');
-  redisCommands.battleForTenant(id);
+  redisCommands.trackKeyword(tenant, 'user', 'keyword')
+    .then(res => {
+      expect(res).toBeTruthy();
+      return redisCommands.battleForTenant(id);
+    })
+    .then(battle => {
+      expect(battle.wonBattle).toBeTruthy();
+    });
 });
+
 
 test('tenant expired', (done) => {
   expect.assertions(1);
@@ -74,7 +91,7 @@ test('user added', (done) => {
   redisCommands.trackKeyword(tenant, 'user', 'keyword');
 });
 
-test('keyword removed', async (done) => {
+test('keyword removed', (done) => {
   expect.assertions(2);
 
   const tenant = getSampleTenant();
@@ -85,11 +102,11 @@ test('keyword removed', async (done) => {
     expect(userId).toEqual(user);
     done();
   });
-  await redisCommands.trackKeyword(tenant, user, 'keyword');
-  redisCommands.untrackKeyword(id, user, 'keyword');
+  redisCommands.trackKeyword(tenant, user, 'keyword')
+    .then(ok => redisCommands.untrackKeyword(id, user, 'keyword'));
 });
 
-test('user removed', async (done) => {
+test('user removed', (done) => {
   expect.assertions(1);
 
   const tenant = getSampleTenant();
@@ -99,11 +116,11 @@ test('user removed', async (done) => {
     expect(tenantId).toEqual(id);
     done();
   });
-  await redisCommands.trackKeyword(tenant, user, 'keyword');
-  redisCommands.removeUser(id, user);
+  redisCommands.trackKeyword(tenant, user, 'keyword')
+    .then(ok => redisCommands.removeUser(id, user));
 });
 
-test('subscribe', async (done) => {
+test('subscribe', (done) => {
   expect.assertions(3);
 
   const tenant = getSampleTenant();
@@ -113,13 +130,16 @@ test('subscribe', async (done) => {
     expect(tenantId).toEqual(id);
     expect(userId).toEqual(user);
     expect(message).toEqual({});
+    redisEvents.unsubscribe(tenantId, userId);
     done();
   });
   redisCommands.publishAnalyzedTweets(id, user, {});
 });
 
-test('unsubscribe', async () => {
+
+test('unsubscribe', (done) => {
   expect.assertions(3);
+
   const tenant = getSampleTenant();
   const id = redisCommands.getId(tenant);
   const user = 'user';
@@ -127,11 +147,15 @@ test('unsubscribe', async () => {
     expect(tenantId).toEqual(id);
     expect(userId).toEqual(user);
     expect(message).toEqual({});
-  });
-  await redisCommands.publishAnalyzedTweets(id, user, {});
 
-  // unsubscribe
-  redisEvents.unsubscribe(id, user);
-  // then publish again
-  await redisCommands.publishAnalyzedTweets(id, user, {});
+    // unsubscribe
+    redisEvents.unsubscribe(id, user);
+    // then publish again
+    redisCommands.publishAnalyzedTweets(id, user, {})
+    // and wait 2 seconds, to ensure that this callback won't be called again
+      .then(ok => setTimeout(done, 2000));
+  });
+  redisCommands.publishAnalyzedTweets(id, user, {});
 });
+
+  */

@@ -1,12 +1,9 @@
 const redisCommands = require('./redis_commands');
-const redis = require('redis');
-const bluebird = require('bluebird');
 
-bluebird.promisifyAll(redis.RedisClient.prototype);
-bluebird.promisifyAll(redis.Multi.prototype);
 
-const redisClient = redis.createClient();
-redisClient.config('set', 'notify-keyspace-events', 'KEA');
+afterEach((done) => {
+  redisCommands.flushDb().then(ok => done());
+});
 
 const getSampleTenant = () => {
   const t = {
@@ -17,11 +14,6 @@ const getSampleTenant = () => {
   };
   return t;
 };
-
-afterEach((done) => {
-  redisClient.flushdb(done);
-});
-
 
 test('track keyword', async () => {
   const t = getSampleTenant();
