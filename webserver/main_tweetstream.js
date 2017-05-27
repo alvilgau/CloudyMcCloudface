@@ -8,9 +8,13 @@ const streams = {};
 
 const analyzeTweets = (keyword, tweets) => new Promise(
   (resolve) => {
-    lambda({ tweets }, null, (res) => {
-      res.keyword = keyword;      
-      resolve(res);            
+    lambda({ tweets }, null, (err, res) => {
+      if (err) {
+        reject(err);
+      } else {
+        res.keyword = keyword;
+        resolve(res);
+      }
     });
   });
 
@@ -19,10 +23,7 @@ const publishAnalyzedTweets = (tenant, analyzedTweets) => {
   const keyword = analyzedTweets.keyword;
   redisCommands.getUserIdsByKeyword(tenantId, keyword)
     .then(userIds => {
-      userIds.forEach(userId => {
-        console.log(`analyzed tweets: ${analyzedTweets}`);
-        redisCommands.publishAnalyzedTweets(tenantId, userId, analyzedTweets);
-      });
+      userIds.forEach(userId => redisCommands.publishAnalyzedTweets(tenantId, userId, analyzedTweets));
     });
 };
 

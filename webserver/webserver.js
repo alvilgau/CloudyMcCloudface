@@ -40,7 +40,7 @@ io.on('connection', (socket) => {
     tenant: defaultTenant
   };
 
-  redisEvents.subscribe(redisCommands.getId(defaultTenant), socket.id, (analyzedTweets) => {
+  redisEvents.subscribe(redisCommands.getId(defaultTenant), socket.id, (tenantId, userId, analyzedTweets) => {
     console.log(`received some analyzed tweets ${analyzedTweets.keyword}`);
     handleAnalyzedTweets(socket, analyzedTweets);
   });
@@ -51,7 +51,7 @@ io.on('connection', (socket) => {
       redisCommands.getUserKeywords(tenantId, socket.id).then(keywords => {
         redisCommands.removeUser(sockets[socket].tenant, socket.id);
         sockets[socket].tenant = tenant;
-        redisEvents.subscribe(tenantId, socket.id, (analyzedTweets) => {
+        redisEvents.subscribe(tenantId, socket.id, (tenantId, userId, analyzedTweets) => {
           handleAnalyzedTweets(socket, analyzedTweets);
         });
         keywords.forEach(keyword => redisCommands.trackKeyword(tenant, socket.id, keyword));

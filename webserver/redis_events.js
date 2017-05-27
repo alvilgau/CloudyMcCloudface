@@ -112,7 +112,8 @@ subscriber.on('message', (channel, message) => {
     const userId = splitted[2];
     const subscription = getSubscription(tenantId, userId);
     if (subscription) {
-      subscription.callback(tenantId, userId, JSON.parse(message));
+      const msg = JSON.parse(message);
+      subscription.callback(tenantId, userId, msg);
     }
   }
 });

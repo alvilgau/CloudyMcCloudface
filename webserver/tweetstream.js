@@ -15,7 +15,6 @@ const handleNewTweet = function (stream, tweet) {
            this sould match 'doghouse' instead of 'dog'.
            this can be reached when we sort the string by length.
   */
-
   const keyword = stream.keywords
                         .sort((a, b) => b.length - a.length)
                         .find(kw => tweet.toLowerCase().includes(kw));
@@ -102,7 +101,7 @@ const startPeriodicReconnect = (stream) => {
       stream.needReconnect = false;
       console.log(`reconnect to twitter: ${stream.keywords.join()}`);
       // close current stream and connect again
-      stream.connection.abort();
+      stopStream(stream);
       connectToTwitter(stream);
     } else {
       console.log('no need to reconnect');
