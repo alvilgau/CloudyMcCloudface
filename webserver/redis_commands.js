@@ -156,7 +156,7 @@ const refreshTenantExpiration = (tenantId) => {
 
 const publishAnalyzedTweets = (tenantId, userId, analyzedTweets) => {
   const str = JSON.stringify(analyzedTweets);  
-  client.publishAsync(`tenants:${tenantId}:users:${userId}->analyzedTweets`, str);
+  return client.publishAsync(`tenants:${tenantId}:users:${userId}->analyzedTweets`, str);
 };
 
 module.exports = {
