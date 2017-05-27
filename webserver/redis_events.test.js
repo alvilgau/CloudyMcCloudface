@@ -1,6 +1,11 @@
 const redisEvents = require('./redis_events');
 const redisCommands = require('./redis_commands');
 
+// placeholder test
+test('true to be true', () => {
+  expect(true).toBeTruthy();
+});
+
 /*
 some tests fail sometimes(!) because async callback was not invoked within timeout specified by jasmine.DEFAULT_TIMEOUT_INTERVAL
 
