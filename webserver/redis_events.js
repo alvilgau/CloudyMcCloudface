@@ -70,7 +70,7 @@ const lrem = (redisKey) => {
     const splitted = redisKey.split(/(?:tenants\:|\:users\:|->keywords)/);
     const tenantId = splitted[1];
     const userId = splitted[2];
-    eventEmitter.emit('keywordAdded', tenantId, userId);
+    eventEmitter.emit('keywordRemoved', tenantId, userId);
   } else if (/tenants:\S+->users/.test(redisKey)) {
     const splitted = redisKey.split(/(?:tenants\:|->users)/);
     const tenantId = splitted[1];
