@@ -53,9 +53,17 @@ aws --endpoint-url=http://localhost:4574 lambda create-function --function-name 
 ```
 
 3. Execute the Lambda function:
+
+For windows use:
 ```
 aws --endpoint-url=http://localhost:4574 lambda invoke --function-name sum --payload '{""val1"":5, ""val2"":3}' response.log
 ```
+
+For Linux/Unix use:
+```
+aws --endpoint-url=http://localhost:4574 lambda invoke --function-name sum --payload '{"val1":5, "val2":3}' response.log
+```
+
 If the call was successful, the following response will be shown on the commandline:
 ```
 {
