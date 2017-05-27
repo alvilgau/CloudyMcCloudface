@@ -1,6 +1,6 @@
 'use strict';
 
-var AWS = require('aws-sdk');
+const AWS = require('aws-sdk');
 
 AWS.config.update({
     // accessKeyId: '...',
@@ -9,10 +9,10 @@ AWS.config.update({
     region: 'eu-central-1'
 });
 
-var lambda = new AWS.Lambda();
+const lambda = new AWS.Lambda();
 
-var payload = {val1: 4, val2: 2};
-var params = {
+const payload = {val1: 4, val2: 2};
+const params = {
     FunctionName: 'sum',
     Payload: JSON.stringify(payload)
 };
