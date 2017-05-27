@@ -113,8 +113,11 @@ const onTweets = (stream, tweetHandler) => {
   stream.handleTweets = tweetHandler;
 };
 
-const setKeywords = (stream, keywords) => {  
-  stream.needReconnect = !_.isEqual(stream.keywords.sort(), keywords.sort());
+const setKeywords = (stream, keywords) => {
+  const needReconnect = !_.isEqual(stream.keywords.sort(), keywords.sort());
+  if (needReconnect) {
+    stream.needReconnect = true;
+  }
   stream.keywords = keywords;
 };
 
