@@ -10,13 +10,13 @@ npm install
 
 ## Run
 
-1. run redis
+1. configure redis
 ```bash
-redis-server
+redis-cli config set notify-keyspace-events KEA
 ```
 
-2. run scripts:
+
+2. run backend services:
 ```bash
-node tweetstream.js
-node webserver.js
+npm start
 ```
