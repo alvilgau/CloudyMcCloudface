@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/cloudy-sentiment-analysis/CloudyMcCloudface.svg?branch=master)](https://travis-ci.org/cloudy-sentiment-analysis/CloudyMcCloudface)
+
 # Twitter Sentiment Analysis
 Twitter Sentiment Analysis(TSA) is a cloud software platform for massive tweet analysis. TSA allows the user to run real-time sentiment analysis on one or multiple twitter streams. A web client then will visualize the analysis results in real time. TSA also gives the user the possibility to record the stream for a specified time.
 
