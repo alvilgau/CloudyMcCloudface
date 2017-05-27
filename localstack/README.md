@@ -18,7 +18,7 @@ git clone https://github.com/atlassian/localstack.git
 docker-compose up
 ```
 
-2.1 Configure aws:
+3. Configure aws:
 ```
 aws configure
 ```
@@ -28,7 +28,7 @@ aws configure
 - set `Default region name` to `a`
 - set `Default output format` to `json`
 
-3. Make sure that LocalStack runs correctly.
+4. Make sure that LocalStack runs correctly.
 The following command:
 ```
 aws --endpoint-url=http://localhost:4574 lambda list-functions 
