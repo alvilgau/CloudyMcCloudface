@@ -1,10 +1,7 @@
 language: node_js
 node_js:
-- node
-- '7'
+  - "node"
+  - "7"
 script: cd webserver && npm install && npm test
 services:
-- redis-server
-env:
-  global:
-    secure: ueXf1XVI4WZrFbTdOOd/duSabY1h6v5Ut6HJAGpYGdyFbfBgROSrWgD5Ht4EYTYeoHelLviXpCcg9p8frdBcfECvCkBtu/qPm0DY75+TnO1ZAxeupj/FPAaqvoQtdvAlSZ9V3H2DzKDa/GVFKEZDg1d1yBf71Xbbpv0pK6AZ7IbEwzkmcw4iDM5NreaB8y+Q1QSiwekDTXLTATOE5U1jTXTI9QRNgW0t0OyiEFY31HKTuWH19yYecpyyZs0t1zSZwNq1pcAV1laPYxsnuLqvertCQtZL9AX92GPG2qwEz/uO3CEFPbHFG8ZpfeU1HHaIOQTvzMs708LyXraYC3he4YeJ1qKO4IHcR5yu4iA5Cw++uasEFa1/KK/wMfxPw/CLgRvsY+SE2Lo/rhzksJGM/X3cMXxxlQWsk/bZOA0Q2i+w5v/nSiFiNkvv74T+LXv5crzPaEdrLwTeSvOo9VroAF8utOerSQtllQQZ5JBkJf+oxaxpqEdRGDNiijz+8HAJQrfNIrPyFCDuSTxxCqPJNjaRjRjCRyBXpphlXL/TMTWFFIu2JH37sVnYeITMdoPXrfgw5mkFJxAQNi9yIPEWiO4oV7/G14NfZg38UeVXVwamCORrDWaYJpvMC8qO8ctqkGRPldV7zwcNdYIL/FkG12oJ5IbdhB0NHeVLEXG+xog=
+  - redis-server
