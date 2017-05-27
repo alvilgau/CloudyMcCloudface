@@ -18,6 +18,16 @@ git clone https://github.com/atlassian/localstack.git
 docker-compose up
 ```
 
+2.1 Configure aws:
+```
+aws configure
+```
+
+- set `AWS Access Key ID` to `a`
+- set `AWS Secret Access Key` to `a`
+- set `Default region name` to `a`
+- set `Default output format` to `json`
+
 3. Make sure that LocalStack runs correctly.
 The following command:
 ```
