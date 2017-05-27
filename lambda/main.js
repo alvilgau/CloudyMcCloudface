@@ -64,5 +64,5 @@ const analyzeTweets = (tweets) => {
 module.exports = function(event, context, callback) {
     const tweets = event.tweets; // TODO Extract tweets from lambda event
     const analyzedTweets = analyzeTweets(tweets);
-    callback(analyzedTweets, "success");
+    callback(null, analyzedTweets); // parameters: error, result
 }
