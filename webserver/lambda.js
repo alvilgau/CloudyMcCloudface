@@ -2,6 +2,7 @@ require('dotenv').config();
 const fs = require('fs');
 const aws = require('aws-sdk');
 const admZip = require('adm-zip');
+const lambdaMain = require('../lambda/main');
 
 
 // test with console:
@@ -52,6 +53,10 @@ const createLambdaFunction = () => new Promise((resolve, reject) => {
 });
 
 const analyzeTweets = (tweets) => new Promise((resolve, reject) => {
+
+  resolve(lambdaMain.analyzeTweets(tweets));
+
+  /*
   const params = {
     FunctionName: 'analyzeTweets',
     Payload: JSON.stringify({tweets})
@@ -60,7 +65,8 @@ const analyzeTweets = (tweets) => new Promise((resolve, reject) => {
     if (err) {
       reject(err);
     } else {
-      resolve(data);
+      resolve(data.Payload);
+
       /*
       const dirtyData = JSON.parse(JSON.stringify(data));
       const dirtyPayload = dirtyData.Payload;
@@ -71,9 +77,10 @@ const analyzeTweets = (tweets) => new Promise((resolve, reject) => {
       } catch(err) {
         console.error(`could not parse payload: ${payload}`);
         reject(err);
-      }*/
+      }
     }
   });
+*/
 });
 
 module.exports = {
