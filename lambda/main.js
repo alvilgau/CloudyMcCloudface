@@ -10,6 +10,7 @@ const stats = require('stats-lite');
    }
 */
 const analyzeTweet = function (tweet) {
+  console.log(`try to analyze tweet: '${tweet}'`);
   const analysis = sentiment(tweet);
   return {
     text: tweet,
@@ -61,8 +62,8 @@ const analyzeTweets = (tweets) => {
   };
 };
 
-module.exports = function(event, context, callback) {
-    const tweets = event.tweets; // TODO Extract tweets from lambda event
-    const analyzedTweets = analyzeTweets(tweets);
-    callback(null, analyzedTweets); // parameters: error, result
-}
+exports.handler = (event, context, callback) => {
+  const tweets = event.tweets;
+  const analyzedTweets = analyzeTweets(tweets);
+  callback(null, analyzedTweets);
+};

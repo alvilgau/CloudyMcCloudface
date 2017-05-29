@@ -1,31 +1,19 @@
 require('dotenv').config();
 const redisEvents = require('./redis_events');
 const redisCommands = require('./redis_commands');
-const lambda = require('../lambda/main');
 const ts = require('./tweetstream');
+const lambda = require('./lambda');
 
-const streams = {};
-
-const analyzeTweets = (keyword, tweets) => new Promise(
-  (resolve) => {
-    lambda({ tweets }, null, (err, res) => {
-      if (err) {
-        reject(err);
-      } else {
-        res.keyword = keyword;
-        resolve(res);
-      }
-    });
+lambda.deleteLambdaFunction()
+  .then(ok => lambda.createLambdaFunction())
+  .then(ok => lambda.analyzeTweets(['hello whats up', 'fuck the system', 'correct in todays politics 😂 ']))
+  .then(console.log)
+  .catch(err => {
+    console.error(`could not create lambda function: ${err}`);
+    process.exit(1);
   });
 
-const publishAnalyzedTweets = (tenant, analyzedTweets) => {
-  const tenantId = redisCommands.getId(tenant);
-  const keyword = analyzedTweets.keyword;
-  redisCommands.getUserIdsByKeyword(tenantId, keyword)
-    .then(userIds => {
-      userIds.forEach(userId => redisCommands.publishAnalyzedTweets(tenantId, userId, analyzedTweets));
-    });
-};
+const streams = {};
 
 const handlePossibleKeywordChange = tenantId => {    
   const stream = streams[tenantId];
@@ -40,8 +28,15 @@ const createStreamForTenant = tenant => {
   const stream = ts.startStream(tenant);
   streams[tenantId] = stream;
   ts.onTweets(stream, (keyword, tweets) => {
-    analyzeTweets(keyword, tweets)
-      .then(analyzedTweets => publishAnalyzedTweets(tenant, analyzedTweets));
+    lambda.analyzeTweets(tweets)
+      .then(analyzedTweets => {
+        analyzedTweets.keyword = keyword;
+        redisCommands.getUserIdsByKeyword(tenantId, keyword)
+          .then(userIds => {
+            userIds.forEach(userId => redisCommands.publishAnalyzedTweets(tenantId, userId, analyzedTweets));
+          });
+      })
+      .catch(console.error);
   });
   handlePossibleKeywordChange(tenantId);
 };
