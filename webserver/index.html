@@ -62,11 +62,9 @@
             const keyword = $('#m').val();
             if (subscriptions.indexOf(keyword) === -1) {
                 subscriptions.push(keyword);
-                counter[keyword] = 0;
                 socket.emit('track', keyword);                
             } else {
                 subscriptions = subscriptions.filter((x) => x !== keyword);
-                counter[keyword] = 0;
                 socket.emit('untrack', keyword);                
             }            
             $('#m').val('');            
@@ -88,10 +86,14 @@
             counter += msg.tweets.length;
             document.title = "tweets: " + counter;
             msg.tweets.forEach(tweet => {                
-                const text = msg.keyword + " [" + tweet.score + "] " + tweet.text
+                const text = msg.keyword + " [" + tweet.score + "] " + tweet.text;
                 $('#messages').append($('<li>').text(text));                
-            })  
+            }) ;
             $('body').scrollTop($('ul li').last().position().top + $('ul li').last().height());                
+        });
+
+        socket.on('disconnect', () => {
+            alert('server closed connection');
         });
     });
 
