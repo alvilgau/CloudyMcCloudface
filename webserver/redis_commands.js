@@ -49,11 +49,11 @@ const removeUser = (tenantId, userId) => {
 
 const getTenantIds = () => {
   return client.scanAsync(0, 'MATCH', 'tenants->*')
-    .then((res) => {
+    .then(res => {
       const redisKeys = res[1];
       return redisKeys.map(key => key.replace('tenants->', ''));
     })
-    .catch((err) => {
+    .catch(err => {
       console.error('could not query tenant ids from redis');
       console.error(err);
       return [];
@@ -63,7 +63,7 @@ const getTenantIds = () => {
 const getUserIds = (tenantId) => {
   return client.lrangeAsync(`tenants:${tenantId}->users`, 0, -1)
             .then(ids => _.uniq(ids))
-            .catch((err) => {
+            .catch(err => {
               console.error(`could not query user ids for tenant ${tenantId} from redis`);
               console.error(err);
               return [];
@@ -96,7 +96,7 @@ const battleForTenant = (tenantId) => {
       .incr(`battle:tenants->${tenantId}`)
       .expire(`battle:tenants->${tenantId}`, expiration)
       .execAsync()
-      .then((res) => {
+      .then(res => {
         // get result from incr command
         const tenant = JSON.parse(res[0]);
         const battleCounter = res[1];

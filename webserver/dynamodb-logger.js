@@ -63,7 +63,7 @@ const handleChunk = (chunk, level) => {
   lines.filter(line => line.length !== 0)
     .forEach(line => {
       log(service, level, line)
-        .then(verbose && console.log(`[${level} - ${service}] ${line}`))
+        .then(ok => verbose && console.log(`[${level} - ${service}] ${line}`))
         .catch(err => console.error(`could not log ${level} message [${service}] ${line}`));
     });
 };
