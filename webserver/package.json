@@ -6,7 +6,7 @@
   "scripts": {
     "test": "jest",
     "lint": "eslint .",
-    "start": "redis-server & node main_tweetstream.js | node log_service.js tweetstream & node webserver.js | node log_service.js websvr"
+    "start": "redis-server & node main_tweetstream.js | node dynamodb-logger.js tweetstream & node webserver.js | node dynamodb-logger.js webserver"
   },
   "keywords": [
     "node",

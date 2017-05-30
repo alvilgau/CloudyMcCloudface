@@ -6,7 +6,6 @@ const lambda = require('./lambda');
 
 lambda.deleteLambdaFunction()
   .then(ok => lambda.createLambdaFunction())
-  .then(ok => lambda.analyzeTweets(['hello whats up', 'fuck the system', 'correct in todays politics 😂 ']))
   .then(console.log)
   .catch(err => {
     console.error(`could not create lambda function: ${err}`);
