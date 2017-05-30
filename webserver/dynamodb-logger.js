@@ -16,7 +16,7 @@ AWS.config.update({
 const dynamodb = new AWS.DynamoDB();
 const docClient = new AWS.DynamoDB.DocumentClient();
 
-const createTable = () => new Promise ((resolve, reject) => {
+const createTable = () => new Promise((resolve, reject) => {
   const params = {
     TableName : tableName,
     AttributeDefinitions: [
@@ -71,7 +71,8 @@ const handleChunk = (chunk, level) => {
 process.stdin.on('data', (chunk) => handleChunk(chunk, 'info'));
 process.stderr.on('data', (chunk) => handleChunk(chunk, 'error'));
 
+
 deleteTable()
-  .then(createTable())
-  .then(log(service, 'info', 'hello out there'))
+  .then(ok => createTable())
+  .then(ok => log(service, 'info', 'hello out there'))
   .catch(console.error);
