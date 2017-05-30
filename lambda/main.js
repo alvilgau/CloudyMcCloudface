@@ -67,3 +67,7 @@ exports.handler = (event, context, callback) => {
   const analyzedTweets = analyzeTweets(tweets);
   callback(null, analyzedTweets);
 };
+
+module.exports = {
+  analyzeTweets
+};
