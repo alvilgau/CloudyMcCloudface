@@ -19,15 +19,13 @@ const docClient = new AWS.DynamoDB.DocumentClient();
 const createTable = () => new Promise((resolve, reject) => {
   const params = {
     TableName : tableName,
-    AttributeDefinitions: [
-      { AttributeName: 'service', AttributeType: 'S' },
-      { AttributeName: 'level', AttributeType: 'S' }/*,
-      { AttributeName: 'message', AttributeType: 'S' }*/
-    ],
     KeySchema: [
       { AttributeName: 'service', KeyType: 'HASH' },
-      { AttributeName: 'level', KeyType: 'RANGE' }/*,
-      { AttributeName: 'message', KeyType: 'RANGE' }*/
+      { AttributeName: 'timestamp', KeyType: 'RANGE' }
+    ],
+    AttributeDefinitions: [
+      { AttributeName: 'service', AttributeType: 'S' },
+      { AttributeName: 'timestamp', AttributeType: 'N' }
     ],
     ProvisionedThroughput: {
       ReadCapacityUnits: 10,
@@ -35,26 +33,40 @@ const createTable = () => new Promise((resolve, reject) => {
     }
   };
   dynamodb.createTable(params, (err, data) => {
-    if (err) reject(err);
-    else     resolve(data);
+    if (data || (err && err.code === 'ResourceInUseException')) {
+      resolve(data);
+    } else {
+      reject(err);
+    }
   });
 });
 
 const deleteTable = () => new Promise((resolve, reject) => {
   dynamodb.deleteTable({TableName : tableName}, (err, data) => {
-    if (err) reject(err);
-    else     resolve(data);
+    if (data || (err && err.code === 'ResourceNotFoundException')) {
+      resolve(data);
+    } else {
+      reject(err);
+    }
   });
 });
 
 const log = (level, message) => new Promise ((resolve, reject) => {
-  const logData = {
+  const logEntry = {
     TableName: tableName,
-    Item: { service, level/*, message */}
+    Item: {
+      service,
+      timestamp: new Date().getUTCDate(),
+      message,
+      level
+    }
   };
-  docClient.put(logData, (err, data) => {
-    if (err) reject(err);
-    else     resolve(data);
+  docClient.put(logEntry, (err, data) => {
+    if (data) {
+      resolve(data);
+    } else {
+      reject(err);
+    }
   });
 });
 
@@ -62,7 +74,7 @@ const handleChunk = (chunk, level) => {
   const lines = chunk.split('\n');
   lines.filter(line => line.length !== 0)
     .forEach(line => {
-      log(service, level, line)
+      log(level, line)
         .then(ok => verbose && console.log(`[${level} - ${service}] ${line}`))
         .catch(err => console.error(`could not log ${level} message [${service}] ${line}`));
     });
@@ -71,8 +83,4 @@ const handleChunk = (chunk, level) => {
 process.stdin.on('data', (chunk) => handleChunk(chunk, 'info'));
 process.stderr.on('data', (chunk) => handleChunk(chunk, 'error'));
 
-
-deleteTable()
-  .then(ok => createTable())
-  .then(ok => log(service, 'info', 'hello out there'))
-  .catch(console.error);
+createTable().then(ok => log('info', 'mymessage')).then(console.log).catch(console.error);
