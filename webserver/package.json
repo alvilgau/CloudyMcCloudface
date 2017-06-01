@@ -29,7 +29,8 @@
     "request": "^2.81.0",
     "sentiment": "^4.0.0",
     "socket.io": "^1.7.3",
-    "stats-lite": "^2.0.4"
+    "stats-lite": "^2.0.4",
+    "uuid": "^3.0.1"
   },
   "devDependencies": {
     "eslint": "^3.19.0",

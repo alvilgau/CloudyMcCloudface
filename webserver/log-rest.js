@@ -44,8 +44,7 @@ server.route({
   path:'/logs',
   handler: (request, reply) => {
     const params = {
-      TableName: tableName,
-      ProjectionExpression: 'service, logTimestamp, info.logMessage, info.logLevel',
+      TableName: tableName
     };
     return reply(scan(params));
   }
@@ -57,20 +56,18 @@ server.route({
   handler: (request, reply) => {
     const params = {
       TableName: tableName,
-      KeyConditionExpression: '#service = :service',
+      KeyConditionExpression: '#service = :service and #logLevel = :logLevel',
       ExpressionAttributeNames: {
-        '#service': 'service'
+        '#service': 'service',
+        '#logLevel': 'logLevel'
       },
       ExpressionAttributeValues: {
-        ':service':request.params.service
+        ':service': request.params.service,
+        ':logLevel': request.query.logLevel || 'error'
       }
     };
     return reply(query(params));
   }
-});
-
-server.on('request-error', (request, err) => {
-  console.error(`${err}`);
 });
 
 server.start((err) => {
