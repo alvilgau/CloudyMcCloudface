@@ -21,11 +21,11 @@ const createTable = () => new Promise((resolve, reject) => {
     TableName : tableName,
     KeySchema: [
       { AttributeName: 'service', KeyType: 'HASH' },
-      { AttributeName: 'timestamp', KeyType: 'RANGE' }
+      { AttributeName: 'logTimestamp', KeyType: 'RANGE' }
     ],
     AttributeDefinitions: [
       { AttributeName: 'service', AttributeType: 'S' },
-      { AttributeName: 'timestamp', AttributeType: 'N' }
+      { AttributeName: 'logTimestamp', AttributeType: 'N' }
     ],
     ProvisionedThroughput: {
       ReadCapacityUnits: 10,
@@ -51,14 +51,16 @@ const deleteTable = () => new Promise((resolve, reject) => {
   });
 });
 
-const log = (level, message) => new Promise ((resolve, reject) => {
+const log = (logLevel, logMessage) => new Promise ((resolve, reject) => {
   const logEntry = {
     TableName: tableName,
     Item: {
       service,
-      timestamp: new Date().getUTCDate(),
-      message,
-      level
+      logTimestamp: new Date().getUTCDate(),
+      info: {
+        logMessage,
+        logLevel
+      }
     }
   };
   docClient.put(logEntry, (err, data) => {
@@ -70,17 +72,21 @@ const log = (level, message) => new Promise ((resolve, reject) => {
   });
 });
 
-const handleChunk = (chunk, level) => {
+const handleChunk = (chunk, logLevel) => {
   const lines = chunk.split('\n');
   lines.filter(line => line.length !== 0)
     .forEach(line => {
-      log(level, line)
-        .then(ok => verbose && console.log(`[${level} - ${service}] ${line}`))
-        .catch(err => console.error(`could not log ${level} message [${service}] ${line}`));
+      log(logLevel, line)
+        .then(ok => verbose && console.log(`[${logLevel} - ${service}] ${line}`))
+        .catch(err => console.error(`could not log ${logLevel} message [${service}] ${line}`));
     });
 };
 
 process.stdin.on('data', (chunk) => handleChunk(chunk, 'info'));
 process.stderr.on('data', (chunk) => handleChunk(chunk, 'error'));
 
-createTable().then(ok => log('info', 'mymessage')).then(console.log).catch(console.error);
+
+createTable()
+  .then(ok => log('info', 'mymessage'))
+  .then(console.log)
+  .catch(console.error);
