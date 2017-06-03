@@ -1,6 +1,7 @@
 require('dotenv').config();
 const Hapi = require('hapi');
 const AWS = require('aws-sdk');
+const _ = require('lodash');
 
 AWS.config.update({
   region: process.env.LOG_REGION,
@@ -47,6 +48,22 @@ server.route({
       TableName: tableName
     };
     return reply(scan(params));
+  }
+});
+
+server.route({
+  method: 'GET',
+  path: '/services',
+  handler: (request, reply) => {
+    const params = {
+      TableName: tableName,
+      ProjectionExpression: 'service'
+    };
+    const services = scan(params)
+      .then(res => res.Items)
+      .then(items => items.map(item => item.service))
+      .then(_.uniq);
+    return reply(services);
   }
 });
 

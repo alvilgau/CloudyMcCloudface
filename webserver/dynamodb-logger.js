@@ -1,8 +1,8 @@
 require('dotenv').config();
 const AWS = require('aws-sdk');
-const uuidV1 = require('uuid/v1'); // uuid1 is time based
+const uuidV4 = require('uuid/v4');
 
-const uuid = uuidV1();
+const uuid = uuidV4();
 const service = process.argv[2] || 'unknown-service';
 const verbose = process.argv.includes('-v') || process.argv.includes('--verbose');
 const tableName = 'logs';
