@@ -1,4 +1,5 @@
 require('dotenv').config();
+const Path = require('Path');
 const Hapi = require('hapi');
 const AWS = require('aws-sdk');
 const _ = require('lodash');
@@ -11,12 +12,19 @@ AWS.config.update({
 const docClient = new AWS.DynamoDB.DocumentClient();
 const tableName = 'logs';
 
-const server = new Hapi.Server();
+const server = new Hapi.Server({
+  connections: {
+    routes: {
+      files: {
+        relativeTo: Path.join(__dirname, '../web/log')
+      }
+    }
+  }
+});
 server.connection({
   host: 'localhost',
   port: process.env.LOG_REST_PORT
 });
-
 
 const scan = (params) => new Promise((resolve, reject) => {
   docClient.scan(params, (err, data) => {
@@ -69,22 +77,39 @@ server.route({
 
 server.route({
   method: 'GET',
-  path: '/logs/{service}',
+  path: '/services/{service}/logs',
   handler: (request, reply) => {
     const params = {
       TableName: tableName,
-      KeyConditionExpression: '#service = :service and #logLevel = :logLevel',
+      FilterExpression: '#service = :service and #timestamp between :begin and :end',
       ExpressionAttributeNames: {
         '#service': 'service',
-        '#logLevel': 'logLevel'
+        '#timestamp': 'logs.timestamp'
       },
       ExpressionAttributeValues: {
         ':service': request.params.service,
-        ':logLevel': request.query.logLevel || 'error'
+        ':begin': request.query.begin || new Date(2017, 1, 1).getTime(),
+        ':end': request.query.end || new Date().getTime()
       }
     };
-    return reply(query(params));
+    console.log(params);
+    return reply(scan(params));
   }
+});
+
+server.register(require('inert'), (err) => {
+  if (err) {
+    throw err;
+  }
+
+  server.route({
+    method: 'GET',
+    path: '/',
+    handler: (request, reply) => {
+      reply.file('log.html');
+    }
+  });
+
 });
 
 server.start((err) => {

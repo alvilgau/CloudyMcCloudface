@@ -54,7 +54,7 @@ const deleteTable = () => new Promise((resolve, reject) => {
 });
 
 const log = (logLevel, message) => new Promise ((resolve, reject) => {
-  const timestamp = new Date().toISOString();
+  const timestamp = new Date().getTime();
   const params = {
     TableName: tableName,
     Key: {
