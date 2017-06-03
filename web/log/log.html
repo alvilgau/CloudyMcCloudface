@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Logs</title>
+    <style></style>
+</head>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script>
+    $(function () {
+
+        var allServices = [];
+
+        function createCheckBoxForService(service) {
+            return $(`
+                <div>
+                    <input type='checkbox' checked='true' value='checkedServices' id='${service}'/>
+                    <label>${service}</label>
+                </div>
+            `);
+        }
+
+        function createCheckBoxesForServices() {
+            $.ajax({url: '/services', success: (services) => {
+                allServices = services;
+                services.forEach(service => {
+                    const cb = createCheckBoxForService(service);
+                    $('#services').append(cb);
+                });
+            }});
+        };
+
+        function queryLogs(service) {
+            $.ajax({url: `/services/${service}/logs`, success: (logs) => {
+                console.log(logs);
+            }});
+        };
+
+        function queryLogsForSelectedServices() {
+            allServices.filter(service => $(`#${service}`).is(":checked"))
+            .forEach(queryLogs);
+        };
+
+        setInterval(queryLogsForSelectedServices, 1000);
+
+        $(document).on('ready', createCheckBoxesForServices());
+    });
+
+</script>
+
+<body>
+    <h1>Services</h1>
+    <div id="services"></div>
+
+    <h2>Logs</h2>
+    <div id="logs"></div>
+</body>
+
+</html>
