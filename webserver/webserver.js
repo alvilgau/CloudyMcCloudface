@@ -1,12 +1,18 @@
 
 require('dotenv').config();
-const app = require('express')();
-const http = require('http').Server(app);
+const express = require('express');
+const http = require('http');
+const uuidV4 = require('uuid/v4');
+
 const WebSocket = require('ws');
 const Joi = require('joi');
 const redisCommands = require('./redis_commands');
 const redisEvents = require('./redis_events');
 const _ = require('lodash');
+
+const app = express();
+const server = http.Server(app);
+const wss = new WebSocket.Server({ server });
 
 // serve index.html
 app.get('/', (req, res) => {
@@ -34,28 +40,41 @@ const subscribeSchema = Joi.object().keys({
   keywords: Joi.array().items(Joi.string())
 });
 
-const wss = new WebSocket.Server({port: process.env.WEBSOCKET_SERVER_PORT || 3001});
+const subscribe = (ws, message) => {
+  sockets[ws].tenant = message.tenant || sockets[ws].tenant;
+  redisCommands.trackKeywords(sockets[ws].tenant, sockets[ws].userId, message.keywords);
+  redisEvents.subscribe(redisCommands.getId(sockets[ws].tenant), sockets[ws].userId, (tenantId, userId, analyzedTweets) => {
+    ws.send(analyzedTweets);
+  });
+};
+
+const unsubscribe = (ws) => {
+  const userId = sockets[ws].userId;
+  const tenantId = redisCommands.getId(sockets[ws].tenant);
+  redisEvents.unsubscribe(tenantId, userId);
+  redisCommands.removeUser(tenantId, userId)
+               .then(ok => ok && delete sockets[ws]);
+};
 
 wss.on('connection', (ws) => {
 
   sockets[ws] = {
     tenant: defaultTenant,
+    userId: uuidV4(),
     keywords: []
   };
 
   ws.on('message', (message) => {
-    console.log('message', message);
     const validation = Joi.validate(message, subscribeSchema);
     if (validation.error) {
-      //ws.send({ error: validation.error });
+      ws.send(JSON.stringify({ error: validation }));
     } else {
-      sockets[ws].tenant = message.tenant || defaultTenant;
-      redisCommands.trackKeywords(sockets[ws].tenant, ws._ultron.id, message.keywords);
+      subscribe(ws, message);
     }
   });
 
   ws.on('close', () => {
-    console.log('socket closed connection');
+    unsubscribe(ws);
   });
 
 });
@@ -113,6 +132,6 @@ setInterval(() => {
 }, process.env.KEEP_ALIVE_INTERVAL);
 
 // lets go
-http.listen(3000, () => {
+server.listen(3000, () => {
   console.log('listening on *:3000');
 });
