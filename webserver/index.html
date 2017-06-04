@@ -54,11 +54,20 @@
 <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
 <script>
     $(function () {
-        var socket = new WebSocket('ws://localhost:3000');
+
+        const keywords = [];
+        const socket = new WebSocket('ws://localhost:3000');
 
         $('form').submit(function () {
             const keyword = $('#m').val();
-            socket.send(keyword);
+            if (keywords.includes(keyword)) {
+                keywords.splice(keywords.indexOf(keyword), 1);
+            } else {
+                keywords.push(keyword);
+            }
+            const msg = { tenant: null, keywords };
+            console.log(`send message to server`, msg);
+            socket.send(JSON.stringify(msg));
             return false;
         });
 
@@ -67,7 +76,7 @@
         };
 
         socket.onmessage = (msg) => {
-            console.log(msg);
+            console.log(JSON.parse(msg.data));
             /*
             counter += msg.datatweets.length;
             document.title = "tweets: " + counter;
