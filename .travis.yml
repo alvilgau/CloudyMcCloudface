@@ -2,7 +2,11 @@ language: node_js
 node_js:
 - node
 - '7'
-script: cd webserver && npm install && npm test
+install:
+- cd webserver && npm install && cd ..
+- cd lambda && npm install && cd ..
+script:
+- cd webserver && npm test && cd ..
 services:
 - redis-server
 env:
@@ -17,3 +21,19 @@ env:
   - secure: J4lwPztbiaOGeHnyE5e7zl8ekuD8n7uZpvMPGVFHkzI2hI7ZlqNN3F2m/1np3BMJD7GjjK/MbciDdAHdJwAEtPmZk9skOboyRDKhysyx6RQg+E22lxC6UPmMTmoUaTFOrbgGAPW8eVTjd13URi1JIlsLVMyteE5m5axElFlOB+ZvbA+HgaeUHZiXk+d7VR6drbgpAOwR6dqtktrFojIHRv3ShM6ykbvIOah+dP98zfYwq9vJ5Ldutz9j0PFULD+IotuHdZf8qyqtphl1ks4kwhYJRbpKaE2q5sTvx6qzkakcZpKbKB3dZpsBb67ZXDmDdyOlsvRW7ysygkdAJllRxbpASUDnbMaqn6xSc0pYft3HIZFnLhlfARgBYlUM//ZjyfU11IHL5tjAzf+D9pfhtMBeavbNGoaVY8iBLvsNZjAvYJfVRAW8/Z/U8/Y5uIT3PNDnL1EE/sOUeBsL/sJ4AuO44LtsXNCyZQcW+IJoIGBwiRKEVCbLQ8RjKbOucJ2UAQtR2qHMVjEUM+O+fL0T9Uxlj2vcS5aNTm02nge81PArosxbIZn8TukEtHIMSwDR8yu3xPLq1ZHVMOrx8/pZkemYjy4X+whAy19kx4GufAvazWf7CNNph5GbZo/svg6xk/TG2dTLy/M3stuSIOizzqW1P6FSADXmvMI7io6XWIE=
   - secure: tQQVpmr3LF+Ro7JNW6jUEXNrEpnQ5fJUOeeYGTMeQ47HbUFDlPJfWoplN+g6J2lAMcNGU6H3o36B/C6X7JYQ2tZg/vY541RmVV2fiAs1exWGY5h3h+c5B+RGMDKDf9ITq8pSGgEpkYAbcNL5JCOGWEsNQHxxiNjXehUUV/GDW0y/+bY7Hblz+VMBf5f1BXuO8XBTa1XnGkqvn437MJBHolwQAlAc9+y4j9pByXWSY1znZhfh7gjhTjM2M0x76pjUkB5Sd/j7xSdP/l4yJ7MM8LXr3/lzUu2q4aQyuFNJDa1zWdQtd1CMtwrjA/I0f4c3Py2ou4rvRQ16JUoeawyl9O7zbTMcN35x/r/Ei98DL3yflY++Lgy6crOfvfNMZ9XqO8UnYutULC/ABuxSBNWnTSBBGsdImQ0vSAEZpItaSJ52CmWgct3gZs8N2ZzIxfRn92qjGYVzvzgly8BhMXaHd3wJD9eplCw2mOyawxU9rXqxCoKwdevLCHXqsLQYLt517lLU504YjD+ZJunxQYg94o6vgfsYDgZjfs7zJ/31DVpa0+RshPkVCXZS53gA4Ugei4t8Nx1UWMSLmV2Oo/yjJNrdSOEdACvzVXp295n6aIu96hVHiSFOrJtmJz83HmpR6SGjeU1xc6JQRydmkMqfAfc4St1TQ8NwVRleSjWXDYY=
   - secure: M+SonMzg2i05+SmqOLB/mn2S1ERJOkrT2zMewYlO0vAxr8u8QfMr653ypmB14tTE58rdg4oRb4Hq+QrjsTkz8GKT0BT2scahHXufaxc6VF+VouJrUoyHEdO93vsCcELm9Nk9QmtQmTC0skWjZupJ2R+CGp7aGeae27PPVVLEnlJ77QQuGNCNAHqeA5CCWDQvd3eq6qACdheoZpDpdH3BYRd1/lN7WHalWze+W2wLJGTbDbEPv8NykBi+R2Rlv7aRgPZwhIlOuv81xPNdupkuHNvVQe156jeYTwZAPie42/GKXy1bfNyiYcyg/y2xAnvnCsCQcxa4laQY1pcedUClD54nNG4FDMj/NP8N1qIOyvlXVchnymmK77t0TBtCRYd4uLF4x4bn68PKvg0PtD6UZeenNGwfjclOanzjQdIQTRL1x7pB9YgZqB1TnYBo+/0+EuJGL+ohuTRBWuRy1keC1Mbe6yBhaN4fRl+irz86I1Cb0QOIRoDMFVLpzfmwFI8+FtJnkEaFwhbWTkhp3RAl7QwdBSfFfEFpsOoc/dGvc9nGaif1v/Rbt+GmLqrdMRkSx5sWffr6PbNsw1lULKOu+duoMySqqWr8crcomaR5+q1+Pr8msKD9zPQR7Vgr/rHNxeCRD6ZTpuNuTsfS3RmZX1IXrBmVNA1WVYTQaOXraKg=
+before_deploy:
+  - mkdir deploy
+  - zip --quiet -r "deploy/webserver--$TRAVIS_BRANCH--$TRAVIS_BUILD_NUMBER--$(date '+%Y-%M-%d--%H-%m-%S').zip" webserver
+deploy:
+  provider: s3
+  access_key_id: AKIAJZGVKYOBXBX7DR7A
+  secret_access_key:
+    secure: BkSfJVIwlsLS5lRcifGhu3BDgQs6ytibt82m/lRR6a2ZM5scrUzAwSJ9vHXpKMb1kvKmXuMK0DqKed15DXOan9iOlH89WsR1hiseAWFkPWzsNe7yfYwlqFng5akoJDlkn63xXsptHIWkWB5q8lDmsXd/iMPAqrE0NBAc4XqdoUF6urG+Z9AZVQ0gxMw2QItAFWfH0VNv1aynmc1rOI4XEb4I21QwNFQxvpDBJhGf+s5R33olZUCdq/RJ6obHHCwRB94AAPmi7GuX/g6/cmPYTy62oIgPWlBSZlNpnrt/I6t4FJswwokGoqgR/XQ+cidJhCKJIg5ELexk2VNL9+fFwmdWHM33vHZNlTgpStPaV0y96RyMDX6p5IZuKScenm8zLRszabVDwAkt9Bk3vNaY7FsYyFCNaOvJtV2RZwcuI4kyxaAjgENHQHB24lNs8lM3ItqQnx8zucFGcaUWJkaaJ9W144tpOMromHfJGQZ00UB+PFAtUBMh4m99WhaPYBlfkSCT+NxHTuC/U6O2OjwmtzJeBYBvHmMApu7R5B/PsUd2QuAk2vU8Y8WzRsl9IqWJu80byZEtnlgX6GJW17eVcSX8PhRL3BpPip0oGj/pRdaGBKaqdr6Sw1HODho9naOhQ4gRR0++MySl+0TfArgijhBCemWOp/1Dhu+bbolikCw=
+  bucket: cloudy-sentiment-analysis
+  region: eu-central-1
+  local_dir: deploy
+  skip_cleanup: true
+  upload-dir: webserver
+  on:
+    branch: master
+    node: 7
