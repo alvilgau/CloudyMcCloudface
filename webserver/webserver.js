@@ -36,7 +36,7 @@ const tenantSchema = Joi.object().keys({
 });
 
 const subscribeSchema = Joi.object().keys({
-  tenant: tenantSchema.required().allow(null),
+  tenant: tenantSchema.allow(null),
   keywords: Joi.array().items(Joi.string())
 });
 
@@ -67,7 +67,8 @@ wss.on('connection', (ws) => {
   ws.on('message', (message) => {
     const validation = Joi.validate(message, subscribeSchema);
     if (validation.error) {
-      ws.send(JSON.stringify({ error: validation }));
+      console.error(validation.error);
+      ws.send(JSON.stringify(validation));
     } else {
       subscribe(ws, message);
     }
