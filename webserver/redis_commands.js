@@ -18,18 +18,22 @@ const getId = (tenant) => {
 };
 
 const trackKeyword = (tenant, userId, keyword) => {
+  return trackKeywords(tenant, userId, [keyword]);
+};
+
+const trackKeywords = (tenant, userId, keywords) => {
   const tenantId = getId(tenant);
-  console.log(`track keyword for tenant ${tenantId}`);
+  console.log(`track keywords for tenant ${tenantId}`);
   return client.multi()
-            .set(`tenants->${tenantId}`, JSON.stringify(tenant))
-            .expire(`tenants->${tenantId}`, expiration)
-            .lpush(`tenants:${tenantId}->users`, userId)
-            .expire(`tenants:${tenantId}->users`, expiration)
-            .lpush(`tenants:${tenantId}:users:${userId}->keywords`, keyword)
-            .expire(`tenants:${tenantId}:users:${userId}->keywords`, expiration)
-            .execAsync()
-            .then(ok => true)
-            .catch(err => false);
+    .set(`tenants->${tenantId}`, JSON.stringify(tenant))
+    .expire(`tenants->${tenantId}`, expiration)
+    .lpush(`tenants:${tenantId}->users`, userId)
+    .expire(`tenants:${tenantId}->users`, expiration)
+    .lpush(`tenants:${tenantId}:users:${userId}->keywords`, keywords)
+    .expire(`tenants:${tenantId}:users:${userId}->keywords`, expiration)
+    .execAsync()
+    .then(ok => true)
+    .catch(err => false);
 };
 
 const untrackKeyword = (tenantId, userId, keyword) => {
@@ -167,6 +171,7 @@ const flushDb = () => {
 
 module.exports = {
   trackKeyword,
+  trackKeywords,
   untrackKeyword,
   removeUser,
   publishAnalyzedTweets,
