@@ -2,10 +2,11 @@
 require('dotenv').config();
 const app = require('express')();
 const http = require('http').Server(app);
-const io = require('socket.io')(http);
+const WebSocket = require('ws');
 const Joi = require('joi');
 const redisCommands = require('./redis_commands');
 const redisEvents = require('./redis_events');
+const _ = require('lodash');
 
 // serve index.html
 app.get('/', (req, res) => {
@@ -22,12 +23,43 @@ const defaultTenant = {
 };
 
 const tenantSchema = Joi.object().keys({
-    consumerKey: Joi.string().alphanum().min(3).max(30).required(),
-    token: Joi.string().alphanum().min(3).max(30).required(),
-    consumerSecret: Joi.string().alphanum().min(3).max(30).required(),
-    tokenSecret: Joi.string().alphanum().min(3).max(30).required(),
+    consumerKey: Joi.string().min(3).max(30).required(),
+    token: Joi.string().length(50).required(),
+    consumerSecret: Joi.string().length(50).required(),
+    tokenSecret: Joi.string().min(30).max(60).required()
 });
 
+const subscribeSchema = Joi.object().keys({
+  tenant: tenantSchema.required().allow(null),
+  keywords: Joi.array().items(Joi.string())
+});
+
+const wss = new WebSocket.Server({port: process.env.WEBSOCKET_SERVER_PORT || 3001});
+
+wss.on('connection', (ws) => {
+
+  sockets[ws] = {
+    tenant: defaultTenant,
+    keywords: []
+  };
+
+  ws.on('message', (message) => {
+    console.log('message', message);
+    const validation = Joi.validate(message, subscribeSchema);
+    if (validation.error) {
+      //ws.send({ error: validation.error });
+    } else {
+      sockets[ws].tenant = message.tenant || defaultTenant;
+      redisCommands.trackKeywords(sockets[ws].tenant, ws._ultron.id, message.keywords);
+    }
+  });
+
+  ws.on('close', () => {
+    console.log('socket closed connection');
+  });
+
+});
+/*
 // new client connected
 io.on('connection', (socket) => {
 
@@ -70,6 +102,7 @@ io.on('connection', (socket) => {
                  .then(ok => ok && delete sockets[socket]);
   });
 });
+*/
 
 setInterval(() => {
   new Set(

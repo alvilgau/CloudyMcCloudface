@@ -51,13 +51,13 @@
         }
     </style>
 </head>
-<script src="/socket.io/socket.io.js"></script>
 <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
 <script>
     $(function () {
         var subscriptions = [];
-        var socket = io();
-        var counter = {};
+        var counter = 0;
+        var socket = new WebSocket('ws://localhost:3001');
+
         $('form').submit(function () {
             const keyword = $('#m').val();
             if (subscriptions.indexOf(keyword) === -1) {
@@ -79,22 +79,19 @@
             }
         });
 
-        var counter = 0;
 
-        socket.on('tweets', function (msg) {
+
+        socket.onmessage = (msg) => {
             console.log(msg);
             counter += msg.tweets.length;
             document.title = "tweets: " + counter;
-            msg.tweets.forEach(tweet => {                
+            msg.tweets.forEach(tweet => {
                 const text = msg.keyword + " [" + tweet.score + "] " + tweet.text;
-                $('#messages').append($('<li>').text(text));                
+                $('#messages').append($('<li>').text(text));
             }) ;
-            $('body').scrollTop($('ul li').last().position().top + $('ul li').last().height());                
-        });
+            $('body').scrollTop($('ul li').last().position().top + $('ul li').last().height());
+        };
 
-        socket.on('disconnect', () => {
-            alert('server closed connection');
-        });
     });
 
 </script>
