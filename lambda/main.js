@@ -21,9 +21,10 @@ const analyzeTweet = function (tweet) {
 };
 
 const analyzeTweets = (tweets) => {
-  const analyzedTweets = tweets.map(t => analyzeTweet(t));
+  const analyzedTweets = tweets.map(analyzeTweet);
   const scores = analyzedTweets.map(t => t.score);
   return {
+    analyzedTweets,
     timestamp: Date.now(),
     values: [
       { name: 'Mean', value: stats.mean(scores) },
