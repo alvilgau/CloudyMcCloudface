@@ -1,6 +1,6 @@
 require('dotenv').config();
-const redisEvents = require('./redis_events');
-const redisCommands = require('./redis_commands');
+const redisEvents = require('./../redis/redis-events');
+const redisCommands = require('./../redis/redis-commands');
 const ts = require('./tweetstream');
 const lambda = require('./lambda');
 

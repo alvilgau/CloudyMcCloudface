@@ -1,4 +1,4 @@
-const redisCommands = require('./redis_commands');
+const redisCommands = require('./redis-commands');
 
 
 afterEach((done) => {

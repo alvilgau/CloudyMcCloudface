@@ -1,6 +1,6 @@
 require('dotenv').config();
 const AWS = require('aws-sdk');
-const redisEvents = require('./redis_events');
+const redisEvents = require('./../redis/redis-events');
 
 AWS.config.update({
     endpoint: process.env.DYNAMO_DB_ENDPOINT,

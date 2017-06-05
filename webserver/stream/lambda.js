@@ -2,7 +2,7 @@ require('dotenv').config();
 const fs = require('fs');
 const aws = require('aws-sdk');
 const admZip = require('adm-zip');
-const lambdaMain = require('../lambda/main');
+const lambdaMain = require('../../lambda/main');
 
 
 // test with console:

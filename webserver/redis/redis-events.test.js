@@ -1,5 +1,5 @@
-const redisEvents = require('./redis_events');
-const redisCommands = require('./redis_commands');
+const redisEvents = require('./redis-events');
+const redisCommands = require('./redis-commands');
 
 // placeholder test
 test('true to be true', () => {

@@ -6,7 +6,7 @@
   "scripts": {
     "test": "jest",
     "lint": "eslint .",
-    "start": "redis-server & node main_tweetstream.js & node webserver.js"
+    "start": "redis-server & node stream/main-tweetstream.js & node webserver.js"
   },
   "keywords": [
     "node",

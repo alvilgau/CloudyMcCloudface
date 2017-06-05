@@ -6,8 +6,8 @@ const uuidV4 = require('uuid/v4');
 
 const WebSocket = require('ws');
 const Joi = require('joi');
-const redisCommands = require('./redis_commands');
-const redisEvents = require('./redis_events');
+const redisCommands = require('./redis/redis-commands');
+const redisEvents = require('./redis/redis-events');
 const _ = require('lodash');
 
 const app = express();
