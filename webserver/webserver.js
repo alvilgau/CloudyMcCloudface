@@ -79,50 +79,6 @@ wss.on('connection', (ws) => {
   });
 
 });
-/*
-// new client connected
-io.on('connection', (socket) => {
-
-  sockets[socket] = {
-    tenant: defaultTenant
-  };
-
-  redisEvents.subscribe(redisCommands.getId(defaultTenant), socket.id, (tenantId, userId, analyzedTweets) => {
-    socket.emit('tweets', analyzedTweets);
-  });
-
-  socket.on('tenant', (tenant) => {    
-    if (!Joi.validate(tenant, tenantSchema).error) {
-      const tenantId = redisCommands.getId(tenant);
-      redisCommands.getUserKeywords(tenantId, socket.id).then(keywords => {
-        redisCommands.removeUser(sockets[socket].tenant, socket.id);
-        sockets[socket].tenant = tenant;
-        redisEvents.subscribe(tenantId, socket.id, (tenantId, userId, analyzedTweets) => {
-          socket.emit('tweets', analyzedTweets);
-        });
-        keywords.forEach(keyword => redisCommands.trackKeyword(tenant, socket.id, keyword));
-      });
-    }    
-  });
-
-  socket.on('track', (keyword) => {    
-    redisCommands.trackKeyword(sockets[socket].tenant, socket.id, keyword);
-  });
-
-  socket.on('untrack', (keyword) => {
-    const tenantId = redisCommands.getId(sockets[socket].tenant);
-    redisCommands.untrackKeyword(tenantId, socket.id, keyword);
-  });
-
-  socket.on('disconnect', () => {
-    const userId = socket.id;
-    const tenantId = redisCommands.getId(sockets[socket].tenant);
-    redisEvents.unsubscribe(tenantId, userId);
-    redisCommands.removeUser(tenantId, userId)
-                 .then(ok => ok && delete sockets[socket]);
-  });
-});
-*/
 
 setInterval(() => {
   new Set(
