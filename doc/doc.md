@@ -24,7 +24,7 @@ In order to handle a any amount of tweets and clients concurrently TSA needs to 
 ### scaling
 - tenants -> scale up main_tweetstreams
 - users -> scale up webserver.js
-- tweets -> scale up redis
+- tweets -> scale up redis + auto scaling with AWS lambda
 
 ### multi-tenancy
 - twitter oauth credentials
