@@ -24,6 +24,7 @@ const analyzeTweets = (tweets) => {
   const analyzedTweets = tweets.map(t => analyzeTweet(t));
   const scores = analyzedTweets.map(t => t.score);
   return {
+    timestamp: Date.now(),
     values: [
       { name: 'Mean', value: stats.mean(scores) },
       { name: 'Variance', value: stats.variance(scores) },
