@@ -10,12 +10,6 @@ npm install
 
 ## Run
 
-1. configure redis
-```bash
-redis-cli config set notify-keyspace-events KEA
-```
-
-
 2. run backend services:
 ```bash
 npm start
