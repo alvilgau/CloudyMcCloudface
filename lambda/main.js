@@ -1,64 +1,37 @@
 const sentiment = require('sentiment');
 const stats = require('stats-lite');
 
-/* analyze a single tweet
- return value:
-   {
-        text: 'Cats are totally amazing',
-        score: 4,
-        comparative: 1
-   }
-*/
-const analyzeTweet = function (tweet) {
-  console.log(`try to analyze tweet: '${tweet}'`);
-  const analysis = sentiment(tweet);
-  return {
-    text: tweet,
-    score: analysis.score,
-    comparative: analysis.comparative,
-  };
+// the scores of the sentiment module are in range [-20, 20],
+// but no normal text can reach this, so we use our own limit!
+const maxScore = 8;
+
+const bound = (min, value, max) => {
+  return Math.max(min, Math.min(value, max));
 };
 
-/* analyze a bunch of tweets
-   return value:
-   {
-      tweets: [...] -> list of analyzed tweets (see analyzeTweet)
-      score: {
-        mean: 0.4,
-        median: 0,
-        variance: 0.9600000000000002,
-        standardDeviation: 0.9797958971132713,
-        percentile: 0
-      },
-      comparative: {
-        mean: 0.4,
-        median: 0,
-        variance: 0.9600000000000002,
-        standardDeviation: 0.9797958971132713,
-        percentile: 0
-      }
-   }
-*/
+const convertScoreToPercent = (score) => {
+  const boundedScore = bound(-maxScore, score, maxScore);
+  return (boundedScore / maxScore) * 100;
+};
+
+const analyzeTweet = function (tweet) {
+  const analysis = sentiment(tweet);
+  const score = convertScoreToPercent(analysis.score);
+  return { tweet, score };
+};
+
 const analyzeTweets = (tweets) => {
   const analyzedTweets = tweets.map(t => analyzeTweet(t));
   const scores = analyzedTweets.map(t => t.score);
-  const comparatives = analyzedTweets.map(t => t.comparative);
   return {
-    tweets: analyzedTweets,
-    score: {
-      mean: stats.mean(scores),
-      median: stats.median(scores),
-      variance: stats.variance(scores),
-      standardDeviation: stats.stdev(scores),
-      percentile: stats.percentile(scores, 0.85),
-    },
-    comparative: {
-      mean: stats.mean(comparatives),
-      median: stats.median(comparatives),
-      variance: stats.variance(comparatives),
-      standardDeviation: stats.stdev(comparatives),
-      percentile: stats.percentile(comparatives, 0.85),
-    },
+    values: [
+      { name: 'Mean', value: stats.mean(scores) },
+      { name: 'Variance', value: stats.variance(scores) },
+      { name: 'Standard Deviation', value: stats.stdev(scores) },
+      { name: '0.25 Quantile', value: stats.percentile(scores, 0.25) },
+      { name: 'Median', value: stats.median(scores) },
+      { name: '0.75 Quantile', value: stats.percentile(scores, 0.75) },
+    ]
   };
 };
 
@@ -69,5 +42,6 @@ exports.handler = (event, context, callback) => {
 };
 
 module.exports = {
-  analyzeTweets
+  analyzeTweets,
+  analyzeTweet
 };
