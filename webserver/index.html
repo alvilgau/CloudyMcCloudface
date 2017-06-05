@@ -55,6 +55,7 @@
 <script>
     $(function () {
 
+        var counter = 0;
         const keywords = [];
         const socket = new WebSocket('ws://localhost:3000');
 
@@ -76,16 +77,15 @@
         };
 
         socket.onmessage = (msg) => {
-            console.log(JSON.parse(msg.data));
-            /*
-            counter += msg.datatweets.length;
-            document.title = "tweets: " + counter;
-            msg.tweets.forEach(tweet => {
-                const text = msg.keyword + " [" + tweet.score + "] " + tweet.text;
+            const data = JSON.parse(msg.data);
+            counter += data.analyzedTweets.length;
+            $('#messages').append($('<li>').text(data.keyword));
+            data.values.forEach(value => {
+                const text = `    ${value.name} -> ${value.value}`;
                 $('#messages').append($('<li>').text(text));
-            }) ;
+            });
+            document.title = "tweets: " + counter;
             $('body').scrollTop($('ul li').last().position().top + $('ul li').last().height());
-            */
         };
 
     });
