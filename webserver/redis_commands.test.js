@@ -17,12 +17,30 @@ const getSampleTenant = () => {
 
 test('track keyword', async () => {
   const t = getSampleTenant();
-
+  const id = redisCommands.getId(t);
   let ok = await redisCommands.trackKeyword(t, 'user1', 'obama');
+  let keywords = await redisCommands.getUserKeywords(id, 'user1');
+  expect(ok).toBeTruthy();
+  expect(keywords.length).toBe(1);
+  expect(keywords).toContain('obama');
+
+  ok = await redisCommands.trackKeyword(t, 'user2', 'clinton');
+  keywords = await redisCommands.getUserKeywords(id, 'user2');
+  expect(ok).toBeTruthy();
+  expect(keywords.length).toBe(1);
+  expect(keywords).toContain('clinton');
+});
+
+test('track keywords', async() => {
+  const t = getSampleTenant();
+  const ok = await redisCommands.trackKeywords(t, 'user1', ['obama', 'clinton', 'trump']);
   expect(ok).toBeTruthy();
 
-  ok = await redisCommands.trackKeyword(t, 'user2', 'obama');
-  expect(ok).toBeTruthy();
+  const keywords = await redisCommands.getUserKeywords(redisCommands.getId(t), 'user1');
+  expect(keywords.length).toBe(3);
+  expect(keywords).toContain('clinton');
+  expect(keywords).toContain('obama');
+  expect(keywords).toContain('trump');
 });
 
 test('untrack keyword', async () => {
@@ -31,7 +49,9 @@ test('untrack keyword', async () => {
 
   await redisCommands.trackKeyword(t, 'user1', 'obama');
   const ok = await redisCommands.untrackKeyword(id, 'user1', 'obama');
+  const keywords = await redisCommands.getUserKeywords(id, 'user1');
   expect(ok).toBeTruthy();
+  expect(keywords.length).toBe(0);
 
 });
 
