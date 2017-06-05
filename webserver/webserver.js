@@ -37,14 +37,14 @@ const tenantSchema = Joi.object().keys({
 
 const subscribeSchema = Joi.object().keys({
   tenant: tenantSchema.allow(null),
-  keywords: Joi.array().items(Joi.string())
+  keywords: Joi.array().items(Joi.string()).required()
 });
 
 const subscribe = (ws, message) => {
   sockets[ws].tenant = message.tenant || sockets[ws].tenant;
   redisCommands.trackKeywords(sockets[ws].tenant, sockets[ws].userId, message.keywords);
   redisEvents.subscribe(redisCommands.getId(sockets[ws].tenant), sockets[ws].userId, (tenantId, userId, analyzedTweets) => {
-    ws.send(analyzedTweets);
+    ws.send(JSON.stringify(analyzedTweets));
   });
 };
 
@@ -70,7 +70,7 @@ wss.on('connection', (ws) => {
       console.error(validation.error);
       ws.send(JSON.stringify(validation));
     } else {
-      subscribe(ws, message);
+      subscribe(ws, JSON.parse(message));
     }
   });
 
