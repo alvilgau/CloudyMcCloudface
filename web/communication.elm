@@ -4,10 +4,11 @@ import Json.Decode exposing (decodeString, field, list, map2, string, nullable, 
 import Json.Encode as Encode
 import WebSocket
 import DataPoint exposing (decode, DataPoint)
+import Tenant exposing (Tenant, encode)
 
 
 type InMessage
-    = Data (List DataPoint)
+    = Data DataPoint
     | Invalid String
 
 
@@ -21,13 +22,22 @@ handleMessage msg =
             Invalid <| Debug.log "Error" e
 
 
-queryKeywordsCmd : List String -> Cmd msg
-queryKeywordsCmd keywords =
-    keywords
-        |> List.map (\k -> Encode.string k)
-        |> Encode.list
-        |> Encode.encode 0
-        |> WebSocket.send "ws://localhost:9000/socket"
+queryKeywordsCmd : Maybe Tenant -> List String -> Cmd msg
+queryKeywordsCmd tenant keywords =
+    let
+        encodedKeywords =
+            keywords
+                |> List.map (\k -> Encode.string k)
+                |> Encode.list
+
+        encodedTenant =
+            tenant
+                |> Maybe.map Tenant.encode
+                |> Maybe.withDefault Encode.null
+    in
+        Encode.object [ ( "tenant", encodedTenant ), ( "keywords", encodedKeywords ) ]
+            |> Encode.encode 0
+            |> WebSocket.send "ws://localhost:3000"
 
 
 inMessageDecoder : Json.Decode.Decoder InMessage
@@ -37,4 +47,4 @@ inMessageDecoder =
 
 dataDecoder : Json.Decode.Decoder InMessage
 dataDecoder =
-    map Data (list DataPoint.decode)
+    map Data DataPoint.decode

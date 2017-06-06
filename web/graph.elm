@@ -18,7 +18,7 @@ viewGraph keywords data =
 
 
 lineColoredWhereKeyword name colors =
-    { axis = sometimesYouDoNotHaveAnAxis
+    { axis = normalAxis
     , interpolation = Monotone Nothing [ stroke colors ]
     , toDataPoints = List.filter (\dp -> dp.keyword == name) >> List.map (\dp -> clear dp.time dp.value)
     }
@@ -60,4 +60,5 @@ dateToTimeString date =
                 |> toString
                 |> String.padLeft 2 '0'
     in
-        hour ++ ":" ++ minute ++ ":" ++ second
+        -- hour ++ ":" ++ minute ++ ":" ++
+        second
