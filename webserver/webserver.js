@@ -15,9 +15,7 @@ const server = http.Server(app);
 const wss = new WebSocket.Server({ server });
 
 // serve index.html
-app.get('/', (req, res) => {
-  res.sendFile(`${__dirname}/index.html`);
-});
+app.use(express.static('public'));
 
 const sockets = {};
 
