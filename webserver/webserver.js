@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
@@ -38,30 +37,34 @@ const subscribeSchema = Joi.object().keys({
   keywords: Joi.array().items(Joi.string()).required()
 });
 
-const subscribe = (ws, message) => {
-  sockets[ws].tenant = message.tenant || sockets[ws].tenant;
-  redisCommands.trackKeywords(sockets[ws].tenant, sockets[ws].userId, message.keywords);
-  redisEvents.subscribe(redisCommands.getId(sockets[ws].tenant), sockets[ws].userId, (tenantId, userId, analyzedTweets) => {
-    ws.send(JSON.stringify(analyzedTweets));
+const subscribe = (connection, message) => {
+  console.log(message.tenant);
+  connection.tenant = message.tenant || connection.tenant;
+  console.log(connection.tenant.consumerKey);
+  redisCommands.trackKeywords(connection.tenant, connection.userId, message.keywords);
+  redisEvents.subscribe(redisCommands.getId(connection.tenant), connection.userId, (tenantId, userId, analyzedTweets) => {
+    connection.ws.send(JSON.stringify(analyzedTweets));
   });
 };
 
-const unsubscribe = (ws) => {
-  const userId = sockets[ws].userId;
-  const tenantId = redisCommands.getId(sockets[ws].tenant);
+const unsubscribe = (connection) => {
+  const userId = connection.userId;
+  const tenantId = redisCommands.getId(connection.tenant);
   if (userId && tenantId) {
     redisEvents.unsubscribe(tenantId, userId);
     redisCommands.removeUser(tenantId, userId)
-      .then(ok => ok && delete sockets[ws]);
+      .then(ok => ok && delete sockets[userId]);
   }
 };
 
 wss.on('connection', (ws) => {
 
-  sockets[ws] = {
+  const userId = uuidV4();
+  sockets[userId] = {
     tenant: defaultTenant,
-    userId: uuidV4(),
-    keywords: []
+    userId: userId,
+    ws: ws,
+    keywords: [],
   };
 
   ws.on('message', (message) => {
@@ -70,12 +73,12 @@ wss.on('connection', (ws) => {
       console.error(validation.error);
       ws.send(JSON.stringify(validation));
     } else {
-      subscribe(ws, JSON.parse(message));
+      subscribe(sockets[userId], JSON.parse(message));
     }
   });
 
   ws.on('close', () => {
-    unsubscribe(ws);
+    unsubscribe(sockets[userId]);
   });
 
 });
