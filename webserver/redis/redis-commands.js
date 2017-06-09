@@ -29,6 +29,7 @@ const trackKeywords = (tenant, userId, keywords) => {
     .expire(`tenants->${tenantId}`, expiration)
     .lpush(`tenants:${tenantId}->users`, userId)
     .expire(`tenants:${tenantId}->users`, expiration)
+    .del(`tenants:${tenantId}:users:${userId}->keywords`)
     .lpush(`tenants:${tenantId}:users:${userId}->keywords`, keywords)
     .expire(`tenants:${tenantId}:users:${userId}->keywords`, expiration)
     .execAsync()

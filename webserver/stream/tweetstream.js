@@ -5,40 +5,29 @@ const _ = require('lodash');
 const twitterUrl = process.env.TWITTER_URL;
 
 const handleNewTweet = function (stream, tweet) {
-
-  /* determine the keyword for the tweet
-
-     note: we have to sort the keywords by length (longest first),
-           otherwise more generic words would match first!
-           imagine the tweet: "we have a new doghouse :-)"
-           as well as the keywords = ['dog', 'doghouse'].
-           this sould match 'doghouse' instead of 'dog'.
-           this can be reached when we sort the string by length.
-  */
-  const keyword = stream.keywords
-                        .sort((a, b) => b.length - a.length)
-                        .find(kw => tweet.toLowerCase().includes(kw));
-  // no keyword found
-  if (!keyword) {
-    return;
-  }
+  const keywords = stream.keywords
+                         .sort((a, b) => b.length - a.length)
+                         .filter(kw => tweet.toLowerCase().includes(kw));
   const tweets = stream.tweets;
-  // create key for keyword if not already exists
-  if (!tweets[keyword]) {
-    tweets[keyword] = [];
-  }
-  // store tweet
-  tweets[keyword].push(tweet);
+  keywords.forEach(keyword => {
+    // create key for keyword if not already exists
+    if (!tweets[keyword]) {
+      tweets[keyword] = [];
+    }
+    // store tweet
+    tweets[keyword].push(tweet);
 
-  // number of tweets to collect (per keyword) before analysis starts
-  const threshold = 10;
-  // check if exchangeChannel is set up and threshold is reached  
-  if (tweets[keyword].length >= threshold) {
-    // analyze a bunch of tweets
-    stream.handleTweets(keyword, tweets[keyword]);
-    // clear tweets for the keyword
-    tweets[keyword] = [];
-  }
+    // number of tweets to collect (per keyword) before analysis starts
+    const threshold = 10;
+    // check if exchangeChannel is set up and threshold is reached
+    if (tweets[keyword].length >= threshold) {
+      // analyze a bunch of tweets
+      console.log(`we have a new buch of tweets for ${keyword}`);
+      stream.handleTweets(keyword, tweets[keyword]);
+      // clear tweets for the keyword
+      tweets[keyword] = [];
+    }
+  });
 };
 
 const installErrorHandler = function (stream) {

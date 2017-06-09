@@ -51,7 +51,7 @@ test('tenant expired', (done) => {
 
   const tenant = getSampleTenant();
   const id = redisCommands.getId(tenant);
-  redisEvents.once('tenantExpired', (tenantId) => {
+  redisEvents.once('tenantRemoved', (tenantId) => {
     expect(tenantId).toEqual(id);
     done();
   });

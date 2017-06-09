@@ -49,9 +49,11 @@ const subscribe = (ws, message) => {
 const unsubscribe = (ws) => {
   const userId = sockets[ws].userId;
   const tenantId = redisCommands.getId(sockets[ws].tenant);
-  redisEvents.unsubscribe(tenantId, userId);
-  redisCommands.removeUser(tenantId, userId)
-               .then(ok => ok && delete sockets[ws]);
+  if (userId && tenantId) {
+    redisEvents.unsubscribe(tenantId, userId);
+    redisCommands.removeUser(tenantId, userId)
+      .then(ok => ok && delete sockets[ws]);
+  }
 };
 
 wss.on('connection', (ws) => {
