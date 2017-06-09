@@ -32,7 +32,7 @@ const expired = (redisKey) => {
   } else if (/tenants->\S+/.test(redisKey)) {
     const splitted = redisKey.split(/(?:tenants->)/);
     const tenantId = splitted[1];
-    eventEmitter.emit('tenantExpired', tenantId);
+    eventEmitter.emit('tenantRemoved', tenantId);
   }
 };
 
