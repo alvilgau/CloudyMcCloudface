@@ -41,8 +41,8 @@ const insertAnalyzedTweets = (tenantId, userId, keyword, analyzedTweets) => {
     const params = {
         TableName: tenantId,
         Key: {
-            keyword: keyword,
-            userId: userId
+            keyword,
+            userId
         },
         UpdateExpression: 'set analyzedTweets = list_append(if_not_exists(analyzedTweets, :empty_list), :tweets)',
         ExpressionAttributeValues: {
@@ -79,7 +79,7 @@ const queryTweets = (tenantId, keyword) => new Promise((resolve, reject) => {
             // todo: remove score filter
             const analyzedTweets = data.Items[0].analyzedTweets;
             const filtered = analyzedTweets.filter(tweet => {
-               return tweet.score == 2
+               return tweet.score == 0
             });
             resolve(filtered);
         }
