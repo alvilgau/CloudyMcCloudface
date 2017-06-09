@@ -8,7 +8,6 @@ server.connection({
     port: 3010
 });
 
-// Add the route
 server.route({
     method: 'GET',
     path: '/tweets',
@@ -17,7 +16,6 @@ server.route({
     }
 });
 
-// Start the server
 server.start((err) => {
     if (err) {
         throw err;
