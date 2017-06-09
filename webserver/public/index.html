@@ -12883,52 +12883,131 @@ var _user$project$DataPoint$decode = A4(
 	A2(_elm_lang$core$Json_Decode$field, 'keyword', _elm_lang$core$Json_Decode$string),
 	A2(_elm_lang$core$Json_Decode$field, 'timestamp', _elm_lang$core$Json_Decode$float),
 	A2(_elm_lang$core$Json_Decode$field, 'values', _user$project$DataPoint$mean));
+var _user$project$Tenant$set_ = F3(
+	function (field, value, tenant) {
+		var _p0 = field;
+		switch (_p0.ctor) {
+			case 'ConsumerKey':
+				return _elm_lang$core$Native_Utils.update(
+					tenant,
+					{consumerKey: value});
+			case 'Token':
+				return _elm_lang$core$Native_Utils.update(
+					tenant,
+					{token: value});
+			case 'ConsumerSecret':
+				return _elm_lang$core$Native_Utils.update(
+					tenant,
+					{consumerSecret: value});
+			default:
+				return _elm_lang$core$Native_Utils.update(
+					tenant,
+					{tokenSecret: value});
+		}
+	});
 var _user$project$Tenant$encode = function (tenant) {
-	return _elm_lang$core$Json_Encode$object(
-		{
-			ctor: '::',
-			_0: {
-				ctor: '_Tuple2',
-				_0: 'consumerKey',
-				_1: _elm_lang$core$Json_Encode$string(tenant.consumerKey)
-			},
-			_1: {
+	var _p1 = tenant;
+	if (_p1.ctor === 'Default') {
+		return _elm_lang$core$Json_Encode$null;
+	} else {
+		var _p2 = _p1._0;
+		return _elm_lang$core$Json_Encode$object(
+			{
 				ctor: '::',
 				_0: {
 					ctor: '_Tuple2',
-					_0: 'token',
-					_1: _elm_lang$core$Json_Encode$string(tenant.token)
+					_0: 'consumerKey',
+					_1: _elm_lang$core$Json_Encode$string(_p2.consumerKey)
 				},
 				_1: {
 					ctor: '::',
 					_0: {
 						ctor: '_Tuple2',
-						_0: 'consumerSecret',
-						_1: _elm_lang$core$Json_Encode$string(tenant.consumerSecret)
+						_0: 'token',
+						_1: _elm_lang$core$Json_Encode$string(_p2.token)
 					},
 					_1: {
 						ctor: '::',
 						_0: {
 							ctor: '_Tuple2',
-							_0: 'tokenSecret',
-							_1: _elm_lang$core$Json_Encode$string(tenant.tokenSecret)
+							_0: 'consumerSecret',
+							_1: _elm_lang$core$Json_Encode$string(_p2.consumerSecret)
 						},
-						_1: {ctor: '[]'}
+						_1: {
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'tokenSecret',
+								_1: _elm_lang$core$Json_Encode$string(_p2.tokenSecret)
+							},
+							_1: {ctor: '[]'}
+						}
 					}
 				}
-			}
-		});
+			});
+	}
 };
-var _user$project$Tenant$Tenant = F4(
+var _user$project$Tenant$previous = function (tenant) {
+	var _p3 = tenant;
+	if (_p3.ctor === 'Default') {
+		return _p3._0;
+	} else {
+		return _p3._0;
+	}
+};
+var _user$project$Tenant$isCustom = function (tenant) {
+	var _p4 = tenant;
+	if (_p4.ctor === 'Default') {
+		return false;
+	} else {
+		return true;
+	}
+};
+var _user$project$Tenant$get = function (tenant) {
+	var _p5 = tenant;
+	if (_p5.ctor === 'Default') {
+		return _elm_lang$core$Maybe$Nothing;
+	} else {
+		return _elm_lang$core$Maybe$Just(_p5._0);
+	}
+};
+var _user$project$Tenant$CustomTenant = F4(
 	function (a, b, c, d) {
 		return {consumerKey: a, token: b, consumerSecret: c, tokenSecret: d};
 	});
+var _user$project$Tenant$Custom = function (a) {
+	return {ctor: 'Custom', _0: a};
+};
+var _user$project$Tenant$custom = function (prev) {
+	return _user$project$Tenant$Custom(
+		_user$project$Tenant$previous(prev));
+};
+var _user$project$Tenant$set = F3(
+	function (field, value, tenant) {
+		var _p6 = tenant;
+		if (_p6.ctor === 'Default') {
+			return tenant;
+		} else {
+			return _user$project$Tenant$Custom(
+				A3(_user$project$Tenant$set_, field, value, _p6._0));
+		}
+	});
+var _user$project$Tenant$Default = function (a) {
+	return {ctor: 'Default', _0: a};
+};
+var _user$project$Tenant$init = _user$project$Tenant$Default(
+	A4(_user$project$Tenant$CustomTenant, '', '', '', ''));
+var _user$project$Tenant$default = function (prev) {
+	return _user$project$Tenant$Default(
+		_user$project$Tenant$previous(prev));
+};
+var _user$project$Tenant$TokenSecret = {ctor: 'TokenSecret'};
+var _user$project$Tenant$ConsumerSecret = {ctor: 'ConsumerSecret'};
+var _user$project$Tenant$Token = {ctor: 'Token'};
+var _user$project$Tenant$ConsumerKey = {ctor: 'ConsumerKey'};
 var _user$project$Communication$queryKeywordsCmd = F2(
 	function (tenant, keywords) {
-		var encodedTenant = A2(
-			_elm_lang$core$Maybe$withDefault,
-			_elm_lang$core$Json_Encode$null,
-			A2(_elm_lang$core$Maybe$map, _user$project$Tenant$encode, tenant));
+		var encodedTenant = _user$project$Tenant$encode(tenant);
 		var encodedKeywords = _elm_lang$core$Json_Encode$list(
 			A2(
 				_elm_lang$core$List$map,
@@ -13069,30 +13148,13 @@ var _user$project$Keyword$Keyword = F2(
 	function (a, b) {
 		return {name: a, color: b};
 	});
-var _user$project$TestData$data = {ctor: '[]'};
-var _user$project$TestData$keywords = {
-	ctor: '::',
-	_0: {name: 'trump', color: ''},
-	_1: {
-		ctor: '::',
-		_0: {name: 'qatar', color: ''},
-		_1: {
-			ctor: '::',
-			_0: {name: 'london', color: ''},
-			_1: {
-				ctor: '::',
-				_0: {name: 'bosz', color: ''},
-				_1: {ctor: '[]'}
-			}
-		}
-	}
-};
 var _user$project$Main$init = A2(
 	_elm_lang$core$Platform_Cmd_ops['!'],
 	{
 		keywords: {ctor: '[]'},
 		data: {ctor: '[]'},
-		editedKeyword: ''
+		editedKeyword: '',
+		tenant: _user$project$Tenant$init
 	},
 	{ctor: '[]'});
 var _user$project$Main$webSocketReceived = F2(
@@ -13232,7 +13294,7 @@ var _user$project$Main$queryKeywordsCmd = function (model) {
 			return _.name;
 		},
 		model.keywords);
-	return A2(_user$project$Communication$queryKeywordsCmd, _elm_lang$core$Maybe$Nothing, keywordNames);
+	return A2(_user$project$Communication$queryKeywordsCmd, model.tenant, keywordNames);
 };
 var _user$project$Main$update = F2(
 	function (msg, model) {
@@ -13304,18 +13366,114 @@ var _user$project$Main$update = F2(
 						_0: _user$project$Main$queryKeywordsCmd(model_),
 						_1: {ctor: '[]'}
 					});
-			default:
+			case 'KeywordEdited':
 				return A2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
 					_elm_lang$core$Native_Utils.update(
 						model,
 						{editedKeyword: _p1._0}),
 					{ctor: '[]'});
+			case 'TenantEdited':
+				var tenant = A3(_user$project$Tenant$set, _p1._0, _p1._1, model.tenant);
+				return A2(
+					_elm_lang$core$Platform_Cmd_ops['!'],
+					_elm_lang$core$Native_Utils.update(
+						model,
+						{tenant: tenant}),
+					{ctor: '[]'});
+			default:
+				var _p3 = _p1._0 ? {
+					ctor: '_Tuple2',
+					_0: _user$project$Tenant$custom(model.tenant),
+					_1: _elm_lang$core$Platform_Cmd$none
+				} : {
+					ctor: '_Tuple2',
+					_0: _user$project$Tenant$default(model.tenant),
+					_1: _user$project$Main$queryKeywordsCmd(model)
+				};
+				var tenant = _p3._0;
+				var cmd = _p3._1;
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{tenant: tenant}),
+					_1: cmd
+				};
 		}
 	});
-var _user$project$Main$Model = F3(
-	function (a, b, c) {
-		return {keywords: a, data: b, editedKeyword: c};
+var _user$project$Main$Model = F4(
+	function (a, b, c, d) {
+		return {keywords: a, data: b, editedKeyword: c, tenant: d};
+	});
+var _user$project$Main$TenantSelected = function (a) {
+	return {ctor: 'TenantSelected', _0: a};
+};
+var _user$project$Main$TenantEdited = F2(
+	function (a, b) {
+		return {ctor: 'TenantEdited', _0: a, _1: b};
+	});
+var _user$project$Main$labeledTenantInput = F3(
+	function (fieldId, labelString, content) {
+		var inputId = A4(
+			_elm_lang$core$Regex$replace,
+			_elm_lang$core$Regex$All,
+			_elm_lang$core$Regex$regex('[^a-z0-9]'),
+			function (_p4) {
+				return '';
+			},
+			A4(
+				_elm_lang$core$Regex$replace,
+				_elm_lang$core$Regex$All,
+				_elm_lang$core$Regex$regex(' '),
+				function (_p5) {
+					return '-';
+				},
+				_elm_lang$core$String$toLower(labelString)));
+		return {
+			ctor: '::',
+			_0: A2(
+				_elm_lang$html$Html$label,
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html_Attributes$for(inputId),
+					_1: {ctor: '[]'}
+				},
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html$text(labelString),
+					_1: {ctor: '[]'}
+				}),
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$input,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$type_('text'),
+						_1: {
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$class('u-full-width'),
+							_1: {
+								ctor: '::',
+								_0: _elm_lang$html$Html_Events$onInput(
+									_user$project$Main$TenantEdited(fieldId)),
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$id(inputId),
+									_1: {ctor: '[]'}
+								}
+							}
+						}
+					},
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html$text(content),
+						_1: {ctor: '[]'}
+					}),
+				_1: {ctor: '[]'}
+			}
+		};
 	});
 var _user$project$Main$KeywordEdited = function (a) {
 	return {ctor: 'KeywordEdited', _0: a};
@@ -13338,11 +13496,15 @@ var _user$project$Main$inputRow = function (editedKeyword) {
 						_elm_lang$html$Html$input,
 						{
 							ctor: '::',
-							_0: _elm_lang$html$Html_Attributes$placeholder('New keyword'),
+							_0: _elm_lang$html$Html_Attributes$type_('text'),
 							_1: {
 								ctor: '::',
-								_0: _elm_lang$html$Html_Events$onInput(_user$project$Main$KeywordEdited),
-								_1: {ctor: '[]'}
+								_0: _elm_lang$html$Html_Attributes$placeholder('New keyword'),
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$html$Html_Events$onInput(_user$project$Main$KeywordEdited),
+									_1: {ctor: '[]'}
+								}
 							}
 						},
 						{ctor: '[]'}),
@@ -13369,20 +13531,24 @@ var _user$project$Main$inputRow = function (editedKeyword) {
 								_elm_lang$html$Html$button,
 								{
 									ctor: '::',
-									_0: _elm_lang$html$Html_Attributes$class('button-primary'),
+									_0: _elm_lang$html$Html_Attributes$type_('submit'),
 									_1: {
 										ctor: '::',
-										_0: _elm_lang$html$Html_Attributes$style(
-											{
-												ctor: '::',
-												_0: {ctor: '_Tuple2', _0: 'padding', _1: '0 15px'},
-												_1: {ctor: '[]'}
-											}),
+										_0: _elm_lang$html$Html_Attributes$class('button-primary'),
 										_1: {
 											ctor: '::',
-											_0: _elm_lang$html$Html_Events$onClick(
-												_user$project$Main$Add(editedKeyword)),
-											_1: {ctor: '[]'}
+											_0: _elm_lang$html$Html_Attributes$style(
+												{
+													ctor: '::',
+													_0: {ctor: '_Tuple2', _0: 'padding', _1: '0 15px'},
+													_1: {ctor: '[]'}
+												}),
+											_1: {
+												ctor: '::',
+												_0: _elm_lang$html$Html_Events$onClick(
+													_user$project$Main$Add(editedKeyword)),
+												_1: {ctor: '[]'}
+											}
 										}
 									}
 								},
@@ -13486,13 +13652,126 @@ var _user$project$Main$keywordRows = F2(
 			{ctor: '[]'},
 			rows);
 	});
+var _user$project$Main$Query = {ctor: 'Query'};
+var _user$project$Main$tenantSelector = function (tenant) {
+	return {
+		ctor: '::',
+		_0: A2(
+			_elm_lang$html$Html$label,
+			{ctor: '[]'},
+			{
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$input,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$type_('checkbox'),
+						_1: {
+							ctor: '::',
+							_0: _elm_lang$html$Html_Events$onCheck(_user$project$Main$TenantSelected),
+							_1: {ctor: '[]'}
+						}
+					},
+					{ctor: '[]'}),
+				_1: {
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$span,
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$class('label-body'),
+							_1: {ctor: '[]'}
+						},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text('Use own Twitter'),
+							_1: {ctor: '[]'}
+						}),
+					_1: {ctor: '[]'}
+				}
+			}),
+		_1: {
+			ctor: '::',
+			_0: function () {
+				var _p6 = _user$project$Tenant$get(tenant);
+				if (_p6.ctor === 'Just') {
+					var _p7 = _p6._0;
+					return A2(
+						_elm_lang$html$Html$form,
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$class('u-full-width'),
+							_1: {ctor: '[]'}
+						},
+						_elm_lang$core$List$concat(
+							{
+								ctor: '::',
+								_0: A3(_user$project$Main$labeledTenantInput, _user$project$Tenant$ConsumerKey, 'Consumer Key', _p7.consumerKey),
+								_1: {
+									ctor: '::',
+									_0: A3(_user$project$Main$labeledTenantInput, _user$project$Tenant$ConsumerSecret, 'Consumer Secret', _p7.consumerSecret),
+									_1: {
+										ctor: '::',
+										_0: A3(_user$project$Main$labeledTenantInput, _user$project$Tenant$Token, 'Token', _p7.token),
+										_1: {
+											ctor: '::',
+											_0: A3(_user$project$Main$labeledTenantInput, _user$project$Tenant$TokenSecret, 'Token Secret', _p7.tokenSecret),
+											_1: {
+												ctor: '::',
+												_0: {
+													ctor: '::',
+													_0: A2(
+														_elm_lang$html$Html$button,
+														{
+															ctor: '::',
+															_0: _elm_lang$html$Html_Attributes$class('button-primary'),
+															_1: {
+																ctor: '::',
+																_0: _elm_lang$html$Html_Attributes$type_('button'),
+																_1: {
+																	ctor: '::',
+																	_0: _elm_lang$html$Html_Events$onClick(_user$project$Main$Query),
+																	_1: {ctor: '[]'}
+																}
+															}
+														},
+														{
+															ctor: '::',
+															_0: _elm_lang$html$Html$text('Reconnect'),
+															_1: {ctor: '[]'}
+														}),
+													_1: {ctor: '[]'}
+												},
+												_1: {ctor: '[]'}
+											}
+										}
+									}
+								}
+							}));
+				} else {
+					return _elm_lang$html$Html$text('');
+				}
+			}(),
+			_1: {ctor: '[]'}
+		}
+	};
+};
 var _user$project$Main$view = function (model) {
 	return A2(
 		_elm_lang$html$Html$div,
 		{
 			ctor: '::',
 			_0: _elm_lang$html$Html_Attributes$class('container'),
-			_1: {ctor: '[]'}
+			_1: {
+				ctor: '::',
+				_0: _elm_lang$html$Html_Attributes$style(
+					{
+						ctor: '::',
+						_0: {ctor: '_Tuple2', _0: 'max-width', _1: '1440px'},
+						_1: {ctor: '[]'}
+					}),
+				_1: {ctor: '[]'}
+			}
 		},
 		{
 			ctor: '::',
@@ -13553,47 +13832,67 @@ var _user$project$Main$view = function (model) {
 							},
 							{
 								ctor: '::',
-								_0: A2(_user$project$Graph$viewGraph, model.keywords, model.data),
-								_1: {ctor: '[]'}
-							}),
-						_1: {
-							ctor: '::',
-							_0: A2(
-								_elm_lang$html$Html$div,
-								{
-									ctor: '::',
-									_0: _elm_lang$html$Html_Attributes$class('row'),
-									_1: {ctor: '[]'}
-								},
-								{
+								_0: A2(
+									_elm_lang$html$Html$div,
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$class('eight columns'),
+										_1: {ctor: '[]'}
+									},
+									{
+										ctor: '::',
+										_0: A2(_user$project$Graph$viewGraph, model.keywords, model.data),
+										_1: {ctor: '[]'}
+									}),
+								_1: {
 									ctor: '::',
 									_0: A2(
-										_elm_lang$html$Html$table,
+										_elm_lang$html$Html$div,
 										{
 											ctor: '::',
-											_0: _elm_lang$html$Html_Attributes$style(
-												{ctor: '[]'}),
+											_0: _elm_lang$html$Html_Attributes$class('four columns'),
 											_1: {ctor: '[]'}
 										},
-										{
-											ctor: '::',
-											_0: _user$project$Main$keywordHeading,
-											_1: {
+										_user$project$Main$tenantSelector(model.tenant)),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$div,
+											{
 												ctor: '::',
-												_0: A2(_user$project$Main$keywordRows, model.keywords, model.editedKeyword),
+												_0: _elm_lang$html$Html_Attributes$class('four columns'),
 												_1: {ctor: '[]'}
-											}
-										}),
-									_1: {ctor: '[]'}
-								}),
-							_1: {ctor: '[]'}
-						}
+											},
+											{
+												ctor: '::',
+												_0: A2(
+													_elm_lang$html$Html$table,
+													{
+														ctor: '::',
+														_0: _elm_lang$html$Html_Attributes$class('u-full-width'),
+														_1: {ctor: '[]'}
+													},
+													{
+														ctor: '::',
+														_0: _user$project$Main$keywordHeading,
+														_1: {
+															ctor: '::',
+															_0: A2(_user$project$Main$keywordRows, model.keywords, model.editedKeyword),
+															_1: {ctor: '[]'}
+														}
+													}),
+												_1: {ctor: '[]'}
+											}),
+										_1: {ctor: '[]'}
+									}
+								}
+							}),
+						_1: {ctor: '[]'}
 					}
 				}
 			}
 		});
 };
-var _user$project$Main$Query = {ctor: 'Query'};
 var _user$project$Main$WSMessage = function (a) {
 	return {ctor: 'WSMessage', _0: a};
 };
