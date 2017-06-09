@@ -107,7 +107,7 @@ queryKeywordsCmd model =
         keywordNames =
             List.map .name model.keywords
     in
-        Communication.queryKeywordsCmd Nothing keywordNames
+        Communication.queryKeywordsCmd model.tenant keywordNames
 
 
 colors =
@@ -138,8 +138,8 @@ tenantSelector tenant =
             form [ class "u-full-width" ]
                 (List.concat
                     [ labeledTenantInput Tenant.ConsumerKey "Consumer Key" custom.consumerKey
-                    , labeledTenantInput Tenant.Token "Token" custom.token
                     , labeledTenantInput Tenant.ConsumerSecret "Consumer Secret" custom.consumerSecret
+                    , labeledTenantInput Tenant.Token "Token" custom.token
                     , labeledTenantInput Tenant.TokenSecret "Token Secret" custom.tokenSecret
                     , [ button [ class "button-primary", type_ "button", onClick Query ] [ text "Reconnect" ]
                       ]

@@ -22,7 +22,7 @@ handleMessage msg =
             Invalid <| Debug.log "Error" e
 
 
-queryKeywordsCmd : Maybe Tenant -> List String -> Cmd msg
+queryKeywordsCmd : Tenant -> List String -> Cmd msg
 queryKeywordsCmd tenant keywords =
     let
         encodedKeywords =
@@ -31,9 +31,7 @@ queryKeywordsCmd tenant keywords =
                 |> Encode.list
 
         encodedTenant =
-            tenant
-                |> Maybe.map Tenant.encode
-                |> Maybe.withDefault Encode.null
+            Tenant.encode tenant
     in
         Encode.object [ ( "tenant", encodedTenant ), ( "keywords", encodedKeywords ) ]
             |> Encode.encode 0
