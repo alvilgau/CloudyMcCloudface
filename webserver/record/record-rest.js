@@ -1,6 +1,6 @@
 require('dotenv').config();
 const Hapi = require('hapi');
-const AWS = require('aws-sdk');
+const dynamo = require('./dynamo-api');
 
 const server = new Hapi.Server();
 server.connection({
@@ -10,9 +10,9 @@ server.connection({
 
 server.route({
     method: 'GET',
-    path: '/tweets',
+    path: '/tweets/{tenantId}/{keyword}',
     handler: function (request, reply) {
-        return reply('Here the tweets will be shown soon...');
+        return reply(dynamo.queryTweets(request.params.tenantId, request.params.keyword));
     }
 });
 

@@ -61,7 +61,33 @@ const insertAnalyzedTweets = (tenantId, userId, keyword, analyzedTweets) => {
     });
 };
 
+
+const queryTweets = (tenantId, keyword) => new Promise((resolve, reject) => {
+    const params = {
+        TableName: tenantId,
+        KeyConditionExpression: 'keyword = :key',
+        ExpressionAttributeValues: {
+            ':key': keyword
+        }
+    };
+
+    docClient.query(params, (err, data) => {
+        if (err) {
+            console.error(`Unable to scan table: ${JSON.stringify(err, null, 2)}`);
+            reject(err);
+        } else {
+            // todo: remove score filter
+            const analyzedTweets = data.Items[0].analyzedTweets;
+            const filtered = analyzedTweets.filter(tweet => {
+               return tweet.score == 2
+            });
+            resolve(filtered);
+        }
+    });
+});
+
 module.exports = {
     createTable,
-    insertAnalyzedTweets
+    insertAnalyzedTweets,
+    queryTweets
 };
