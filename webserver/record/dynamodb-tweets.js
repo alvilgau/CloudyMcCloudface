@@ -65,8 +65,8 @@ const insertAnalyzedTweets = (tenantId, userId, keyword, analyzedTweets) => {
 
 redisEvents.on('keywordAdded', (tenantId, userId) => {
     createTable(tenantId);
-    redisEvents.subscribe(tenantId, userId, (tenantId, userId, analyzedTweets) => {
-        insertAnalyzedTweets(tenantId, userId, analyzedTweets.keyword, analyzedTweets.tweets);
+    redisEvents.subscribe(tenantId, userId, (tenantId, userId, tweets) => {
+        insertAnalyzedTweets(tenantId, userId, tweets.keyword, tweets.analyzedTweets);
     });
 });
 
