@@ -14,11 +14,9 @@ const createTable = (tenantId) => {
         TableName: tenantId,
         AttributeDefinitions: [
             {AttributeName: 'keyword', AttributeType: 'S'},
-            {AttributeName: 'userId', AttributeType: 'S'}
         ],
         KeySchema: [
             {AttributeName: 'keyword', KeyType: 'HASH'},  //Partition key
-            {AttributeName: 'userId', KeyType: 'RANGE'}  //Sort key
         ],
         ProvisionedThroughput: {
             ReadCapacityUnits: 10,
@@ -36,7 +34,7 @@ const createTable = (tenantId) => {
     });
 };
 
-const insertAnalyzedTweets = (tenantId, userId, tweets) => {
+const insertAnalyzedTweets = (tenantId, tweets) => {
     // adding timestamp to analyzed tweets
     tweets.analyzedTweets.forEach(tweet => {
         tweet.timestamp = tweets.timestamp;
@@ -47,7 +45,6 @@ const insertAnalyzedTweets = (tenantId, userId, tweets) => {
         TableName: tenantId,
         Key: {
             keyword: tweets.keyword,
-            userId
         },
         UpdateExpression: 'set analyzedTweets = list_append(if_not_exists(analyzedTweets, :empty_list), :tweets)',
         ExpressionAttributeValues: {
