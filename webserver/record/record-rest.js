@@ -43,6 +43,20 @@ server.route({
     }
 });
 
+/**
+ * Route to get the analyzed tweets for one record
+ */
+server.route({
+    method: 'GET',
+    path: '/record/{recordId}',
+    handler: function (request, reply) {
+        dynamoRecords.getRecord(request.params.recordId).then(result => {
+            // todo: fetch analyzed and return them
+            return reply(result);
+        });
+    }
+});
+
 /*
  persist tweets
  // create dynamo table for this tenant

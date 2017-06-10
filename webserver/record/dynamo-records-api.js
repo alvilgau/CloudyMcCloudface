@@ -46,7 +46,7 @@ const insertRecord = (record) => new Promise((resolve, reject) => {
         Item: record
     };
 
-    docClient.put(params, function (err, data) {
+    docClient.put(params, function (err) {
         if (err) {
             console.error('Unable to insert record. Error JSON:', JSON.stringify(err, null, 2));
             reject(err);
@@ -77,8 +77,28 @@ const scanRecords = (tenantId) => new Promise((resolve, reject) => {
     });
 });
 
+const getRecord = (recordId) => new Promise((resolve, reject) => {
+    const params = {
+        TableName: tableName,
+        KeyConditionExpression: 'id = :recordId',
+        ExpressionAttributeValues: {
+            ':recordId': recordId
+        }
+    };
+
+    docClient.query(params, (err, data) => {
+        if (err) {
+            console.error(`Unable to query table: ${JSON.stringify(err, null, 2)}`);
+            reject(err);
+        } else {
+            resolve(data);
+        }
+    });
+});
+
 module.exports = {
     createTable,
     insertRecord,
-    scanRecords
+    scanRecords,
+    getRecord
 };
