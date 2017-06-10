@@ -1,8 +1,11 @@
 require('dotenv').config();
 const Hapi = require('hapi');
-const dynamo = require('./dynamo-api');
+const dynamoRecords = require('./dynamo-records-api');
+const dynamoTweets = require('./dynamo-tweets-api');
 const redisCommands = require('../redis/redis-commands');
 const redisEvents = require('../redis/redis-events');
+
+const user = "system";
 
 const server = new Hapi.Server();
 server.connection({
@@ -10,37 +13,55 @@ server.connection({
     port: 3010
 });
 
-const defaultTenant = {
-    consumerKey: process.env.TWITTER_CONSUMER_KEY,
-    token: process.env.TWITTER_TOKEN,
-    consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
-    tokenSecret: process.env.TWITTER_TOKEN_SECRET,
-};
-
+/**
+ * Route to create a new record. Example payload:
+ * {
+     tenant: {...},
+     keywords: ['fbc', 'bvb'],
+     begin: 1497089444598,
+     end: 1497089467765
+   }
+ */
 server.route({
-    method: 'GET',
-    path: '/tweets/{tenantId}/{keyword}',
+    method: 'POST',
+    path: '/record',
     handler: function (request, reply) {
-        return reply(dynamo.queryTweets(request.params.tenantId, request.params.keyword,
-            request.query.begin, request.query.end));
+        const payload = request.payload;
+
+        console.log(request.payload);
+        return reply(request.payload);
     }
 });
 
-server.route({
-    method: 'GET',
-    path: '/record/{tenantId}/{keyword}',
-    handler: function (request, reply) {
-        redisCommands.trackKeywords(defaultTenant, 'system', 'trump');
-        redisEvents.subscribe(redisCommands.getId(defaultTenant), 'system', (tenantId, userId, analyzedTweets) => {
-            console.log(analyzedTweets);
-        });
-        return reply("ok");
-    }
-});
+/*
+ persist tweets
+ // create dynamo table for this tenant
+ dynamoTweets.createTable(tenantId);
+
+ redisCommands.trackKeywords(payload.tenant, user, payload.keywords);
+ redisEvents.subscribe(tenantId, user, (tenantId, userId, tweets) => {
+ dynamoTweets.insertAnalyzedTweets(tenantId, tweets);
+ });
+ */
+
+/*
+ server.route({
+ method: 'GET',
+ path: '/tweets/{tenantId}/{keyword}',
+ handler: function (request, reply) {
+ return reply(dynamoTweets.queryTweets(request.params.tenantId, request.params.keyword,
+ request.query.begin, request.query.end));
+ }
+ });
+ */
+
 
 server.start((err) => {
     if (err) {
         throw err;
     }
     console.log('Server running at:', server.info.uri);
+
+    // creating records table if not exist
+    dynamoRecords.createTable();
 });
