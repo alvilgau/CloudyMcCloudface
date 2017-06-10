@@ -28,8 +28,7 @@ server.route({
     handler: function (request, reply) {
         const payload = request.payload;
 
-        console.log(request.payload);
-        return reply(request.payload);
+        return reply(dynamoRecords.insertRecord(payload));
     }
 });
 

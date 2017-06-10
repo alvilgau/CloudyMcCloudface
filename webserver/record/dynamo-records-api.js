@@ -1,5 +1,6 @@
 require('dotenv').config();
 const AWS = require('aws-sdk');
+const uuidV4 = require('uuid/v4');
 
 AWS.config.update({
     // endpoint: process.env.DYNAMO_DB_ENDPOINT,
@@ -9,9 +10,11 @@ AWS.config.update({
 const dynamodb = new AWS.DynamoDB();
 const docClient = new AWS.DynamoDB.DocumentClient();
 
+const tableName = 'records';
+
 const createTable = () => {
     const params = {
-        TableName: 'records',
+        TableName: tableName,
         AttributeDefinitions: [
             {AttributeName: 'id', AttributeType: 'S'},
         ],
@@ -34,7 +37,25 @@ const createTable = () => {
     });
 };
 
+const insertRecord = (record) => new Promise((resolve, reject) => {
+    record.id = uuidV4();
+    const params = {
+        TableName: tableName,
+        Item: record
+    };
+
+    docClient.put(params, function (err, data) {
+        if (err) {
+            console.error('Unable to insert record. Error JSON:', JSON.stringify(err, null, 2));
+            reject(err);
+        } else {
+            resolve(record);
+        }
+    });
+});
+
 
 module.exports = {
-    createTable
+    createTable,
+    insertRecord
 };
