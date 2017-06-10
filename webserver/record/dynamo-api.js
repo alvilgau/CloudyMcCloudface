@@ -36,17 +36,22 @@ const createTable = (tenantId) => {
     });
 };
 
-const insertAnalyzedTweets = (tenantId, userId, keyword, analyzedTweets) => {
+const insertAnalyzedTweets = (tenantId, userId, tweets) => {
+    // adding timestamp to analyzed tweets
+    tweets.analyzedTweets.forEach(tweet => {
+        tweet.timestamp = tweets.timestamp;
+    });
+
     console.log('Inserting analyzed tweets...');
     const params = {
         TableName: tenantId,
         Key: {
-            keyword,
+            keyword: tweets.keyword,
             userId
         },
         UpdateExpression: 'set analyzedTweets = list_append(if_not_exists(analyzedTweets, :empty_list), :tweets)',
         ExpressionAttributeValues: {
-            ':tweets': analyzedTweets,
+            ':tweets': tweets.analyzedTweets,
             ':empty_list': []
         },
         ReturnValues: 'UPDATED_NEW'

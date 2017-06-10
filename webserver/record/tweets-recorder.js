@@ -4,7 +4,7 @@ const dynamo = require('./dynamo-api');
 redisEvents.on('keywordAdded', (tenantId, userId) => {
     dynamo.createTable(tenantId);
     redisEvents.subscribe(tenantId, userId, (tenantId, userId, tweets) => {
-        dynamo.insertAnalyzedTweets(tenantId, userId, tweets.keyword, tweets.analyzedTweets);
+        dynamo.insertAnalyzedTweets(tenantId, userId, tweets);
     });
 });
 
