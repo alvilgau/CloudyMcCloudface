@@ -64,7 +64,7 @@ const insertAnalyzedTweets = (tenantId, tweets) => {
 };
 
 
-const queryTweets = (tenantId, keyword) => new Promise((resolve, reject) => {
+const queryTweets = (tenantId, keyword, begin, end) => new Promise((resolve, reject) => {
     const params = {
         TableName: tenantId,
         KeyConditionExpression: 'keyword = :key',
@@ -83,13 +83,16 @@ const queryTweets = (tenantId, keyword) => new Promise((resolve, reject) => {
                 return;
             }
 
-            // todo: remove score filter
-            const analyzedTweets = data.Items[0].analyzedTweets;
-            console.log(analyzedTweets);
-            const filtered = analyzedTweets.filter(tweet => {
-                return tweet.score == 0
+            let analyzedTweets = data.Items[0].analyzedTweets;
+
+            // filter by timestamp
+            const from = begin || new Date(2017, 1, 1).getTime();
+            const until = end || new Date().getTime();
+            analyzedTweets = analyzedTweets.filter(tweet => {
+                return tweet.timestamp >= from && tweet.timestamp <= until;
             });
-            resolve(filtered);
+
+            resolve(analyzedTweets);
         }
     });
 });
