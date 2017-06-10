@@ -65,32 +65,24 @@ const insertAnalyzedTweets = (tenantId, tweets) => {
 const queryTweets = (tenantId, keyword, begin, end) => new Promise((resolve, reject) => {
     const params = {
         TableName: tenantId,
-        KeyConditionExpression: 'keyword = :key',
+        KeyConditionExpression: '#keyword = :key and #timestamp between :begin and :end',
+        ExpressionAttributeNames: {
+            '#keyword': 'keyword',
+            '#timestamp': 'timestamp'
+        },
         ExpressionAttributeValues: {
-            ':key': keyword
+            ':key': keyword,
+            ':begin': parseInt(begin) || new Date(2017, 1, 1).getTime(),
+            ':end': parseInt(end) || new Date().getTime()
         }
     };
 
     docClient.query(params, (err, data) => {
         if (err) {
-            console.error(`Unable to scan table: ${JSON.stringify(err, null, 2)}`);
+            console.error(`Unable to query table: ${JSON.stringify(err, null, 2)}`);
             reject(err);
         } else {
-            if (data.Items.length < 1) {
-                resolve('No data found');
-                return;
-            }
-
-            let analyzedTweets = data.Items[0].analyzedTweets;
-
-            // filter by timestamp
-            const from = begin || new Date(2017, 1, 1).getTime();
-            const until = end || new Date().getTime();
-            analyzedTweets = analyzedTweets.filter(tweet => {
-                return tweet.timestamp >= from && tweet.timestamp <= until;
-            });
-
-            resolve(analyzedTweets);
+            resolve(data);
         }
     });
 });
