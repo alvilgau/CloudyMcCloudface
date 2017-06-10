@@ -27,8 +27,15 @@ server.route({
     path: '/record',
     handler: function (request, reply) {
         const payload = request.payload;
-
         return reply(dynamoRecords.insertRecord(payload));
+    }
+});
+
+server.route({
+    method: 'GET',
+    path: '/record',
+    handler: function (request, reply) {
+        return reply(dynamoRecords.scanRecords(request.query.tenantId));
     }
 });
 

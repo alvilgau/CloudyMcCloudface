@@ -38,7 +38,9 @@ const createTable = () => {
 };
 
 const insertRecord = (record) => new Promise((resolve, reject) => {
+    // create record id
     record.id = uuidV4();
+
     const params = {
         TableName: tableName,
         Item: record
@@ -54,8 +56,29 @@ const insertRecord = (record) => new Promise((resolve, reject) => {
     });
 });
 
+const scanRecords = (tenantId) => new Promise((resolve, reject) => {
+    const params = {
+        TableName: tableName
+    };
+
+    if (tenantId) {
+        // filter by tenantId
+        params.FilterExpression = 'tenant.consumerKey = :tenantId';
+        params.ExpressionAttributeValues = {':tenantId': tenantId}
+    }
+
+    docClient.scan(params, (err, data) => {
+        if (err) {
+            console.error(`Unable to scan table: ${JSON.stringify(err, null, 2)}`);
+            reject(err);
+        } else {
+            resolve(data);
+        }
+    });
+});
 
 module.exports = {
     createTable,
-    insertRecord
+    insertRecord,
+    scanRecords
 };
