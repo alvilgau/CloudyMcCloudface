@@ -72,7 +72,7 @@ const scanRecords = (tenantId) => new Promise((resolve, reject) => {
             console.error(`Unable to scan table: ${JSON.stringify(err, null, 2)}`);
             reject(err);
         } else {
-            resolve(data);
+            resolve(data.Items);
         }
     });
 });
@@ -91,7 +91,7 @@ const getRecord = (recordId) => new Promise((resolve, reject) => {
             console.error(`Unable to query table: ${JSON.stringify(err, null, 2)}`);
             reject(err);
         } else {
-            resolve(data);
+            resolve(data.Items);
         }
     });
 });
