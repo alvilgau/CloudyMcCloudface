@@ -1,11 +1,11 @@
 require('dotenv').config();
 const Hapi = require('hapi');
 const dynamoRecords = require('./dynamo-records-api');
-const dynamoTweets = require('./dynamo-tweets-api');
-const redisCommands = require('../redis/redis-commands');
-const redisEvents = require('../redis/redis-events');
+// const dynamoTweets = require('./dynamo-tweets-api');
+// const redisCommands = require('../redis/redis-commands');
+// const redisEvents = require('../redis/redis-events');
 
-const user = "system";
+// const user = "system";
 
 const server = new Hapi.Server();
 server.connection({
