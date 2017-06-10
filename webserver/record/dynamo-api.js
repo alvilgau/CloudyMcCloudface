@@ -81,10 +81,16 @@ const queryTweets = (tenantId, keyword) => new Promise((resolve, reject) => {
             console.error(`Unable to scan table: ${JSON.stringify(err, null, 2)}`);
             reject(err);
         } else {
+            if (data.Items.length < 1) {
+                resolve('No data found');
+                return;
+            }
+
             // todo: remove score filter
             const analyzedTweets = data.Items[0].analyzedTweets;
+            console.log(analyzedTweets);
             const filtered = analyzedTweets.filter(tweet => {
-               return tweet.score == 0
+                return tweet.score == 0
             });
             resolve(filtered);
         }
