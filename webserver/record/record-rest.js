@@ -31,6 +31,10 @@ server.route({
     }
 });
 
+/**
+ * Route to get all records or all record for a specific tenantId
+ * QueryParam: /record?tenantId={tenantId}
+ */
 server.route({
     method: 'GET',
     path: '/record',
