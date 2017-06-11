@@ -17,7 +17,7 @@ redisEvents.on('startRecord', (recordId) => {
 
             redisCommands.trackKeywords(record.tenant, record.id, record.keywords);
             redisEvents.subscribe(tenantId, record.id, (tenantId, recordId, tweets) => {
-                console.log('analyzed', tweets);
+                dynamoTweets.insertAnalyzedTweets(tenantId, recordId, tweets);
             });
         });
 });

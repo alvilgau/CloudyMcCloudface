@@ -2,7 +2,7 @@ require('dotenv').config();
 const AWS = require('aws-sdk');
 
 AWS.config.update({
-    endpoint: process.env.DYNAMO_DB_ENDPOINT,
+    // endpoint: process.env.DYNAMO_DB_ENDPOINT,
     region: process.env.DYNAMO_DB_REGION
 });
 
@@ -14,7 +14,7 @@ const createTable = (tenantId) => {
         TableName: tenantId,
         AttributeDefinitions: [
             {AttributeName: 'recordId', AttributeType: 'S'},
-            {AttributeName: 'keyword', AttributeType: 'N'},
+            {AttributeName: 'keyword', AttributeType: 'S'},
         ],
         KeySchema: [
             {AttributeName: 'recordId', KeyType: 'HASH'},  //Partition key
@@ -36,13 +36,17 @@ const createTable = (tenantId) => {
     });
 };
 
-const insertAnalyzedTweets = (tenantId, tweets) => {
+const insertAnalyzedTweets = (tenantId, recordId, tweets) => {
     console.log('Inserting analyzed tweets...');
+
+    // add timestamp to analyzed tweets
+    tweets.analyzedTweets.forEach(tweet => tweet.timestamp = tweets.timestamp);
+
     const params = {
         TableName: tenantId,
         Key: {
-            keyword: tweets.keyword,
-            timestamp: tweets.timestamp
+            recordId,
+            keyword: tweets.keyword
         },
         UpdateExpression: 'set analyzedTweets = list_append(if_not_exists(analyzedTweets, :empty_list), :tweets)',
         ExpressionAttributeValues: {
@@ -61,7 +65,7 @@ const insertAnalyzedTweets = (tenantId, tweets) => {
     });
 };
 
-
+/*
 const queryTweets = (tenantId, keyword, begin, end) => new Promise((resolve, reject) => {
     const params = {
         TableName: tenantId,
@@ -86,9 +90,9 @@ const queryTweets = (tenantId, keyword, begin, end) => new Promise((resolve, rej
         }
     });
 });
-
+*/
 module.exports = {
     createTable,
     insertAnalyzedTweets,
-    queryTweets
+    // queryTweets
 };
