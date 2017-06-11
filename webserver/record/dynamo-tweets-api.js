@@ -2,7 +2,7 @@ require('dotenv').config();
 const AWS = require('aws-sdk');
 
 AWS.config.update({
-    // endpoint: process.env.DYNAMO_DB_ENDPOINT,
+    endpoint: process.env.DYNAMO_DB_ENDPOINT,
     region: process.env.DYNAMO_DB_REGION
 });
 
@@ -65,19 +65,12 @@ const insertAnalyzedTweets = (tenantId, recordId, tweets) => {
     });
 };
 
-/*
-const queryTweets = (tenantId, keyword, begin, end) => new Promise((resolve, reject) => {
+const queryTweets = (tenantId, recordId) => new Promise((resolve, reject) => {
     const params = {
         TableName: tenantId,
-        KeyConditionExpression: '#keyword = :key and #timestamp between :begin and :end',
-        ExpressionAttributeNames: {
-            '#keyword': 'keyword',
-            '#timestamp': 'timestamp'
-        },
+        KeyConditionExpression: 'recordId = :recId',
         ExpressionAttributeValues: {
-            ':key': keyword,
-            ':begin': parseInt(begin) || new Date(2017, 1, 1).getTime(),
-            ':end': parseInt(end) || new Date().getTime()
+            ':recId': recordId
         }
     };
 
@@ -86,13 +79,13 @@ const queryTweets = (tenantId, keyword, begin, end) => new Promise((resolve, rej
             console.error(`Unable to query table: ${JSON.stringify(err, null, 2)}`);
             reject(err);
         } else {
-            resolve(data);
+            resolve(data.Items);
         }
     });
 });
-*/
+
 module.exports = {
     createTable,
     insertAnalyzedTweets,
-    // queryTweets
+    queryTweets
 };

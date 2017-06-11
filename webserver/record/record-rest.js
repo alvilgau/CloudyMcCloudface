@@ -1,6 +1,8 @@
 const Hapi = require('hapi');
-const dynamoRecords = require('./dynamo-records-api');
+const Boom = require('boom');
 const redisCommands = require('../redis/redis-commands');
+const dynamoRecords = require('./dynamo-records-api');
+const dynamoTweets = require('./dynamo-tweets-api');
 
 const server = new Hapi.Server();
 // todo: refactor host & port to .env
@@ -23,8 +25,11 @@ server.route({
     path: '/record',
     handler: function (request, reply) {
         const currentTime = new Date().getTime();
-        if(request.payload.begin < currentTime) {
-            return reply('begin must be in the future.');
+        if (request.payload.begin < currentTime) {
+            return reply(Boom.badData('begin must be in the future.'));
+        }
+        else if (request.payload.end < request.payload.begin) {
+            return reply(Boom.badData('end must be after begin.'));
         }
 
         dynamoRecords.insertRecord(request.payload).then(record => {
@@ -62,10 +67,15 @@ server.route({
     method: 'GET',
     path: '/tweets/{recordId}',
     handler: function (request, reply) {
-        dynamoRecords.getRecord(request.params.recordId).then(result => {
-            // todo: fetch analyzed tweets and return them
-            return reply(result);
-        });
+        dynamoRecords.getRecord(request.params.recordId)
+            .then(record => {
+                if (!record) {
+                    return Boom.notFound('Record not found.');
+                }
+                const tenantId = redisCommands.getId(record.tenant);
+                return dynamoTweets.queryTweets(tenantId, record.id);
+            })
+            .then(reply);
     }
 });
 
