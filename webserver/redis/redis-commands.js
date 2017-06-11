@@ -43,6 +43,18 @@ const untrackKeyword = (tenantId, userId, keyword) => {
             .catch(err => false);
 };
 
+const scheduleRecording = (recordId, begin, type) => {
+  const currentTime =  new Date();
+  const expiration = Math.floor((begin - currentTime.getTime()) / 1000);
+  console.log(`${type} record with id ${recordId} at ${currentTime.toUTCString()}`);
+  return client.multi()
+    .set(`record:${type}:${recordId}`, 1)
+    .expire(`record:${type}:${recordId}`, 2) // todo: set real calculated expiartion
+    .execAsync()
+    .then(ok => true)
+    .catch(err => false);
+};
+
 const removeUser = (tenantId, userId) => {
   return client.multi()
             .lrem(`tenants:${tenantId}->users`, 0, userId)
@@ -160,7 +172,7 @@ const refreshTenantExpiration = (tenantId) => {
 };
 
 const publishAnalyzedTweets = (tenantId, userId, analyzedTweets) => {
-  const str = JSON.stringify(analyzedTweets);  
+  const str = JSON.stringify(analyzedTweets);
   return client.publishAsync(`tenants:${tenantId}:users:${userId}->analyzedTweets`, str);
 };
 
@@ -174,6 +186,7 @@ module.exports = {
   trackKeyword,
   trackKeywords,
   untrackKeyword,
+  scheduleRecording,
   removeUser,
   publishAnalyzedTweets,
   getId,

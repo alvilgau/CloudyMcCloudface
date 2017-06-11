@@ -2,8 +2,8 @@ require('dotenv').config();
 const Hapi = require('hapi');
 const dynamoRecords = require('./dynamo-records-api');
 // const dynamoTweets = require('./dynamo-tweets-api');
-// const redisCommands = require('../redis/redis-commands');
-// const redisEvents = require('../redis/redis-events');
+const redisCommands = require('../redis/redis-commands');
+const redisEvents = require('../redis/redis-events');
 
 // const user = "system";
 
@@ -26,8 +26,16 @@ server.route({
     method: 'POST',
     path: '/record',
     handler: function (request, reply) {
-        const payload = request.payload;
-        return reply(dynamoRecords.insertRecord(payload));
+        const currentTime = new Date().getTime();
+        if(request.payload.begin < currentTime) {
+            return reply('begin must be in the future.');
+        }
+
+        dynamoRecords.insertRecord(request.payload).then(record => {
+            redisCommands.scheduleRecording(record.id, record.begin);
+            return reply(record);
+        });
+
     }
 });
 
@@ -65,17 +73,6 @@ server.route({
  redisCommands.trackKeywords(payload.tenant, user, payload.keywords);
  redisEvents.subscribe(tenantId, user, (tenantId, userId, tweets) => {
  dynamoTweets.insertAnalyzedTweets(tenantId, tweets);
- });
- */
-
-/*
- server.route({
- method: 'GET',
- path: '/tweets/{tenantId}/{keyword}',
- handler: function (request, reply) {
- return reply(dynamoTweets.queryTweets(request.params.tenantId, request.params.keyword,
- request.query.begin, request.query.end));
- }
  });
  */
 
