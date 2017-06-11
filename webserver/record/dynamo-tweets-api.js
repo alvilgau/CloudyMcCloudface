@@ -2,7 +2,7 @@ require('dotenv').config();
 const AWS = require('aws-sdk');
 
 AWS.config.update({
-    // endpoint: process.env.DYNAMO_DB_ENDPOINT,
+    endpoint: process.env.DYNAMO_DB_ENDPOINT,
     region: process.env.DYNAMO_DB_REGION
 });
 

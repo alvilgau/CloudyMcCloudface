@@ -3,7 +3,7 @@ const AWS = require('aws-sdk');
 const uuidV4 = require('uuid/v4');
 
 AWS.config.update({
-    // endpoint: process.env.DYNAMO_DB_ENDPOINT,
+    endpoint: process.env.DYNAMO_DB_ENDPOINT,
     region: process.env.DYNAMO_DB_REGION
 });
 
