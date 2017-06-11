@@ -3,6 +3,7 @@ const dynamoRecords = require('./dynamo-records-api');
 const redisCommands = require('../redis/redis-commands');
 
 const server = new Hapi.Server();
+// todo: refactor host & port to .env
 server.connection({
     host: 'localhost',
     port: 3010
@@ -27,7 +28,15 @@ server.route({
         }
 
         dynamoRecords.insertRecord(request.payload).then(record => {
-            redisCommands.scheduleRecording(record.id, record.begin, record.end);
+            // redisCommands.scheduleRecording(record.id, record.begin, record.end);
+
+            // TODO: remove dummy begin & end
+            const begin = new Date();
+            begin.setSeconds(begin.getSeconds() + 3);
+            const end = new Date();
+            end.setSeconds(end.getSeconds() + 7);
+            redisCommands.scheduleRecording(record.id, begin.getTime(), end.getTime());
+
             return reply(record);
         });
 
