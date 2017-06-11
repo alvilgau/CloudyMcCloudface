@@ -32,7 +32,7 @@ server.route({
         }
 
         dynamoRecords.insertRecord(request.payload).then(record => {
-            redisCommands.scheduleRecording(record.id, record.begin);
+            redisCommands.startRecording(record.id, record.begin);
             return reply(record);
         });
 
@@ -64,18 +64,6 @@ server.route({
         });
     }
 });
-
-/*
- persist tweets
- // create dynamo table for this tenant
- dynamoTweets.createTable(tenantId);
-
- redisCommands.trackKeywords(payload.tenant, user, payload.keywords);
- redisEvents.subscribe(tenantId, user, (tenantId, userId, tweets) => {
- dynamoTweets.insertAnalyzedTweets(tenantId, tweets);
- });
- */
-
 
 server.start((err) => {
     if (err) {

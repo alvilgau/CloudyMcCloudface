@@ -43,6 +43,14 @@ const untrackKeyword = (tenantId, userId, keyword) => {
             .catch(err => false);
 };
 
+const startRecording = (recordId, begin) => {
+    scheduleRecording(recordId, begin, 'start');
+};
+
+const stopRecording = (recordId, begin) => {
+    scheduleRecording(recordId, begin, 'stop');
+};
+
 const scheduleRecording = (recordId, begin, type) => {
   const currentTime =  new Date();
   const expiration = Math.floor((begin - currentTime.getTime()) / 1000);
@@ -186,7 +194,8 @@ module.exports = {
   trackKeyword,
   trackKeywords,
   untrackKeyword,
-  scheduleRecording,
+  startRecording,
+  stopRecording,
   removeUser,
   publishAnalyzedTweets,
   getId,
