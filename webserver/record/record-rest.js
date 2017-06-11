@@ -51,7 +51,7 @@ server.route({
     path: '/record/{recordId}',
     handler: function (request, reply) {
         dynamoRecords.getRecord(request.params.recordId).then(result => {
-            // todo: fetch analyzed and return them
+            // todo: fetch analyzed tweets and return them
             return reply(result);
         });
     }
