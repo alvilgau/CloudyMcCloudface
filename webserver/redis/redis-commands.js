@@ -54,7 +54,7 @@ const schedule = (recordId, start, type) => {
   const expiration = Math.floor((start - currentTime.getTime()) / 1000);
   return client.multi()
     .set(`record:${type}:${recordId}`, 1)
-    .expire(`record:${type}:${recordId}`, 2) // todo: set real calculated expiartion
+    .expire(`record:${type}:${recordId}`, expiration)
     .execAsync()
     .then(ok => true)
     .catch(err => false);
