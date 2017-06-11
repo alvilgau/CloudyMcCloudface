@@ -13,12 +13,12 @@ const createTable = (tenantId) => {
     const params = {
         TableName: tenantId,
         AttributeDefinitions: [
-            {AttributeName: 'keyword', AttributeType: 'S'},
-            {AttributeName: 'timestamp', AttributeType: 'N'},
+            {AttributeName: 'recordId', AttributeType: 'S'},
+            {AttributeName: 'keyword', AttributeType: 'N'},
         ],
         KeySchema: [
-            {AttributeName: 'keyword', KeyType: 'HASH'},  //Partition key
-            {AttributeName: 'timestamp', KeyType: 'RANGE'},  //Range key
+            {AttributeName: 'recordId', KeyType: 'HASH'},  //Partition key
+            {AttributeName: 'keyword', KeyType: 'RANGE'},  //Range key
         ],
         ProvisionedThroughput: {
             ReadCapacityUnits: 10,

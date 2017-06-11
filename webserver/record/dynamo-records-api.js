@@ -91,7 +91,7 @@ const getRecord = (recordId) => new Promise((resolve, reject) => {
             console.error(`Unable to query table: ${JSON.stringify(err, null, 2)}`);
             reject(err);
         } else {
-            resolve(data.Items);
+            resolve(data.Items[0]);
         }
     });
 });
