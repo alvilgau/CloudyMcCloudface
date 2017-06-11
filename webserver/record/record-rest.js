@@ -1,11 +1,6 @@
-require('dotenv').config();
 const Hapi = require('hapi');
 const dynamoRecords = require('./dynamo-records-api');
-// const dynamoTweets = require('./dynamo-tweets-api');
 const redisCommands = require('../redis/redis-commands');
-const redisEvents = require('../redis/redis-events');
-
-// const user = "system";
 
 const server = new Hapi.Server();
 server.connection({
@@ -32,7 +27,7 @@ server.route({
         }
 
         dynamoRecords.insertRecord(request.payload).then(record => {
-            redisCommands.startRecording(record.id, record.begin);
+            redisCommands.scheduleRecording(record.id, record.begin, record.end);
             return reply(record);
         });
 
@@ -56,7 +51,7 @@ server.route({
  */
 server.route({
     method: 'GET',
-    path: '/record/{recordId}',
+    path: '/tweets/{recordId}',
     handler: function (request, reply) {
         dynamoRecords.getRecord(request.params.recordId).then(result => {
             // todo: fetch analyzed tweets and return them

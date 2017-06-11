@@ -43,18 +43,15 @@ const untrackKeyword = (tenantId, userId, keyword) => {
             .catch(err => false);
 };
 
-const startRecording = (recordId, begin) => {
-    scheduleRecording(recordId, begin, 'start');
+
+const scheduleRecording = (recordId, begin, end) => {
+  schedule(recordId, begin, 'start');
+  schedule(recordId, end, 'stop');
 };
 
-const stopRecording = (recordId, begin) => {
-    scheduleRecording(recordId, begin, 'stop');
-};
-
-const scheduleRecording = (recordId, begin, type) => {
+const schedule = (recordId, start, type) => {
   const currentTime =  new Date();
-  const expiration = Math.floor((begin - currentTime.getTime()) / 1000);
-  console.log(`${type} record with id ${recordId} at ${currentTime.toUTCString()}`);
+  const expiration = Math.floor((start - currentTime.getTime()) / 1000);
   return client.multi()
     .set(`record:${type}:${recordId}`, 1)
     .expire(`record:${type}:${recordId}`, 2) // todo: set real calculated expiartion
@@ -194,8 +191,7 @@ module.exports = {
   trackKeyword,
   trackKeywords,
   untrackKeyword,
-  startRecording,
-  stopRecording,
+  scheduleRecording,
   removeUser,
   publishAnalyzedTweets,
   getId,
