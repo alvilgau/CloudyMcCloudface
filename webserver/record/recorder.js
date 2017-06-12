@@ -6,7 +6,16 @@ const dynamoTweets = require('./dynamo-tweets-api');
 
 const records = {};
 
-redisEvents.on('startRecord', (recordId) => {
+const battleForRecord = (recordId) => {
+    redisCommands.battleForRecord(recordId)
+        .then(battle => {
+            if (battle.wonBattle && battle.recId) {
+                startRecording(battle.recId);
+            }
+        });
+};
+
+const startRecording = (recordId) => {
     dynamoRecords.getRecord(recordId)
         .then(record => {
             records[record.id] = record;
@@ -20,20 +29,31 @@ redisEvents.on('startRecord', (recordId) => {
                 dynamoTweets.insertAnalyzedTweets(tenantId, recordId, tweets);
             });
         });
-});
+};
 
-redisEvents.on('stopRecord', (recordId) => {
+const stopRecording = (recordId) => {
     const record = records[recordId];
+    if (!record) {
+        return;
+    }
     const tenantId = redisCommands.getId(record.tenant);
     redisEvents.unsubscribe(tenantId, recordId);
     redisCommands.removeUser(tenantId, recordId)
         .then(ok => delete records[recordId]);
-});
+};
+
+redisEvents.on('startRecord', battleForRecord);
+redisEvents.on('recordBattleExpired', battleForRecord);
+redisEvents.on('stopRecord', stopRecording);
 
 setInterval(() => {
     new Set(
         Object.values(records)
-            .map(record => redisCommands.getId(record.tenant))
-    ).forEach(tenantId => redisCommands.refreshTenantExpiration(tenantId)
-    );
+            .map(record => {
+                return {tenantId: redisCommands.getId(record.tenant), recordId: record.id};
+            })
+    ).forEach((ret) => {
+        redisCommands.refreshTenantExpiration(ret.tenantId);
+        redisCommands.refreshRecordExpiration(ret.recordId);
+    });
 }, process.env.KEEP_ALIVE_INTERVAL);

@@ -34,6 +34,11 @@ const expired = (redisKey) => {
     const tenantId = splitted[1];
     eventEmitter.emit('tenantRemoved', tenantId);
   }
+  else if(/battle:record:\S+/.test(redisKey)) {
+    const splitted = redisKey.split('battle:record:');
+    const recordId = splitted[1];
+    eventEmitter.emit('recordBattleExpired', recordId);
+  }
   else if(/record:\S+:\S+/.test(redisKey)) {
     const splitted = redisKey.split(':');
     const type = splitted[1];

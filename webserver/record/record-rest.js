@@ -5,10 +5,9 @@ const dynamoRecords = require('./dynamo-records-api');
 const dynamoTweets = require('./dynamo-tweets-api');
 
 const server = new Hapi.Server();
-// todo: refactor host & port to .env
 server.connection({
     host: 'localhost',
-    port: 3010
+    port: process.env.RECORD_REST_PORT
 });
 
 /**
@@ -39,7 +38,7 @@ server.route({
             const begin = new Date();
             begin.setSeconds(begin.getSeconds() + 3);
             const end = new Date();
-            end.setSeconds(end.getSeconds() + 20);
+            end.setMinutes(end.getMinutes() + 1);
             redisCommands.scheduleRecording(record.id, begin.getTime(), end.getTime());
 
             return reply(record);
