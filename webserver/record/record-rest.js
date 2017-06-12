@@ -5,10 +5,9 @@ const dynamoRecords = require('./dynamo-records-api');
 const dynamoTweets = require('./dynamo-tweets-api');
 
 const server = new Hapi.Server();
-// todo: refactor host & port to .env
 server.connection({
     host: 'localhost',
-    port: 3010
+    port: process.env.RECORD_REST_PORT
 });
 
 /**
