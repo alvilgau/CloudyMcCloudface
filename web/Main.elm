@@ -12,6 +12,8 @@ import Svg
 import Svg.Attributes as SvgAttr
 import Regex exposing (regex, HowMany(..))
 import Tenant exposing (Tenant)
+import Maybe.Extra as Maybe
+import Time exposing (second, Time, inMilliseconds)
 
 
 main : Program Never Model Msg
@@ -24,6 +26,7 @@ type alias Model =
     , data : List DataPoint
     , editedKeyword : String
     , tenant : Tenant
+    , lastQuery : Time
     }
 
 
@@ -36,6 +39,7 @@ type Msg
     | KeywordEdited String
     | TenantEdited Tenant.TenantField String
     | TenantSelected Bool
+    | Tick Time
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -96,6 +100,20 @@ update msg model =
             in
                 ( { model | tenant = tenant }, cmd )
 
+        Tick time ->
+            let
+                reconnectCmd =
+                    Just (queryKeywordsCmd model)
+                        |> Maybe.filter (\_ -> List.all (\dp -> dp.time < (inMilliseconds time) - 15000) model.data)
+                        |> Maybe.toList
+                        |> Debug.log "-----\n"
+
+                data =
+                    model.data
+                        |> List.filter (\dp -> dp.time < (inMilliseconds time) - (5 * 60 * 1000))
+            in
+                { model | data = data } ! reconnectCmd
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -107,7 +125,9 @@ queryKeywordsCmd model =
         keywordNames =
             List.map .name model.keywords
     in
-        Communication.queryKeywordsCmd model.tenant keywordNames
+        Just (Communication.queryKeywordsCmd model.tenant keywordNames)
+            |> Maybe.filter (\_ -> List.length keywordNames > 0)
+            |> Maybe.withDefault Cmd.none
 
 
 colors =
@@ -221,4 +241,4 @@ webSocketReceived data model =
 
 init : ( Model, Cmd Msg )
 init =
-    { keywords = [], data = [], editedKeyword = "", tenant = Tenant.init } ! []
+    { keywords = [], data = [], editedKeyword = "", tenant = Tenant.init, lastQuery = 0 } ! []
