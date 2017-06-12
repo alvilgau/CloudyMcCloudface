@@ -117,7 +117,14 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
+    -- Sub.batch
+    --     [
     WebSocket.listen "ws://localhost:3000" WSMessage
+
+
+
+-- , Time.every second Tick
+-- ]
 
 
 queryKeywordsCmd model =
