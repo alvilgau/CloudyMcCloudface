@@ -22,7 +22,7 @@ const handleNewTweet = function (stream, tweet) {
     // check if exchangeChannel is set up and threshold is reached
     if (tweets[keyword].length >= threshold) {
       // analyze a bunch of tweets
-      console.log(`we have a new buch of tweets for ${keyword}`);
+      console.log(`we have a new bunch of tweets for ${keyword}`);
       stream.handleTweets(keyword, tweets[keyword]);
       // clear tweets for the keyword
       tweets[keyword] = [];

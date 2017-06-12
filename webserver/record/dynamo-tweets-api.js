@@ -1,6 +1,5 @@
 require('dotenv').config();
 const AWS = require('aws-sdk');
-const redisEvents = require('./../redis/redis-events');
 
 AWS.config.update({
     endpoint: process.env.DYNAMO_DB_ENDPOINT,
@@ -14,12 +13,12 @@ const createTable = (tenantId) => {
     const params = {
         TableName: tenantId,
         AttributeDefinitions: [
+            {AttributeName: 'recordId', AttributeType: 'S'},
             {AttributeName: 'keyword', AttributeType: 'S'},
-            {AttributeName: 'userId', AttributeType: 'S'}
         ],
         KeySchema: [
-            {AttributeName: 'keyword', KeyType: 'HASH'},  //Partition key
-            {AttributeName: 'userId', KeyType: 'RANGE'}  //Sort key
+            {AttributeName: 'recordId', KeyType: 'HASH'},  //Partition key
+            {AttributeName: 'keyword', KeyType: 'RANGE'},  //Range key
         ],
         ProvisionedThroughput: {
             ReadCapacityUnits: 10,
@@ -37,17 +36,21 @@ const createTable = (tenantId) => {
     });
 };
 
-const insertAnalyzedTweets = (tenantId, userId, keyword, analyzedTweets) => {
+const insertAnalyzedTweets = (tenantId, recordId, tweets) => {
     console.log('Inserting analyzed tweets...');
+
+    // add timestamp to analyzed tweets
+    tweets.analyzedTweets.forEach(tweet => tweet.timestamp = tweets.timestamp);
+
     const params = {
         TableName: tenantId,
         Key: {
-            keyword: keyword,
-            userId: userId
+            recordId,
+            keyword: tweets.keyword
         },
         UpdateExpression: 'set analyzedTweets = list_append(if_not_exists(analyzedTweets, :empty_list), :tweets)',
         ExpressionAttributeValues: {
-            ':tweets': analyzedTweets,
+            ':tweets': tweets.analyzedTweets,
             ':empty_list': []
         },
         ReturnValues: 'UPDATED_NEW'
@@ -62,20 +65,27 @@ const insertAnalyzedTweets = (tenantId, userId, keyword, analyzedTweets) => {
     });
 };
 
+const queryTweets = (tenantId, recordId) => new Promise((resolve, reject) => {
+    const params = {
+        TableName: tenantId,
+        KeyConditionExpression: 'recordId = :recId',
+        ExpressionAttributeValues: {
+            ':recId': recordId
+        }
+    };
 
-redisEvents.on('keywordAdded', (tenantId, userId) => {
-    createTable(tenantId);
-    redisEvents.subscribe(tenantId, userId, (tenantId, userId, analyzedTweets) => {
-        insertAnalyzedTweets(tenantId, userId, analyzedTweets.keyword, analyzedTweets.tweets);
+    docClient.query(params, (err, data) => {
+        if (err) {
+            console.error(`Unable to query table: ${JSON.stringify(err, null, 2)}`);
+            reject(err);
+        } else {
+            resolve(data.Items);
+        }
     });
 });
 
-/*
- redisEvents.on('keywordRemoved', (tenantId, userId) => {
- console.log('dynamo: keyword removed');
- });
-
- redisEvents.on('userRemoved', (tenantId, userId) => {
- console.log('dynamo: remove user');
- });
- */
+module.exports = {
+    createTable,
+    insertAnalyzedTweets,
+    queryTweets
+};
