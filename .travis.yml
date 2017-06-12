@@ -7,12 +7,14 @@ before_install:
 install:
 - cd webserver && npm install && cd ..
 - cd lambda && npm install && cd ..
-- cd web && elm package install -y && cd ..
 script:
 - cd webserver && npm test && cd ..
-- cd web && elm make main.elm --output=index.html && cd ..
+- cd web && elm make main.elm --output=index.html --yes && cd ..
 services:
 - redis-server
+cache:
+  directories:
+    - web/elm-stuff/build-artifacts
 env:
   global:
   - secure: F9aDYSzpeTKqaYSLuf0lsrkiUBwWhblf5Fgo9D7ks/F9elyNdbUjDkox4v/WF+LZr7wTl/BA2b1y1UCZYui7haDkTM4zDkpVt+dbCz6H2388yc/8tUOJ6giywtwY6jYEOqht61D6s0BygkFeGdc0XFyj22bqjuOBsKlvaSTyK3xMJ45F/kfyz+MeAWaAh1wceZtijljcqOkHx+ruConxdGELpmyfMAlYGXcuKlZe6XPxj/aDwkecsmlLFXV+dDzbtqbAXDvTBii20beIcArRWjSKDQAL0A4hbByAiIKGGVJKtQxMvWVel+HzrmIo1XmtlBjZCp1ANDW+YgMLyOFLVxgr496Fw8RaDk/DF2t6rXKsbCqBEllGtcbVvWY7i9dVePts8/EDEQnxI93mTwYfBRd9PqB8SY9j/iMGU+3T9s70oThy9xGwDOwveoNZnza1Ln6d8+GWwBjCWhnu4i121ubcHXg15OVVd2GLS0Y/ebnL3vPJeSHelI5mlH/saHAP9lZ5zs9wq++Cs0tBCxwibRxODneWjyUhFjAdOWnMUKk8khnmgpFItEPu56jCvikfa+I46wnCkOPdxqRV8sJX/A3li00R+IWW3kaUL8j9DC3+zX6nArpNQiWCBkA+Vxx1FD9YS8+vDDd2WNTo6vNsXpNJlygIvJ1+zxUrAfyXDsI=
