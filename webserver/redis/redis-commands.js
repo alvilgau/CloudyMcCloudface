@@ -53,7 +53,7 @@ const schedule = (recordId, start, type) => {
   const currentTime =  new Date();
   const expiration = Math.floor((start - currentTime.getTime()) / 1000);
   return client.multi()
-    .set(`record:${type}:${recordId}`, 1)
+    .set(`record:${type}:${recordId}`, recordId)
     .expire(`record:${type}:${recordId}`, expiration)
     .execAsync()
     .then(ok => true)
@@ -142,6 +142,38 @@ const battleForTenant = (tenantId) => {
   });
 };
 
+const battleForRecord = (recordId) => {
+    console.log(`start a battle for record ${recordId}`);
+    return new Promise((resolve, reject) => {
+        client.multi()
+            .get(`record:stop:${recordId}`)
+            .incr(`battle:record:${recordId}`)
+            .expire(`battle:record:${recordId}`, expiration)
+            .execAsync()
+            .then(res => {
+                // get result from incr command
+                const recId = res[0];
+                const battleCounter = res[1];
+                // only one service will receive counter == 1
+                const wonBattle = battleCounter == 1;
+                if (recId && wonBattle) {
+                    console.log(`won battle for record ${recId}`);
+                    resolve({recId, wonBattle});
+                } else {
+                    if (!recId) {
+                        // we don't need more battles -> there is no such record
+                        client.delAsync(`battle:record:${recordId}`);
+                    }
+                    // we also fulfill the promise when we lost
+                    // because everything else went fine
+                    resolve({recId, wonBattle});
+                    console.log(`lost battle for record ${recordId}`);
+                }
+            })
+            .catch(err => reject(err));
+    });
+};
+
 const getTenant = (tenantId) => {
   return client.getAsync(`tenants->${tenantId}`)
     .then(res => JSON.parse(res));
@@ -176,6 +208,10 @@ const refreshTenantExpiration = (tenantId) => {
   }));
 };
 
+const refreshRecordExpiration = (recordId) => {
+  client.expireAsync(`battle:record:${recordId}`, expiration);
+};
+
 const publishAnalyzedTweets = (tenantId, userId, analyzedTweets) => {
   const str = JSON.stringify(analyzedTweets);
   return client.publishAsync(`tenants:${tenantId}:users:${userId}->analyzedTweets`, str);
@@ -200,6 +236,8 @@ module.exports = {
   battleForFreeTenants,
   battleForTenant,
   refreshTenantBattle,
+  battleForRecord,
+  refreshRecordExpiration,
   getKeywordsByTenant,
   getTenantIds,
   getUserIds,

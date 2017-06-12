@@ -38,7 +38,7 @@ server.route({
             const begin = new Date();
             begin.setSeconds(begin.getSeconds() + 3);
             const end = new Date();
-            end.setSeconds(end.getSeconds() + 20);
+            end.setMinutes(end.getMinutes() + 1);
             redisCommands.scheduleRecording(record.id, begin.getTime(), end.getTime());
 
             return reply(record);
