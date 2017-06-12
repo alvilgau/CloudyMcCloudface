@@ -21,7 +21,7 @@ server.connection({
  */
 server.route({
     method: 'POST',
-    path: '/record',
+    path: '/records',
     handler: function (request, reply) {
         const currentTime = new Date().getTime();
         if (request.payload.begin < currentTime) {
@@ -53,7 +53,7 @@ server.route({
  */
 server.route({
     method: 'GET',
-    path: '/record',
+    path: '/records',
     handler: function (request, reply) {
         return reply(dynamoRecords.scanRecords(request.query.tenantId));
     }
@@ -64,7 +64,7 @@ server.route({
  */
 server.route({
     method: 'GET',
-    path: '/tweets/{recordId}',
+    path: '/records/{recordId}/tweets',
     handler: function (request, reply) {
         dynamoRecords.getRecord(request.params.recordId)
             .then(record => {
