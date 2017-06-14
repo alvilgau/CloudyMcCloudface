@@ -56,27 +56,6 @@ const insertRecord = (record) => new Promise((resolve, reject) => {
     });
 });
 
-const scanRecords = (tenantId) => new Promise((resolve, reject) => {
-    const params = {
-        TableName: tableName
-    };
-
-    if (tenantId) {
-        // filter by tenantId
-        params.FilterExpression = 'tenant.consumerKey = :tenantId';
-        params.ExpressionAttributeValues = {':tenantId': tenantId}
-    }
-
-    docClient.scan(params, (err, data) => {
-        if (err) {
-            console.error(`Unable to scan table: ${JSON.stringify(err, null, 2)}`);
-            reject(err);
-        } else {
-            resolve(data.Items);
-        }
-    });
-});
-
 const getRecord = (recordId) => new Promise((resolve, reject) => {
     const params = {
         TableName: tableName,
@@ -96,9 +75,33 @@ const getRecord = (recordId) => new Promise((resolve, reject) => {
     });
 });
 
+const scanRecordsByTenant = (tenantId) => new Promise((resolve, reject) => {
+    const params = {
+        TableName: tableName,
+        ProjectionExpression: 'id, keywords, #begin, #end',
+        FilterExpression: 'tenant.consumerKey = :tenantId',
+        ExpressionAttributeNames: {
+            '#begin': 'begin',
+            '#end': 'end'
+        },
+        ExpressionAttributeValues: {
+            ':tenantId': tenantId
+        }
+    };
+
+    docClient.scan(params, (err, data) => {
+        if (err) {
+            console.error(`Unable to scan table: ${JSON.stringify(err, null, 2)}`);
+            reject(err);
+        } else {
+            resolve(data.Items);
+        }
+    });
+});
+
 module.exports = {
     createTable,
     insertRecord,
-    scanRecords,
-    getRecord
+    getRecord,
+    scanRecordsByTenant
 };
