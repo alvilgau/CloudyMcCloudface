@@ -56,14 +56,13 @@ server.route({
 });
 
 /**
- * Route to get all records or all record for a specific tenantId
- * QueryParam: /record?tenantId={tenantId}
+ * Route to get all records for a specific tenantId
  */
 server.route({
     method: 'GET',
-    path: '/records',
+    path: '/tenants/{tenantId}/records',
     handler: function (request, reply) {
-        return reply(dynamoRecords.scanRecords(request.query.tenantId));
+        return reply(dynamoRecords.scanRecordsByTenant(request.params.tenantId));
     }
 });
 
