@@ -10,6 +10,9 @@ server.connection({
     port: process.env.RECORD_REST_PORT
 });
 
+const THREE_SECONDS = 3000;
+const ONE_MINUTE = 60000;
+
 /**
  * Route to create a new record. Example payload:
  * {
@@ -23,24 +26,29 @@ server.route({
     method: 'POST',
     path: '/records',
     handler: function (request, reply) {
+        const payload = request.payload;
         const currentTime = new Date().getTime();
-        if (request.payload.begin < currentTime) {
+
+        // no time set, then record now for 1 minute
+        if (!payload.begin && !payload.end) {
+            payload.begin = currentTime + THREE_SECONDS;
+            payload.end = payload.begin + ONE_MINUTE;
+        }
+        // when 1 time param is set, the other time param must be set too
+        else if (!(payload.begin && payload.end)) {
+            return reply(Boom.badData('When 1 time parameter is set, the other time parameter must be set too'));
+        }
+        // 'begin' must be in the future
+        else if (payload.begin < currentTime) {
             return reply(Boom.badData('begin must be in the future.'));
         }
-        else if (request.payload.end < request.payload.begin) {
+        // 'end' must be after 'begin'
+        else if (payload.end < payload.begin) {
             return reply(Boom.badData('end must be after begin.'));
         }
 
-        dynamoRecords.insertRecord(request.payload).then(record => {
-            // redisCommands.scheduleRecording(record.id, record.begin, record.end);
-
-            // TODO: remove dummy begin & end
-            const begin = new Date();
-            begin.setSeconds(begin.getSeconds() + 3);
-            const end = new Date();
-            end.setMinutes(end.getMinutes() + 1);
-            redisCommands.scheduleRecording(record.id, begin.getTime(), end.getTime());
-
+        dynamoRecords.insertRecord(payload).then(record => {
+            redisCommands.scheduleRecording(record.id, record.begin, record.end);
             return reply(record);
         });
 

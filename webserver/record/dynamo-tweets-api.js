@@ -14,11 +14,9 @@ const createTable = (tenantId) => {
         TableName: tenantId,
         AttributeDefinitions: [
             {AttributeName: 'recordId', AttributeType: 'S'},
-            {AttributeName: 'keyword', AttributeType: 'S'},
         ],
         KeySchema: [
             {AttributeName: 'recordId', KeyType: 'HASH'},  //Partition key
-            {AttributeName: 'keyword', KeyType: 'RANGE'},  //Range key
         ],
         ProvisionedThroughput: {
             ReadCapacityUnits: 10,
@@ -39,18 +37,17 @@ const createTable = (tenantId) => {
 const insertAnalyzedTweets = (tenantId, recordId, tweets) => {
     console.log('Inserting analyzed tweets...');
 
-    // add timestamp to analyzed tweets
-    tweets.analyzedTweets.forEach(tweet => tweet.timestamp = tweets.timestamp);
-
     const params = {
         TableName: tenantId,
         Key: {
             recordId,
-            keyword: tweets.keyword
         },
-        UpdateExpression: 'set analyzedTweets = list_append(if_not_exists(analyzedTweets, :empty_list), :tweets)',
+        UpdateExpression: 'set #data = list_append(if_not_exists(#data, :empty_list), :data)',
+        ExpressionAttributeNames: {
+            '#data': 'data'
+        },
         ExpressionAttributeValues: {
-            ':tweets': tweets.analyzedTweets,
+            ':data': [tweets],
             ':empty_list': []
         },
         ReturnValues: 'UPDATED_NEW'
