@@ -39,31 +39,31 @@ const trackKeywords = (tenant, userId, keywords) => {
 
 const untrackKeyword = (tenantId, userId, keyword) => {
   return client.lremAsync(`tenants:${tenantId}:users:${userId}->keywords`, 0, keyword)
-            .then(ok => true)
-            .catch(err => false);
+    .then(ok => true)
+    .catch(err => false);
 };
 
 const scheduleRecording = (recordId, begin, end) => {
-    const currentTime =  new Date().getTime();
-    const expirationStart = Math.floor((begin - currentTime) / 1000);
-    const expirationEnd = Math.floor((end - currentTime) / 1000);
-    return client.multi()
-        .set(`record:start:${recordId}`, recordId)
-        .expire(`record:start:${recordId}`, expirationStart)
-        .set(`record:stop:${recordId}`, recordId)
-        .expire(`record:stop:${recordId}`, expirationEnd)
-        .execAsync()
-        .then(ok => true)
-        .catch(err => false);
+  const currentTime = new Date().getTime();
+  const expirationStart = Math.floor((begin - currentTime) / 1000);
+  const expirationEnd = Math.floor((end - currentTime) / 1000);
+  return client.multi()
+    .set(`record:start:${recordId}`, recordId)
+    .expire(`record:start:${recordId}`, expirationStart)
+    .set(`record:stop:${recordId}`, recordId)
+    .expire(`record:stop:${recordId}`, expirationEnd)
+    .execAsync()
+    .then(ok => true)
+    .catch(err => false);
 };
 
 const removeUser = (tenantId, userId) => {
   return client.multi()
-            .lrem(`tenants:${tenantId}->users`, 0, userId)
-            .del(`tenants:${tenantId}:users:${userId}->keywords`)
-            .execAsync()
-            .then(ok => true)
-            .catch(err => false);
+    .lrem(`tenants:${tenantId}->users`, 0, userId)
+    .del(`tenants:${tenantId}:users:${userId}->keywords`)
+    .execAsync()
+    .then(ok => true)
+    .catch(err => false);
 };
 
 const getTenantIds = () => {
@@ -81,20 +81,28 @@ const getTenantIds = () => {
 
 const getUserIds = (tenantId) => {
   return client.lrangeAsync(`tenants:${tenantId}->users`, 0, -1)
-            .then(ids => _.uniq(ids))
-            .catch(err => {
-              console.error(`could not query user ids for tenant ${tenantId} from redis`);
-              console.error(err);
-              return [];
-            });
+    .then(ids => _.uniq(ids))
+    .catch(err => {
+      console.error(`could not query user ids for tenant ${tenantId} from redis`);
+      console.error(err);
+      return [];
+    });
 };
 
 const getUserIdsByKeyword = (tenantId, keyword) => {
   return getUserIds(tenantId)
-          .then(userIds => userIds.map(userId => getUserKeywords(tenantId, userIds).then(keywords => {return {userId, keywords};})))
-          .then(promises => Promise.all(promises))
-          .then(results => results.filter(result => result.keywords.includes(keyword)))
-          .then(results => results.map(result => result.userId));
+    .then(userIds =>
+      userIds.map(userId =>
+        getUserKeywords(tenantId, userId)
+          .then(keywords => {
+            if (keywords.includes(keyword))
+              return userId;
+            else return undefined;
+          })
+      )
+    )
+    .then(promises => Promise.all(promises))
+    .then(userIds => userIds.filter(userId => userId !== undefined));
 };
 
 const getUserKeywords = (tenantId, userId) => {
@@ -140,35 +148,35 @@ const battleForTenant = (tenantId) => {
 };
 
 const battleForRecord = (recordId) => {
-    console.log(`start a battle for record ${recordId}`);
-    return new Promise((resolve, reject) => {
-        client.multi()
-            .get(`record:stop:${recordId}`)
-            .incr(`battle:record:${recordId}`)
-            .expire(`battle:record:${recordId}`, expiration)
-            .execAsync()
-            .then(res => {
-                // get result from incr command
-                const recId = res[0];
-                const battleCounter = res[1];
-                // only one service will receive counter == 1
-                const wonBattle = battleCounter == 1;
-                if (recId && wonBattle) {
-                    console.log(`won battle for record ${recId}`);
-                    resolve({recId, wonBattle});
-                } else {
-                    if (!recId) {
-                        // we don't need more battles -> there is no such record
-                        client.delAsync(`battle:record:${recordId}`);
-                    }
-                    // we also fulfill the promise when we lost
-                    // because everything else went fine
-                    resolve({recId, wonBattle});
-                    console.log(`lost battle for record ${recordId}`);
-                }
-            })
-            .catch(err => reject(err));
-    });
+  console.log(`start a battle for record ${recordId}`);
+  return new Promise((resolve, reject) => {
+    client.multi()
+      .get(`record:stop:${recordId}`)
+      .incr(`battle:record:${recordId}`)
+      .expire(`battle:record:${recordId}`, expiration)
+      .execAsync()
+      .then(res => {
+        // get result from incr command
+        const recId = res[0];
+        const battleCounter = res[1];
+        // only one service will receive counter == 1
+        const wonBattle = battleCounter == 1;
+        if (recId && wonBattle) {
+          console.log(`won battle for record ${recId}`);
+          resolve({recId, wonBattle});
+        } else {
+          if (!recId) {
+            // we don't need more battles -> there is no such record
+            client.delAsync(`battle:record:${recordId}`);
+          }
+          // we also fulfill the promise when we lost
+          // because everything else went fine
+          resolve({recId, wonBattle});
+          console.log(`lost battle for record ${recordId}`);
+        }
+      })
+      .catch(err => reject(err));
+  });
 };
 
 const getTenant = (tenantId) => {
@@ -177,24 +185,24 @@ const getTenant = (tenantId) => {
 };
 
 const getKeywordsByTenant = (tenantId) => {
-      return getUserIds(tenantId)
-        .then(userIds => userIds.map(userId => getUserKeywords(tenantId, userId)))
-        .then(promises => Promise.all(promises))
-        .then(keywords => _.flatten(keywords))
-        .then(keywords => _.uniq(keywords));
+  return getUserIds(tenantId)
+    .then(userIds => userIds.map(userId => getUserKeywords(tenantId, userId)))
+    .then(promises => Promise.all(promises))
+    .then(keywords => _.flatten(keywords))
+    .then(keywords => _.uniq(keywords));
 };
 
 const battleForFreeTenants = () => {
   return getTenantIds()
-          .then(tenantIds => tenantIds.map(tenantId => battleForTenant(tenantId)))
-          .then(promises => Promise.all(promises))
-          .then(results => _.flatten(results));
+    .then(tenantIds => tenantIds.map(tenantId => battleForTenant(tenantId)))
+    .then(promises => Promise.all(promises))
+    .then(results => _.flatten(results));
 };
 
 const refreshTenantBattle = (tenantId) => {
-    return client.expireAsync(`battle:tenants->${tenantId}`, expiration)
-                .then(ok => true)
-                .catch(err => false);
+  return client.expireAsync(`battle:tenants->${tenantId}`, expiration)
+    .then(ok => true)
+    .catch(err => false);
 };
 
 const refreshTenantExpiration = (tenantId) => {
@@ -216,8 +224,8 @@ const publishAnalyzedTweets = (tenantId, userId, analyzedTweets) => {
 
 const flushDb = () => {
   return client.flushdbAsync()
-          .then(res => true)
-          .catch(err => false);
+    .then(res => true)
+    .catch(err => false);
 };
 
 module.exports = {
