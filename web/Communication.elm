@@ -22,8 +22,8 @@ handleMessage msg =
             Invalid <| Debug.log "Error" e
 
 
-queryKeywordsCmd : Tenant -> List String -> Cmd msg
-queryKeywordsCmd tenant keywords =
+queryKeywordsCmd : Tenant -> String -> List String -> Cmd msg
+queryKeywordsCmd tenant url keywords =
     let
         encodedKeywords =
             keywords
@@ -32,7 +32,7 @@ queryKeywordsCmd tenant keywords =
     in
         Encode.object [ ( "tenant", Tenant.encode tenant ), ( "keywords", encodedKeywords ) ]
             |> Encode.encode 0
-            |> WebSocket.send "ws://localhost:3000"
+            |> WebSocket.send url
 
 
 inMessageDecoder : Json.Decode.Decoder InMessage
