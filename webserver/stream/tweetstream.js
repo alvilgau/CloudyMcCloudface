@@ -4,10 +4,13 @@ const _ = require('lodash');
 
 const twitterUrl = process.env.TWITTER_URL;
 
+// number of tweets to collect (per keyword) before analysis starts
+const threshold = 10;
+
 const handleNewTweet = function (stream, tweet) {
   const keywords = stream.keywords
                          .sort((a, b) => b.length - a.length)
-                         .filter(kw => tweet.toLowerCase().includes(kw));
+                         .filter(kw => tweet.toLowerCase().includes(kw.toLowerCase()));
   const tweets = stream.tweets;
   keywords.forEach(keyword => {
     // create key for keyword if not already exists
@@ -15,19 +18,20 @@ const handleNewTweet = function (stream, tweet) {
       tweets[keyword] = [];
     }
     // store tweet
-    tweets[keyword].push(tweet);
-
-    // number of tweets to collect (per keyword) before analysis starts
-    const threshold = 10;
-    // check if exchangeChannel is set up and threshold is reached
-    if (tweets[keyword].length >= threshold) {
-      // analyze a bunch of tweets
-      console.log(`we have a new bunch of tweets for ${keyword}`);
-      stream.handleTweets(keyword, tweets[keyword]);
-      // clear tweets for the keyword
-      tweets[keyword] = [];
-    }
+    tweets[keyword].push(tweet);  
   });
+
+  // analyze Tweets every 3 seconds
+  if (Date.now() - tweets.__lastAnalysis > 3000) {
+      tweets.__lastAnalysis = Date.now();
+      stream.keywords
+        .forEach(keyword => {
+          if(tweets[keyword].length > 5){
+            stream.handleTweets(keyword, tweets[keyword])
+            tweets[keyword] = [];
+          }
+      });      
+  }
 };
 
 const installErrorHandler = function (stream) {
@@ -112,7 +116,9 @@ const setKeywords = (stream, keywords) => {
 
 const startStream = (tenant) => {
   const stream = {
-    tweets: {},    
+    tweets: {
+      __lastAnalysis: Date.now()
+    },    
     keywords: [],
     needReconnect: false,
     handleTweets: () => { },
