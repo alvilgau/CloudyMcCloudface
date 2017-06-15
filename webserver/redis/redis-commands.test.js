@@ -165,3 +165,24 @@ test('get tenant', async() => {
   const tenant = await redisCommands.getTenant(id);
   expect(tenant).toEqual(t); 
 });
+
+test('get user ids by keyword', async() => {
+  const t = getSampleTenant();
+  const id = redisCommands.getId(t);
+
+  let ok = await redisCommands.trackKeywords(t, 'user1', ['trump']);
+  expect(ok).toBeTruthy();
+  let userIds = await redisCommands.getUserIdsByKeyword(id, 'trump');
+  expect(userIds.length).toBe(1);
+  expect(userIds).toContain('user1');
+
+  ok = await redisCommands.trackKeywords(t, 'user2', ['trump', 'obama']);
+  expect(ok).toBeTruthy();
+
+  userIds = await redisCommands.getUserIdsByKeyword(id, 'trump');
+  //userIds = await redisCommands.getUserIds(id);
+  expect(userIds.length).toBe(2);
+  expect(userIds).toContain('user1');
+  expect(userIds).toContain('user2');
+
+});
