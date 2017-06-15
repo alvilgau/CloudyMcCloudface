@@ -23,8 +23,8 @@ app.use(bodyParser.json());
 app.post('/tenants/validate', (req, res) => {
   credentialsValidator.areCredentialsValid(req.body)
     .then(ok => {
-      if (!ok) res.sendStatus(401);
-      else     res.sendStatus(200);
+      if (!ok) res.status(401).send({});
+      else     res.status(200).send({});
     });
 });
 
