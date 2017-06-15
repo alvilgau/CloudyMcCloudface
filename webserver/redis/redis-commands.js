@@ -43,21 +43,18 @@ const untrackKeyword = (tenantId, userId, keyword) => {
             .catch(err => false);
 };
 
-
 const scheduleRecording = (recordId, begin, end) => {
-  schedule(recordId, begin, 'start');
-  schedule(recordId, end, 'stop');
-};
-
-const schedule = (recordId, start, type) => {
-  const currentTime =  new Date();
-  const expiration = Math.floor((start - currentTime.getTime()) / 1000);
-  return client.multi()
-    .set(`record:${type}:${recordId}`, recordId)
-    .expire(`record:${type}:${recordId}`, expiration)
-    .execAsync()
-    .then(ok => true)
-    .catch(err => false);
+    const currentTime =  new Date().getTime();
+    const expirationStart = Math.floor((begin - currentTime) / 1000);
+    const expirationEnd = Math.floor((end - currentTime) / 1000);
+    return client.multi()
+        .set(`record:start:${recordId}`, recordId)
+        .expire(`record:start:${recordId}`, expirationStart)
+        .set(`record:stop:${recordId}`, recordId)
+        .expire(`record:stop:${recordId}`, expirationEnd)
+        .execAsync()
+        .then(ok => true)
+        .catch(err => false);
 };
 
 const removeUser = (tenantId, userId) => {

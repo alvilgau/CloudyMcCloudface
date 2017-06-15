@@ -29,11 +29,8 @@ queryKeywordsCmd tenant keywords =
             keywords
                 |> List.map (\k -> Encode.string k)
                 |> Encode.list
-
-        encodedTenant =
-            Tenant.encode tenant
     in
-        Encode.object [ ( "tenant", encodedTenant ), ( "keywords", encodedKeywords ) ]
+        Encode.object [ ( "tenant", Tenant.encode tenant ), ( "keywords", encodedKeywords ) ]
             |> Encode.encode 0
             |> WebSocket.send "ws://localhost:3000"
 
