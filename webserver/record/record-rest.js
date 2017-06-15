@@ -6,8 +6,9 @@ const dynamoTweets = require('./dynamo-tweets-api');
 
 const server = new Hapi.Server();
 server.connection({
-    host: 'localhost',
-    port: process.env.RECORD_REST_PORT
+  host: 'localhost',
+  port: process.env.RECORD_REST_PORT,
+  routes: { cors: true }
 });
 
 const THREE_SECONDS = 3000;
