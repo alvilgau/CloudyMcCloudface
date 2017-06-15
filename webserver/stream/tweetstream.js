@@ -128,9 +128,27 @@ const stopStream = (stream) => {
   stream.connection.abort();
 };
 
+const checkTenantCredentials = (tenant) => new Promise((resolve) => {
+  const connection = createTwitterStream(tenant, ['placeholder-keyword-to-establish-connection']);
+  connection.on('response', (res) => {
+    connection.abort();
+    if (res.statusCode === 200) {
+      resolve(true);
+    } else {
+      resolve(false);
+    }
+  });
+  connection.on('error', (err) => {
+    console.error(`could not connect to twitter: ${err}`);
+    connection.abort();
+    resolve(false);
+  });
+});
+
 module.exports = {
   startStream,
   stopStream,
   setKeywords,
-  onTweets
+  onTweets,
+  checkTenantCredentials
 };

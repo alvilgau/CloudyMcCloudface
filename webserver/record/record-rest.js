@@ -29,22 +29,19 @@ server.route({
         const payload = request.payload;
         const currentTime = new Date().getTime();
 
-        // no time set, then record now for 1 minute
         if (!payload.begin && !payload.end) {
+            // no time set, then record now for 1 minute
             payload.begin = currentTime + THREE_SECONDS;
             payload.end = payload.begin + ONE_MINUTE;
         }
-        // when 1 time param is set, the other time param must be set too
         else if (!(payload.begin && payload.end)) {
-            return reply(Boom.badData('When 1 time parameter is set, the other time parameter must be set too'));
+            return reply(Boom.badData({type: 'error', message: 'When 1 time parameter is set, the other time parameter must be set too'}));
         }
-        // 'begin' must be in the future
         else if (payload.begin < currentTime) {
-            return reply(Boom.badData('begin must be in the future.'));
+            return reply(Boom.badData({type: 'error', message: 'begin must be in the future.'}));
         }
-        // 'end' must be after 'begin'
         else if (payload.end < payload.begin) {
-            return reply(Boom.badData('end must be after begin.'));
+            return reply(Boom.badData({type: 'error', message: 'end must be after begin.'}));
         }
 
         dynamoRecords.insertRecord(payload).then(record => {
