@@ -9,7 +9,9 @@ const server = new Hapi.Server();
 server.connection({
   host: 'localhost',
   port: process.env.RECORD_REST_PORT,
-  routes: {cors: true}
+  routes: {
+    cors: true
+  }
 });
 
 const THREE_SECONDS = 3000;
@@ -51,10 +53,10 @@ server.route({
           }));
         }
         else if (payload.begin < currentTime) {
-          return reply(Boom.badData({type: 'error', message: 'begin must be in the future.'}));
+          return reply(Boom.badData({ type: 'error', message: 'begin must be in the future.' }));
         }
         else if (payload.end < payload.begin) {
-          return reply(Boom.badData({type: 'error', message: 'end must be after begin.'}));
+          return reply(Boom.badData({ type: 'error', message: 'end must be after begin.' }));
         }
         dynamoRecords.insertRecord(payload).then(record => {
           redisCommands.scheduleRecording(record.id, record.begin, record.end);
@@ -89,6 +91,12 @@ server.route({
         }
         const tenantId = redisCommands.getId(record.tenant);
         return dynamoTweets.queryTweets(tenantId, record.id);
+      })
+      .then(recordData => {
+        if (!recordData[0]) {
+          return Boom.notFound('No data for record found.');
+        }
+        return recordData[0];
       })
       .then(reply);
   }
