@@ -1,20 +1,32 @@
 require('dotenv').config();
 const express = require('express');
+const bodyParser = require('body-parser');
 const http = require('http');
 const uuidV4 = require('uuid/v4');
-
+const tweetstream = require('./stream/tweetstream');
 const WebSocket = require('ws');
 const Joi = require('joi');
 const redisCommands = require('./redis/redis-commands');
 const redisEvents = require('./redis/redis-events');
 const _ = require('lodash');
+const credentialsValidator = require('./credentials-validator');
 
 const app = express();
 const server = http.Server(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({server});
 
 // serve index.html
 app.use(express.static('public'));
+app.use(bodyParser.json());
+
+
+app.post('/tenants/validate', (req, res) => {
+  credentialsValidator.areCredentialsValid(req.body)
+    .then(ok => {
+      if (!ok) res.status(401).send({});
+      else     res.status(200).send({});
+    });
+});
 
 const sockets = {};
 
@@ -25,22 +37,13 @@ const defaultTenant = {
   tokenSecret: process.env.TWITTER_TOKEN_SECRET,
 };
 
-const tenantSchema = Joi.object().keys({
-    consumerKey: Joi.string().min(3).max(30).required(),
-    token: Joi.string().length(50).required(),
-    consumerSecret: Joi.string().length(50).required(),
-    tokenSecret: Joi.string().min(30).max(60).required()
-});
-
 const subscribeSchema = Joi.object().keys({
-  tenant: tenantSchema.allow(null),
+  tenant: credentialsValidator.tenantSchema.allow(null),
   keywords: Joi.array().items(Joi.string()).required()
 });
 
 const subscribe = (connection, message) => {
-  console.log(message.tenant);
   connection.tenant = message.tenant || connection.tenant;
-  console.log(connection.tenant.consumerKey);
   redisCommands.trackKeywords(connection.tenant, connection.userId, message.keywords);
   redisEvents.subscribe(redisCommands.getId(connection.tenant), connection.userId, (tenantId, userId, analyzedTweets) => {
     connection.ws.send(JSON.stringify(analyzedTweets));
@@ -71,9 +74,19 @@ wss.on('connection', (ws) => {
     const validation = Joi.validate(message, subscribeSchema);
     if (validation.error) {
       console.error(validation.error);
-      ws.send(JSON.stringify(validation));
+      ws.send(JSON.stringify({type: 'error', message: 'Invalid Data Schema!'}));
     } else {
-      subscribe(sockets[userId], JSON.parse(message));
+      const t = message.tenant || sockets[userId].tenant;
+      credentialsValidator.areCredentialsValid(t)
+        .then(ok => {
+          if (ok) {
+            console.log(`tenant credentials are valid`);
+            subscribe(sockets[userId], JSON.parse(message));
+          } else {
+            console.error(`client tried to connect with invalid twitter credentials`);
+            connection.ws.send(JSON.stringify({type: 'error', message: 'Invalid Twitter Credentials!'}));
+          }
+        });
     }
   });
 
@@ -86,8 +99,8 @@ wss.on('connection', (ws) => {
 setInterval(() => {
   new Set(
     Object.values(sockets)
-    .map(value => value.tenant)
-    .map(tenant => redisCommands.getId(tenant))
+      .map(value => value.tenant)
+      .map(tenant => redisCommands.getId(tenant))
   ).forEach(tenantId => redisCommands.refreshTenantExpiration(tenantId));
 }, process.env.KEEP_ALIVE_INTERVAL);
 

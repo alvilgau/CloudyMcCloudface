@@ -10,6 +10,21 @@ In order to handle a any amount of tweets and clients concurrently TSA needs to 
 
 ## Application Design
 
+*TSA* consists of three different kinds of 
+
+*TSA* is realized via micro-services, all written in JavaScript for Node.js.
+
+These services are:
+- webserver-service:
+- tweetstream-service:
+- record-service:
+- log-service:
+
+The micro-services communicate with each other via a redis database.
+
+The web-client is written in Elm, a functional programming which compiles to HTML, CSS and JavaScript. This web-client connects to the webserver-service via websockets to be able to receive messages, when a new bunch of analyzed tweets arrives.
+
+
 ### overall design and data stores
 - nodejs microservices
 - elm frontend
