@@ -2,12 +2,13 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const uuidV4 = require('uuid/v4');
-
+const tweetstream = require('./stream/tweetstream');
 const WebSocket = require('ws');
 const Joi = require('joi');
 const redisCommands = require('./redis/redis-commands');
 const redisEvents = require('./redis/redis-events');
 const _ = require('lodash');
+const credentialsValidator = require('./credentials-validator');
 
 const app = express();
 const server = http.Server(app);
@@ -40,11 +41,21 @@ const subscribeSchema = Joi.object().keys({
 const subscribe = (connection, message) => {
   console.log(message.tenant);
   connection.tenant = message.tenant || connection.tenant;
-  console.log(connection.tenant.consumerKey);
-  redisCommands.trackKeywords(connection.tenant, connection.userId, message.keywords);
-  redisEvents.subscribe(redisCommands.getId(connection.tenant), connection.userId, (tenantId, userId, analyzedTweets) => {
-    connection.ws.send(JSON.stringify(analyzedTweets));
-  });
+  credentialsValidator.areCredentialsValid(connection.tenant)
+    .then(ok => {
+      if (ok) {
+        // credentials are valid
+        console.log(`tenant credentials are valid`);
+        redisCommands.trackKeywords(connection.tenant, connection.userId, message.keywords);
+        redisEvents.subscribe(redisCommands.getId(connection.tenant), connection.userId, (tenantId, userId, analyzedTweets) => {
+          connection.ws.send(JSON.stringify(analyzedTweets));
+        });
+      } else {
+        // credentials are invalid
+        console.error(`client tried to connect with invalid twitter credentials`);
+        connection.ws.send(JSON.stringify({type:'error', message: 'Invalid Twitter Credentials!'}));
+      }
+    });
 };
 
 const unsubscribe = (connection) => {
