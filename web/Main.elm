@@ -14,7 +14,6 @@ import RecordingApi
 import Date
 import Task
 import Regex exposing (regex, HowMany(..))
-import Recording
 import CreateRecordingPageModel
 
 
@@ -75,7 +74,7 @@ update msg model =
             let
                 ( tenant, modus, cmd ) =
                     if Tenant.isCustom selectedTenant then
-                        ( model.tenant, Nothing, Tenant.validate "http://localhost:3000" TenantValidationCompleted selectedTenant )
+                        ( model.tenant, Nothing, Tenant.validate model.baseUrl.http TenantValidationCompleted selectedTenant )
                     else
                         ( selectedTenant, Just Live, Cmd.none )
             in
@@ -98,7 +97,7 @@ update msg model =
         SelectModus modus ->
             { model | modus = Just modus, data = [], keywords = [], selectedRecording = Nothing, createRecordingPageModel = Nothing }
                 ! if modus == Tape then
-                    [ RecordingApi.getRecordingList model.origin.http model.tenant ]
+                    [ RecordingApi.getRecordingList model.baseUrl.record model.tenant ]
                   else
                     []
 
@@ -110,11 +109,11 @@ update msg model =
                         |> Keyword.zipWithColor
             in
                 ( { model | selectedRecording = Just recording.id, keywords = keywords }
-                , RecordingApi.getRecordingData model.origin.http recording.id
+                , RecordingApi.getRecordingData model.baseUrl.record recording.id
                 )
 
         NewRecording (Ok _) ->
-            { model | createRecordingPageModel = Nothing } ! [ RecordingApi.getRecordingList model.origin.http model.tenant ]
+            { model | createRecordingPageModel = Nothing } ! [ RecordingApi.getRecordingList model.baseUrl.record model.tenant ]
 
         NewRecording (Err err) ->
             let
@@ -170,13 +169,14 @@ update msg model =
             let
                 ( createRecordingPageModel, cmd ) =
                     model.createRecordingPageModel
-                        |> Maybe.map (CreateRecordingPageModel.update (RecordingApi.postRecording model.origin.http model.tenant) msg)
+                        |> Maybe.map (CreateRecordingPageModel.update (RecordingApi.postRecording model.baseUrl.record model.tenant) msg)
                         |> Maybe.map (Tuple.mapFirst Just)
                         |> Maybe.withDefault ( Nothing, Cmd.none )
             in
                 { model | createRecordingPageModel = createRecordingPageModel } ! [ cmd ]
 
 
+setLastQueryTime : Cmd Msg
 setLastQueryTime =
     Task.perform SetLastQueryTime Time.now
 
@@ -187,7 +187,7 @@ subscriptions model =
         case model.modus of
             Just Live ->
                 if Tenant.isSelected model.tenant && List.length model.keywords > 0 then
-                    [ WebSocket.listen model.origin.ws WSMessage
+                    [ WebSocket.listen model.baseUrl.ws WSMessage
                     , Time.every second Tick
                     ]
                 else
@@ -197,18 +197,20 @@ subscriptions model =
                 []
 
 
+queryKeywordsCmd : Model -> Cmd Msg
 queryKeywordsCmd model =
     let
         keywordNames =
             List.map .name model.keywords
     in
-        Just (Cmd.batch [ Communication.queryKeywordsCmd model.tenant model.origin.ws keywordNames, setLastQueryTime ])
+        Just (Cmd.batch [ Communication.queryKeywordsCmd model.tenant model.baseUrl.ws keywordNames, setLastQueryTime ])
             |> Maybe.filter (\_ -> List.length keywordNames > 0)
             |> Maybe.withDefault Cmd.none
 
 
-webSocketReceived data model =
-    case (Communication.handleMessage data) of
+webSocketReceived : String -> Model -> Model
+webSocketReceived encodedData model =
+    case (Communication.handleMessage encodedData) of
         Data data ->
             { model | data = (data :: model.data) }
 
@@ -225,7 +227,7 @@ init location =
     , lastQuery = 0
     , modus = Nothing
     , recordings = Nothing
-    , origin = origin location
+    , baseUrl = baseUrl location
     , selectedRecording = Nothing
     , createRecordingPageModel = Nothing
     , error = Nothing
@@ -233,14 +235,9 @@ init location =
         ! []
 
 
-origin location =
-    { http = "http://localhost:3010"
-    , ws = "ws://localhost:3000"
+baseUrl : Location -> BaseUrl
+baseUrl location =
+    { http = location.origin
+    , ws = Regex.replace (AtMost 1) (regex "http") (\_ -> "ws") location.origin
+    , record = "http://localhost:3010"
     }
-
-
-
--- origin location =
---     { http = location.origin
---     , ws = Regex.replace (AtMost 1) (regex "http") (\_ -> "ws") location.origin
---     }

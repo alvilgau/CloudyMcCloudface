@@ -1,8 +1,8 @@
 module KeywordTable exposing (view)
 
-import Html exposing (div, Html, program, button, text, span, node, tr, td, table, th, thead, tbody, h1, input, b, label, form, section)
-import Html.Attributes exposing (style, rel, href, type_, class, placeholder, for, id)
-import Html.Events exposing (onClick, onInput, onCheck)
+import Html exposing (Html, button, text, tr, td, table, th, thead, tbody, input, b)
+import Html.Attributes exposing (style, type_, class, placeholder)
+import Html.Events exposing (onClick, onInput)
 import Svg
 import Svg.Attributes as SvgAttr
 import Keyword exposing (Keyword)

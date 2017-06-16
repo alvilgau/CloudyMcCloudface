@@ -1,10 +1,8 @@
 module View exposing (view)
 
--- import TenantForm
-
-import Html exposing (div, Html, program, button, text, span, node, tr, td, table, th, thead, tbody, h1, h2, input, b, label, form, section)
-import Html.Attributes exposing (style, rel, href, type_, class, placeholder, for, id)
-import Html.Events exposing (onClick, onInput)
+import Html exposing (Html, div, program, button, text, span, node, h1, h2, b, section)
+import Html.Attributes exposing (style, rel, href, type_, class)
+import Html.Events exposing (onClick)
 import Msg exposing (..)
 import Model exposing (..)
 import Tenant
@@ -13,7 +11,6 @@ import Maybe.Extra as Maybe
 import KeywordTable
 import Graph
 import TapeTable
-import Recording exposing (Recording)
 import RecordingForm
 import CreateRecordingPageModel exposing (CreateRecordingPageModel)
 

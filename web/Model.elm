@@ -6,7 +6,6 @@ import Tenant exposing (Tenant)
 import Time exposing (Time)
 import Recording exposing (Recording)
 import CreateRecordingPageModel exposing (CreateRecordingPageModel)
-import Navigation exposing (Location)
 
 
 type Modus
@@ -14,9 +13,10 @@ type Modus
     | Tape
 
 
-type alias Origin =
+type alias BaseUrl =
     { http : String
     , ws : String
+    , record : String
     }
 
 
@@ -27,7 +27,7 @@ type alias Model =
     , tenant : Tenant
     , lastQuery : Time
     , modus : Maybe Modus
-    , origin : Origin
+    , baseUrl : BaseUrl
     , recordings : Maybe (List Recording)
     , selectedRecording : Maybe String
     , createRecordingPageModel : Maybe CreateRecordingPageModel
