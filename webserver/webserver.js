@@ -105,6 +105,6 @@ setInterval(() => {
 }, process.env.KEEP_ALIVE_INTERVAL);
 
 // lets go
-server.listen(3000, () => {
-  console.log('listening on *:3000');
+server.listen(process.env.WEBSERVER_PORT, () => {
+  console.log('listening on *:', process.env.WEBSERVER_PORT);
 });
