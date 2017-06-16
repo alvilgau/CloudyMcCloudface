@@ -2,7 +2,7 @@ module TenantForm exposing (view)
 
 import Html exposing (form, button, label, input, span, text, div, h2)
 import Html.Attributes exposing (type_, class, for, id, style)
-import Html.Events exposing (onClick, onCheck, onInput)
+import Html.Events exposing (onClick, onInput)
 import Tenant
 import Regex exposing (regex, HowMany(..))
 import Msg exposing (..)

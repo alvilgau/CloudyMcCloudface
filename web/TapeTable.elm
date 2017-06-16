@@ -1,14 +1,15 @@
 module TapeTable exposing (view)
 
-import Html exposing (div, Html, program, button, text, span, node, tr, td, table, th, thead, tbody, h1, input, b, label, form, section)
-import Html.Attributes exposing (style, rel, href, type_, class, placeholder, for, id)
-import Html.Events exposing (onClick, onInput, onCheck)
+import Html exposing (Html, text, tr, td, table, th, thead, tbody)
+import Html.Attributes exposing (class)
+import Html.Events exposing (onClick)
 import Msg exposing (..)
 import Recording exposing (Recording)
 import Date
 import Date.Format exposing (format)
 
 
+view : List Recording -> Html Msg
 view recordings =
     table [ class "u-full-width" ] [ header, rows recordings ]
 
@@ -16,11 +17,7 @@ view recordings =
 header : Html msg
 header =
     thead []
-        [ tr []
-            ([ "Start", "End", "Keywords" ]
-                |> List.map (\heading -> th [] [ text heading ])
-            )
-        ]
+        [ tr [] (List.map (\heading -> th [] [ text heading ]) [ "Start", "End", "Keywords" ]) ]
 
 
 rows : List Recording -> Html Msg
@@ -35,11 +32,16 @@ row recording =
             String.join ", " recording.keywords
 
         columnContent =
-            [ text <| formatDate recording.begin, text <| formatDate recording.end, text keywords ]
+            [ formatDateHtml recording.begin, formatDateHtml recording.end, text keywords ]
     in
         tr [ onClick <| SelectRecording recording ]
             (List.map (\content -> td [] [ content ]) columnContent)
 
+formatDateHtml : Date.Date -> Html msg
+formatDateHtml =
+    formatDate >> text
 
+
+formatDate : Date.Date -> String
 formatDate date =
     format "%Y/%m/%d %H:%M:%S" date

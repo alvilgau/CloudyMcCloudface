@@ -29387,9 +29387,9 @@ var _user$project$Recording$Begin = function (a) {
 var _user$project$Recording$ID = function (a) {
 	return {ctor: 'ID', _0: a};
 };
-var _user$project$Model$Origin = F2(
-	function (a, b) {
-		return {http: a, ws: b};
+var _user$project$Model$BaseUrl = F3(
+	function (a, b, c) {
+		return {http: a, ws: b, record: c};
 	});
 var _user$project$Model$Model = function (a) {
 	return function (b) {
@@ -29402,7 +29402,7 @@ var _user$project$Model$Model = function (a) {
 								return function (i) {
 									return function (j) {
 										return function (k) {
-											return {keywords: a, data: b, editedKeyword: c, tenant: d, lastQuery: e, modus: f, origin: g, recordings: h, selectedRecording: i, createRecordingPageModel: j, error: k};
+											return {keywords: a, data: b, editedKeyword: c, tenant: d, lastQuery: e, modus: f, baseUrl: g, recordings: h, selectedRecording: i, createRecordingPageModel: j, error: k};
 										};
 									};
 								};
@@ -29948,16 +29948,18 @@ var _user$project$TenantForm$view = function (tenant) {
 var _user$project$TapeTable$formatDate = function (date) {
 	return A2(_mgold$elm_date_format$Date_Format$format, '%Y/%m/%d %H:%M:%S', date);
 };
+var _user$project$TapeTable$formatDateHtml = function (_p0) {
+	return _elm_lang$html$Html$text(
+		_user$project$TapeTable$formatDate(_p0));
+};
 var _user$project$TapeTable$row = function (recording) {
 	var keywords = A2(_elm_lang$core$String$join, ', ', recording.keywords);
 	var columnContent = {
 		ctor: '::',
-		_0: _elm_lang$html$Html$text(
-			_user$project$TapeTable$formatDate(recording.begin)),
+		_0: _user$project$TapeTable$formatDateHtml(recording.begin),
 		_1: {
 			ctor: '::',
-			_0: _elm_lang$html$Html$text(
-				_user$project$TapeTable$formatDate(recording.end)),
+			_0: _user$project$TapeTable$formatDateHtml(recording.end),
 			_1: {
 				ctor: '::',
 				_0: _elm_lang$html$Html$text(keywords),
@@ -30951,8 +30953,19 @@ var _user$project$RecordingApi$getRecordingList = F2(
 				_elm_lang$core$Json_Decode$list(_user$project$Recording$decode)));
 	});
 var _user$project$RecordingApi$host = 'http://localhost:52865';
-var _user$project$Main$origin = function (location) {
-	return {http: 'http://localhost:3010', ws: 'ws://localhost:3000'};
+var _user$project$Main$baseUrl = function (location) {
+	return {
+		http: location.origin,
+		ws: A4(
+			_elm_lang$core$Regex$replace,
+			_elm_lang$core$Regex$AtMost(1),
+			_elm_lang$core$Regex$regex('http'),
+			function (_p0) {
+				return 'ws';
+			},
+			location.origin),
+		record: 'http://localhost:3010'
+	};
 };
 var _user$project$Main$init = function (location) {
 	return A2(
@@ -30965,7 +30978,7 @@ var _user$project$Main$init = function (location) {
 			lastQuery: 0,
 			modus: _elm_lang$core$Maybe$Nothing,
 			recordings: _elm_lang$core$Maybe$Nothing,
-			origin: _user$project$Main$origin(location),
+			baseUrl: _user$project$Main$baseUrl(location),
 			selectedRecording: _elm_lang$core$Maybe$Nothing,
 			createRecordingPageModel: _elm_lang$core$Maybe$Nothing,
 			error: _elm_lang$core$Maybe$Nothing
@@ -30973,13 +30986,13 @@ var _user$project$Main$init = function (location) {
 		{ctor: '[]'});
 };
 var _user$project$Main$webSocketReceived = F2(
-	function (data, model) {
-		var _p0 = _user$project$Communication$handleMessage(data);
-		if (_p0.ctor === 'Data') {
+	function (encodedData, model) {
+		var _p1 = _user$project$Communication$handleMessage(encodedData);
+		if (_p1.ctor === 'Data') {
 			return _elm_lang$core$Native_Utils.update(
 				model,
 				{
-					data: {ctor: '::', _0: _p0._0, _1: model.data}
+					data: {ctor: '::', _0: _p1._0, _1: model.data}
 				});
 		} else {
 			return model;
@@ -30988,13 +31001,13 @@ var _user$project$Main$webSocketReceived = F2(
 var _user$project$Main$subscriptions = function (model) {
 	return _elm_lang$core$Platform_Sub$batch(
 		function () {
-			var _p1 = model.modus;
-			if ((_p1.ctor === 'Just') && (_p1._0.ctor === 'Live')) {
+			var _p2 = model.modus;
+			if ((_p2.ctor === 'Just') && (_p2._0.ctor === 'Live')) {
 				return (_user$project$Tenant$isSelected(model.tenant) && (_elm_lang$core$Native_Utils.cmp(
 					_elm_lang$core$List$length(model.keywords),
 					0) > 0)) ? {
 					ctor: '::',
-					_0: A2(_elm_lang$websocket$WebSocket$listen, model.origin.ws, _user$project$Msg$WSMessage),
+					_0: A2(_elm_lang$websocket$WebSocket$listen, model.baseUrl.ws, _user$project$Msg$WSMessage),
 					_1: {
 						ctor: '::',
 						_0: A2(_elm_lang$core$Time$every, _elm_lang$core$Time$second, _user$project$Msg$Tick),
@@ -31019,7 +31032,7 @@ var _user$project$Main$queryKeywordsCmd = function (model) {
 		_elm_lang$core$Platform_Cmd$none,
 		A2(
 			_elm_community$maybe_extra$Maybe_Extra$filter,
-			function (_p2) {
+			function (_p3) {
 				return _elm_lang$core$Native_Utils.cmp(
 					_elm_lang$core$List$length(keywordNames),
 					0) > 0;
@@ -31028,7 +31041,7 @@ var _user$project$Main$queryKeywordsCmd = function (model) {
 				_elm_lang$core$Platform_Cmd$batch(
 					{
 						ctor: '::',
-						_0: A3(_user$project$Communication$queryKeywordsCmd, model.tenant, model.origin.ws, keywordNames),
+						_0: A3(_user$project$Communication$queryKeywordsCmd, model.tenant, model.baseUrl.ws, keywordNames),
 						_1: {
 							ctor: '::',
 							_0: _user$project$Main$setLastQueryTime,
@@ -31038,8 +31051,8 @@ var _user$project$Main$queryKeywordsCmd = function (model) {
 };
 var _user$project$Main$update = F2(
 	function (msg, model) {
-		var _p3 = msg;
-		switch (_p3.ctor) {
+		var _p4 = msg;
+		switch (_p4.ctor) {
 			case 'NoOp':
 				return A2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
@@ -31048,7 +31061,7 @@ var _user$project$Main$update = F2(
 			case 'WSMessage':
 				return A2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
-					A2(_user$project$Main$webSocketReceived, _p3._0, model),
+					A2(_user$project$Main$webSocketReceived, _p4._0, model),
 					{ctor: '[]'});
 			case 'Query':
 				return A2(
@@ -31060,18 +31073,18 @@ var _user$project$Main$update = F2(
 						_1: {ctor: '[]'}
 					});
 			case 'Remove':
-				var _p4 = _p3._0;
+				var _p5 = _p4._0;
 				var data = A2(
 					_elm_lang$core$List$filter,
 					function (dp) {
-						return !_elm_lang$core$Native_Utils.eq(dp.keyword, _p4);
+						return !_elm_lang$core$Native_Utils.eq(dp.keyword, _p5);
 					},
 					model.data);
 				var keywords = _user$project$Keyword$zipWithColor(
 					A2(
 						_elm_lang$core$List$filter,
 						function (k) {
-							return !_elm_lang$core$Native_Utils.eq(k.name, _p4);
+							return !_elm_lang$core$Native_Utils.eq(k.name, _p5);
 						},
 						model.keywords));
 				var model_ = _elm_lang$core$Native_Utils.update(
@@ -31092,7 +31105,7 @@ var _user$project$Main$update = F2(
 						model.keywords,
 						{
 							ctor: '::',
-							_0: A2(_user$project$Keyword$Keyword, _p3._0, ''),
+							_0: A2(_user$project$Keyword$Keyword, _p4._0, ''),
 							_1: {ctor: '[]'}
 						}));
 				var model_ = _elm_lang$core$Native_Utils.update(
@@ -31111,10 +31124,10 @@ var _user$project$Main$update = F2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
 					_elm_lang$core$Native_Utils.update(
 						model,
-						{editedKeyword: _p3._0}),
+						{editedKeyword: _p4._0}),
 					{ctor: '[]'});
 			case 'TenantEdited':
-				var tenant = A3(_user$project$Tenant$set, _p3._0, _p3._1, model.tenant);
+				var tenant = A3(_user$project$Tenant$set, _p4._0, _p4._1, model.tenant);
 				return A2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
 					_elm_lang$core$Native_Utils.update(
@@ -31122,21 +31135,21 @@ var _user$project$Main$update = F2(
 						{tenant: tenant}),
 					{ctor: '[]'});
 			case 'TenantSelected':
-				var _p6 = _p3._0;
-				var _p5 = _user$project$Tenant$isCustom(_p6) ? {
+				var _p7 = _p4._0;
+				var _p6 = _user$project$Tenant$isCustom(_p7) ? {
 					ctor: '_Tuple3',
 					_0: model.tenant,
 					_1: _elm_lang$core$Maybe$Nothing,
-					_2: A3(_user$project$Tenant$validate, 'http://localhost:3000', _user$project$Msg$TenantValidationCompleted, _p6)
+					_2: A3(_user$project$Tenant$validate, model.baseUrl.http, _user$project$Msg$TenantValidationCompleted, _p7)
 				} : {
 					ctor: '_Tuple3',
-					_0: _p6,
+					_0: _p7,
 					_1: _elm_lang$core$Maybe$Just(_user$project$Model$Live),
 					_2: _elm_lang$core$Platform_Cmd$none
 				};
-				var tenant = _p5._0;
-				var modus = _p5._1;
-				var cmd = _p5._2;
+				var tenant = _p6._0;
+				var modus = _p6._1;
+				var cmd = _p6._2;
 				return A2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
 					_elm_lang$core$Native_Utils.update(
@@ -31152,32 +31165,32 @@ var _user$project$Main$update = F2(
 						}
 					});
 			case 'Tick':
-				var _p9 = _p3._0;
+				var _p10 = _p4._0;
 				var data = A2(
 					_elm_lang$core$List$filter,
 					function (dp) {
 						return _elm_lang$core$Native_Utils.cmp(
 							dp.time,
-							_elm_lang$core$Time$inMilliseconds(_p9) - ((5 * 60) * 1000)) > 0;
+							_elm_lang$core$Time$inMilliseconds(_p10) - ((5 * 60) * 1000)) > 0;
 					},
 					model.data);
 				var reconnectCmd = _elm_community$maybe_extra$Maybe_Extra$toList(
 					A2(
 						_elm_community$maybe_extra$Maybe_Extra$filter,
-						function (_p7) {
+						function (_p8) {
 							return _elm_lang$core$Native_Utils.cmp(
 								model.lastQuery,
-								_elm_lang$core$Time$inMilliseconds(_p9) - 20000) < 0;
+								_elm_lang$core$Time$inMilliseconds(_p10) - 20000) < 0;
 						},
 						A2(
 							_elm_community$maybe_extra$Maybe_Extra$filter,
-							function (_p8) {
+							function (_p9) {
 								return A2(
 									_elm_lang$core$List$all,
 									function (dp) {
 										return _elm_lang$core$Native_Utils.cmp(
 											dp.time,
-											_elm_lang$core$Time$inMilliseconds(_p9) - 20000) < 0;
+											_elm_lang$core$Time$inMilliseconds(_p10) - 20000) < 0;
 									},
 									model.data);
 							},
@@ -31190,44 +31203,44 @@ var _user$project$Main$update = F2(
 						{data: data}),
 					reconnectCmd);
 			case 'SelectModus':
-				var _p10 = _p3._0;
+				var _p11 = _p4._0;
 				return A2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
 					_elm_lang$core$Native_Utils.update(
 						model,
 						{
-							modus: _elm_lang$core$Maybe$Just(_p10),
+							modus: _elm_lang$core$Maybe$Just(_p11),
 							data: {ctor: '[]'},
 							keywords: {ctor: '[]'},
 							selectedRecording: _elm_lang$core$Maybe$Nothing,
 							createRecordingPageModel: _elm_lang$core$Maybe$Nothing
 						}),
-					_elm_lang$core$Native_Utils.eq(_p10, _user$project$Model$Tape) ? {
+					_elm_lang$core$Native_Utils.eq(_p11, _user$project$Model$Tape) ? {
 						ctor: '::',
-						_0: A2(_user$project$RecordingApi$getRecordingList, model.origin.http, model.tenant),
+						_0: A2(_user$project$RecordingApi$getRecordingList, model.baseUrl.record, model.tenant),
 						_1: {ctor: '[]'}
 					} : {ctor: '[]'});
 			case 'SelectRecording':
-				var _p11 = _p3._0;
+				var _p12 = _p4._0;
 				var keywords = _user$project$Keyword$zipWithColor(
 					A2(
 						_elm_lang$core$List$map,
 						function (name) {
 							return A2(_user$project$Keyword$Keyword, name, '');
 						},
-						_p11.keywords));
+						_p12.keywords));
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{
-							selectedRecording: _elm_lang$core$Maybe$Just(_p11.id),
+							selectedRecording: _elm_lang$core$Maybe$Just(_p12.id),
 							keywords: keywords
 						}),
-					_1: A2(_user$project$RecordingApi$getRecordingData, model.origin.http, _p11.id)
+					_1: A2(_user$project$RecordingApi$getRecordingData, model.baseUrl.record, _p12.id)
 				};
 			case 'NewRecording':
-				if (_p3._0.ctor === 'Ok') {
+				if (_p4._0.ctor === 'Ok') {
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
@@ -31235,26 +31248,26 @@ var _user$project$Main$update = F2(
 							{createRecordingPageModel: _elm_lang$core$Maybe$Nothing}),
 						{
 							ctor: '::',
-							_0: A2(_user$project$RecordingApi$getRecordingList, model.origin.http, model.tenant),
+							_0: A2(_user$project$RecordingApi$getRecordingList, model.baseUrl.record, model.tenant),
 							_1: {ctor: '[]'}
 						});
 				} else {
-					var x = A2(_elm_lang$core$Debug$log, 'GetRecordingListCompleted', _p3._0._0);
+					var x = A2(_elm_lang$core$Debug$log, 'GetRecordingListCompleted', _p4._0._0);
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						model,
 						{ctor: '[]'});
 				}
 			case 'TenantValidationCompleted':
-				if (_p3._0.ctor === 'Ok') {
+				if (_p4._0.ctor === 'Ok') {
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
 							model,
-							{tenant: _p3._0._0}),
+							{tenant: _p4._0._0}),
 						{ctor: '[]'});
 				} else {
-					var x = A2(_elm_lang$core$Debug$log, 'TenantValidationCompleted', _p3._0._0);
+					var x = A2(_elm_lang$core$Debug$log, 'TenantValidationCompleted', _p4._0._0);
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
@@ -31265,7 +31278,7 @@ var _user$project$Main$update = F2(
 						{ctor: '[]'});
 				}
 			case 'GetRecordingDataCompleted':
-				if (_p3._0.ctor === 'Ok') {
+				if (_p4._0.ctor === 'Ok') {
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
@@ -31276,18 +31289,18 @@ var _user$project$Main$update = F2(
 									function (_) {
 										return _.time;
 									},
-									_p3._0._0)
+									_p4._0._0)
 							}),
 						{ctor: '[]'});
 				} else {
-					var x = A2(_elm_lang$core$Debug$log, 'GetRecordingListCompleted', _p3._0._0);
+					var x = A2(_elm_lang$core$Debug$log, 'GetRecordingListCompleted', _p4._0._0);
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						model,
 						{ctor: '[]'});
 				}
 			case 'GetRecordingListCompleted':
-				if (_p3._0.ctor === 'Ok') {
+				if (_p4._0.ctor === 'Ok') {
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
@@ -31303,11 +31316,11 @@ var _user$project$Main$update = F2(
 													_elm_lang$core$Date$toTime(r2.begin),
 													_elm_lang$core$Date$toTime(r1.begin));
 											}),
-										_p3._0._0))
+										_p4._0._0))
 							}),
 						{ctor: '[]'});
 				} else {
-					var x = A2(_elm_lang$core$Debug$log, 'GetRecordingListCompleted', _p3._0._0);
+					var x = A2(_elm_lang$core$Debug$log, 'GetRecordingListCompleted', _p4._0._0);
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						model,
@@ -31318,7 +31331,7 @@ var _user$project$Main$update = F2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
 					_elm_lang$core$Native_Utils.update(
 						model,
-						{lastQuery: _p3._0}),
+						{lastQuery: _p4._0}),
 					{ctor: '[]'});
 			case 'HideError':
 				return A2(
@@ -31328,9 +31341,9 @@ var _user$project$Main$update = F2(
 						{error: _elm_lang$core$Maybe$Nothing}),
 					{ctor: '[]'});
 			case 'CreateNewRecording':
-				var _p12 = _user$project$CreateRecordingPageModel$init;
-				var createRecordingPageModel = _p12._0;
-				var cmd = _p12._1;
+				var _p13 = _user$project$CreateRecordingPageModel$init;
+				var createRecordingPageModel = _p13._0;
+				var cmd = _p13._1;
 				return A2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
 					_elm_lang$core$Native_Utils.update(
@@ -31344,7 +31357,7 @@ var _user$project$Main$update = F2(
 						_1: {ctor: '[]'}
 					});
 			default:
-				var _p13 = A2(
+				var _p14 = A2(
 					_elm_lang$core$Maybe$withDefault,
 					{ctor: '_Tuple2', _0: _elm_lang$core$Maybe$Nothing, _1: _elm_lang$core$Platform_Cmd$none},
 					A2(
@@ -31354,11 +31367,11 @@ var _user$project$Main$update = F2(
 							_elm_lang$core$Maybe$map,
 							A2(
 								_user$project$CreateRecordingPageModel$update,
-								A2(_user$project$RecordingApi$postRecording, model.origin.http, model.tenant),
-								_p3._0),
+								A2(_user$project$RecordingApi$postRecording, model.baseUrl.record, model.tenant),
+								_p4._0),
 							model.createRecordingPageModel)));
-				var createRecordingPageModel = _p13._0;
-				var cmd = _p13._1;
+				var createRecordingPageModel = _p14._0;
+				var cmd = _p14._1;
 				return A2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
 					_elm_lang$core$Native_Utils.update(
@@ -31373,7 +31386,7 @@ var _user$project$Main$update = F2(
 	});
 var _user$project$Main$main = A2(
 	_elm_lang$navigation$Navigation$program,
-	function (_p14) {
+	function (_p15) {
 		return _user$project$Msg$NoOp;
 	},
 	{init: _user$project$Main$init, update: _user$project$Main$update, subscriptions: _user$project$Main$subscriptions, view: _user$project$View$view})();
