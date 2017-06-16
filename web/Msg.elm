@@ -6,6 +6,7 @@ import Model exposing (..)
 import Http
 import DataPoint exposing (DataPoint)
 import Recording exposing (Recording)
+import CreateRecordingPageModel exposing (CreateRecordingPageModel)
 
 
 type Msg
@@ -27,4 +28,4 @@ type Msg
     | GetRecordingListCompleted (Result Http.Error (List Recording))
     | HideError
     | CreateNewRecording
-    | RecordingEdited Recording.Field
+    | RecordingEdited CreateRecordingPageModel.Msg

@@ -15,6 +15,7 @@ import Graph
 import TapeTable
 import Recording exposing (Recording)
 import RecordingForm
+import CreateRecordingPageModel exposing (CreateRecordingPageModel)
 
 
 view : Model -> Html Msg
@@ -27,8 +28,8 @@ view model =
                 container True model <| [ liveTapeSelect model ]
 
             Just Tape ->
-                model.editedRecording
-                    |> Maybe.map (\recording -> tapeStartView recording)
+                model.createRecordingPageModel
+                    |> Maybe.map (\pageModel -> tapeStartView pageModel)
                     |> Maybe.orElse (Maybe.map (\_ -> tapeResultView model) model.selectedRecording)
                     |> Maybe.withDefault (tapeTableView model)
                     |> container True model
@@ -67,32 +68,11 @@ tapeTable maybeRecs =
             span [] [ text "You haven't taped anything yet!" ]
 
 
-tapeStartView : Recording -> List (Html Msg)
-tapeStartView recording =
+tapeStartView : CreateRecordingPageModel -> List (Html Msg)
+tapeStartView pageModel =
     [ div [ class "twelve columns" ] [ h2 [] [ text "Start New Taping" ] ]
-    , div [ class "twelve columns" ] (RecordingForm.view recording)
+    , div [ class "twelve columns" ] [ Html.map RecordingEdited <| RecordingForm.view pageModel ]
     ]
-
-
-
---  [ div [ class "twelve columns" ]
---         [ h2 [] [ text "Twitter Credentials" ]
---         , form [ class "u-full-width" ]
---             (List.concat
---                 [ labeledTenantInput Tenant.ConsumerKey "Consumer Key" fields.consumerKey
---                 , labeledTenantInput Tenant.ConsumerSecret "Consumer Secret" fields.consumerSecret
---                 , labeledTenantInput Tenant.Token "Token" fields.token
---                 , labeledTenantInput Tenant.TokenSecret "Token Secret" fields.tokenSecret
---                 , [ button
---                         [ class "button-primary", style [ ( "width", "33%" ) ], type_ "button", onClick <| TenantSelected <| Tenant.custom tenant ]
---                         [ text "Submit" ]
---                   , button
---                         [ class "button", style [ ( "width", "33%" ), ( "float", "right" ) ], type_ "button", onClick <| TenantSelected <| Tenant.default tenant ]
---                         [ text "Skip" ]
---                   ]
---                 ]
---             )
---         ]
 
 
 tapeResultView model =
@@ -142,7 +122,7 @@ container collapseHeader model content =
 
 
 tapeLiveDiv tenant modus =
-    if Tenant.isSelected tenant && Maybe.isJust modus then
+    if Tenant.isCustom tenant && Maybe.isJust modus then
         div [ class "row", style [ ( "padding", "1rem" ) ] ]
             [ div [ class "twelve columns" ]
                 [ button

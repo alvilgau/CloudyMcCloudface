@@ -5,6 +5,7 @@ import DataPoint exposing (DataPoint)
 import Tenant exposing (Tenant)
 import Time exposing (Time)
 import Recording exposing (Recording)
+import CreateRecordingPageModel exposing (CreateRecordingPageModel)
 import Navigation exposing (Location)
 
 
@@ -29,6 +30,6 @@ type alias Model =
     , origin : Origin
     , recordings : Maybe (List Recording)
     , selectedRecording : Maybe String
-    , editedRecording : Maybe Recording
+    , createRecordingPageModel : Maybe CreateRecordingPageModel
     , error : Maybe String
     }

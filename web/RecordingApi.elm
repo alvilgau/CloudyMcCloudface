@@ -7,6 +7,7 @@ import Http
 import Msg exposing (..)
 import Recording
 import DataPoint
+import Date exposing (Date)
 
 
 host =
@@ -29,7 +30,7 @@ recordingResultDecoder =
     (Decode.field "data" (Decode.list DataPoint.decode))
 
 
-postRecording : String -> Tenant.Tenant -> Float -> Float -> List String -> Cmd Msg
+postRecording : String -> Tenant.Tenant -> Maybe Date.Date -> Maybe Date.Date -> List String -> Cmd Msg
 postRecording host tenant begin end keywords =
     let
         encodedKeywords =
@@ -37,13 +38,19 @@ postRecording host tenant begin end keywords =
                 |> List.map Encode.string
                 |> Encode.list
 
+        beginEnd =
+            [ Maybe.map (Date.toTime >> Encode.float >> ((,) "begin")) begin
+            , Maybe.map (Date.toTime >> Encode.float >> ((,) "end")) end
+            ]
+                |> List.filterMap identity
+
         payload =
             Encode.object
-                [ ( "tenant", Tenant.encode tenant )
-                , ( "begin", Encode.float begin )
-                , ( "end", Encode.float end )
-                , ( "keywords", encodedKeywords )
-                ]
+                ([ ( "tenant", Tenant.encode tenant )
+                 , ( "keywords", encodedKeywords )
+                 ]
+                    ++ beginEnd
+                )
                 |> Http.jsonBody
     in
         Http.post (host ++ "/records") payload (Decode.succeed "")

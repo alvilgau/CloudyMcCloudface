@@ -11,9 +11,11 @@ import Msg exposing (..)
 import View
 import Model exposing (..)
 import RecordingApi
+import Date
 import Task
 import Regex exposing (regex, HowMany(..))
 import Recording
+import CreateRecordingPageModel
 
 
 main : Program Never Model Msg
@@ -94,7 +96,7 @@ update msg model =
                 { model | data = data } ! reconnectCmd
 
         SelectModus modus ->
-            { model | modus = Just modus, data = [], keywords = [], selectedRecording = Nothing, editedRecording = Nothing }
+            { model | modus = Just modus, data = [], keywords = [], selectedRecording = Nothing, createRecordingPageModel = Nothing }
                 ! if modus == Tape then
                     [ RecordingApi.getRecordingList model.origin.http model.tenant ]
                   else
@@ -112,7 +114,7 @@ update msg model =
                 )
 
         NewRecording (Ok _) ->
-            model ! [ RecordingApi.getRecordingList model.origin.http model.tenant ]
+            { model | createRecordingPageModel = Nothing } ! [ RecordingApi.getRecordingList model.origin.http model.tenant ]
 
         NewRecording (Err err) ->
             let
@@ -129,7 +131,7 @@ update msg model =
                 x =
                     Debug.log "TenantValidationCompleted" err
             in
-                { model | error = Just "Tenant not valid!" } ! []
+                { model | error = Just "Invalid twitter credentials!" } ! []
 
         GetRecordingDataCompleted (Ok datapoints) ->
             { model | data = List.sortBy .time datapoints } ! []
@@ -142,7 +144,7 @@ update msg model =
                 model ! []
 
         GetRecordingListCompleted (Ok recordings) ->
-            { model | recordings = Just recordings } ! []
+            { model | recordings = Just <| List.sortWith (\r1 r2 -> compare (Date.toTime r2.begin) (Date.toTime r1.begin)) recordings } ! []
 
         GetRecordingListCompleted (Err err) ->
             let
@@ -158,10 +160,21 @@ update msg model =
             { model | error = Nothing } ! []
 
         CreateNewRecording ->
-            { model | editedRecording = Just Recording.init } ! []
+            let
+                ( createRecordingPageModel, cmd ) =
+                    CreateRecordingPageModel.init
+            in
+                { model | createRecordingPageModel = Just createRecordingPageModel } ! [ Cmd.map RecordingEdited cmd ]
 
-        RecordingEdited field ->
-            { model | editedRecording = Maybe.map (Recording.set field) model.editedRecording } ! []
+        RecordingEdited msg ->
+            let
+                ( createRecordingPageModel, cmd ) =
+                    model.createRecordingPageModel
+                        |> Maybe.map (CreateRecordingPageModel.update (RecordingApi.postRecording model.origin.http model.tenant) msg)
+                        |> Maybe.map (Tuple.mapFirst Just)
+                        |> Maybe.withDefault ( Nothing, Cmd.none )
+            in
+                { model | createRecordingPageModel = createRecordingPageModel } ! [ cmd ]
 
 
 setLastQueryTime =
@@ -214,7 +227,7 @@ init location =
     , recordings = Nothing
     , origin = origin location
     , selectedRecording = Nothing
-    , editedRecording = Nothing
+    , createRecordingPageModel = Nothing
     , error = Nothing
     }
         ! []

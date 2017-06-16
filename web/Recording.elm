@@ -5,10 +5,6 @@ import Date exposing (Date)
 import DateTimePicker
 
 
-type Time
-    = Time (Maybe Date) DateTimePicker.State
-
-
 type alias Recording =
     { id : String
     , begin : Date
