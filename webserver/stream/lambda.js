@@ -20,7 +20,6 @@ aws.config.update({
 
 const lambda = new aws.Lambda();
 
-
 const deleteLambdaFunction = () => new Promise((resolve) => {
   const params = {
     FunctionName: 'analyzeTweets',
@@ -54,33 +53,18 @@ const createLambdaFunction = () => new Promise((resolve, reject) => {
 
 const analyzeTweets = (tweets) => new Promise((resolve, reject) => {
 
-  resolve(lambdaMain.analyzeTweets(tweets));
-
-  /*
-  const params = {
-    FunctionName: 'analyzeTweets',
-    Payload: JSON.stringify({tweets})
-  };
-  lambda.invoke(params, (err, data) => {
-    if (err) {
-      reject(err);
-    } else {
-      resolve(data.Payload);
-
-      /*
-      const dirtyData = JSON.parse(JSON.stringify(data));
-      const dirtyPayload = dirtyData.Payload;
-      const payload = dirtyPayload.substring(dirtyPayload.indexOf('{'), dirtyPayload.lastIndexOf('}')+1);
-      try {
-        const json = JSON.parse(payload);
-        resolve(json);
-      } catch(err) {
-        console.error(`could not parse payload: ${payload}`);
-        reject(err);
-      }
-    }
-  });
-*/
+  if (!process.env.AWS) {
+    resolve(lambdaMain.analyzeTweets(tweets));
+  } else {
+    const params = {
+        FunctionName: 'analyzeTweets',
+        Payload: JSON.stringify({tweets})
+      };
+      lambda.invoke(params, (err, data) => {
+        if (err) reject(err);
+        else     resolve(data.Payload);
+      });      
+  }
 });
 
 module.exports = {
