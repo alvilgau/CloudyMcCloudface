@@ -1,4 +1,4 @@
-module Graph exposing (viewGraph)
+module Graph exposing (view)
 
 import Plot exposing (..)
 import Svg.Attributes exposing (stroke)
@@ -6,7 +6,7 @@ import Date
 import Time
 
 
-viewGraph keywords data =
+view keywords data =
     let
         plotCustomizations_ =
             { defaultSeriesPlotCustomizations | horizontalAxis = timeAxis }
@@ -17,9 +17,9 @@ viewGraph keywords data =
             data
 
 
-lineColoredWhereKeyword name colors =
+lineColoredWhereKeyword name color =
     { axis = normalAxis
-    , interpolation = Monotone Nothing [ stroke colors ]
+    , interpolation = Monotone Nothing [ stroke color ]
     , toDataPoints = List.filter (\dp -> dp.keyword == name) >> List.map (\dp -> clear dp.time dp.value)
     }
 
@@ -60,5 +60,7 @@ dateToTimeString date =
                 |> toString
                 |> String.padLeft 2 '0'
     in
-        -- hour ++ ":" ++ minute ++ ":" ++
-        second
+        if List.any (\e -> e == Date.second date) [ 0, 15, 30, 45 ] then
+            minute ++ ":" ++ second
+        else
+            ""

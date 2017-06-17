@@ -1,45 +1,25 @@
 module Main exposing (..)
 
-import Graph exposing (viewGraph)
-import Html exposing (div, Html, program, button, text, span, node, tr, td, table, th, thead, tbody, h1, input, b, label, form)
-import Html.Attributes exposing (style, rel, href, type_, class, placeholder, for, id)
-import Html.Events exposing (onClick, onInput, onCheck)
 import Keyword exposing (Keyword)
-import DataPoint exposing (DataPoint)
 import WebSocket
+import Navigation exposing (program, Location)
 import Communication exposing (InMessage(..))
-import Svg
-import Svg.Attributes as SvgAttr
-import Regex exposing (regex, HowMany(..))
 import Tenant exposing (Tenant)
 import Maybe.Extra as Maybe
 import Time exposing (second, Time, inMilliseconds)
+import Msg exposing (..)
+import View
+import Model exposing (..)
+import RecordingApi
+import Date
+import Task
+import Regex exposing (regex, HowMany(..))
+import CreateRecordingPageModel
 
 
 main : Program Never Model Msg
 main =
-    program { init = init, update = update, subscriptions = subscriptions, view = view }
-
-
-type alias Model =
-    { keywords : List Keyword
-    , data : List DataPoint
-    , editedKeyword : String
-    , tenant : Tenant
-    , lastQuery : Time
-    }
-
-
-type Msg
-    = NoOp
-    | WSMessage String
-    | Query
-    | Remove String
-    | Add String
-    | KeywordEdited String
-    | TenantEdited Tenant.TenantField String
-    | TenantSelected Bool
-    | Tick Time
+    program (\_ -> NoOp) { init = init, update = update, subscriptions = subscriptions, view = View.view }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -59,7 +39,7 @@ update msg model =
             let
                 keywords =
                     List.filter (\k -> k.name /= name) model.keywords
-                        |> keywordsWithColor
+                        |> Keyword.zipWithColor
 
                 data =
                     List.filter (\dp -> dp.keyword /= name) model.data
@@ -73,7 +53,7 @@ update msg model =
             let
                 keywords =
                     List.append model.keywords [ Keyword name "" ]
-                        |> keywordsWithColor
+                        |> Keyword.zipWithColor
 
                 model_ =
                     { model | keywords = keywords, editedKeyword = "" }
@@ -90,148 +70,147 @@ update msg model =
             in
                 { model | tenant = tenant } ! []
 
-        TenantSelected useCustom ->
+        TenantSelected selectedTenant ->
             let
-                ( tenant, cmd ) =
-                    if useCustom then
-                        ( Tenant.custom model.tenant, Cmd.none )
+                ( tenant, modus, cmd ) =
+                    if Tenant.isCustom selectedTenant then
+                        ( model.tenant, Nothing, Tenant.validate model.baseUrl.http TenantValidationCompleted selectedTenant )
                     else
-                        ( Tenant.default model.tenant, queryKeywordsCmd model )
+                        ( selectedTenant, Just Live, Cmd.none )
             in
-                ( { model | tenant = tenant }, cmd )
+                { model | tenant = tenant, modus = modus } ! [ queryKeywordsCmd model, cmd ]
 
         Tick time ->
             let
                 reconnectCmd =
                     Just (queryKeywordsCmd model)
-                        |> Maybe.filter (\_ -> List.all (\dp -> dp.time < (inMilliseconds time) - 15000) model.data)
+                        |> Maybe.filter (\_ -> List.all (\dp -> dp.time < (inMilliseconds time) - 20000) model.data)
+                        |> Maybe.filter (\_ -> model.lastQuery < (inMilliseconds time) - 20000)
                         |> Maybe.toList
-                        |> Debug.log "-----\n"
 
                 data =
                     model.data
-                        |> List.filter (\dp -> dp.time < (inMilliseconds time) - (5 * 60 * 1000))
+                        |> List.filter (\dp -> dp.time > (inMilliseconds time) - (5 * 60 * 1000))
             in
                 { model | data = data } ! reconnectCmd
+
+        SelectModus modus ->
+            { model | modus = Just modus, data = [], keywords = [], selectedRecording = Nothing, createRecordingPageModel = Nothing }
+                ! if modus == Tape then
+                    [ RecordingApi.getRecordingList model.baseUrl.record model.tenant ]
+                  else
+                    []
+
+        SelectRecording recording ->
+            let
+                keywords =
+                    recording.keywords
+                        |> List.map (\name -> Keyword name "")
+                        |> Keyword.zipWithColor
+            in
+                ( { model | selectedRecording = Just recording.id, keywords = keywords }
+                , RecordingApi.getRecordingData model.baseUrl.record recording.id
+                )
+
+        NewRecording (Ok _) ->
+            { model | createRecordingPageModel = Nothing } ! [ RecordingApi.getRecordingList model.baseUrl.record model.tenant ]
+
+        NewRecording (Err err) ->
+            let
+                x =
+                    Debug.log "GetRecordingListCompleted" err
+            in
+                model ! []
+
+        TenantValidationCompleted (Ok tenant) ->
+            { model | tenant = tenant } ! []
+
+        TenantValidationCompleted (Err err) ->
+            let
+                x =
+                    Debug.log "TenantValidationCompleted" err
+            in
+                { model | error = Just "Invalid twitter credentials!" } ! []
+
+        GetRecordingDataCompleted (Ok datapoints) ->
+            { model | data = List.sortBy .time datapoints } ! []
+
+        GetRecordingDataCompleted (Err err) ->
+            let
+                x =
+                    Debug.log "GetRecordingListCompleted" err
+            in
+                model ! []
+
+        GetRecordingListCompleted (Ok recordings) ->
+            { model | recordings = Just <| List.sortWith (\r1 r2 -> compare (Date.toTime r2.begin) (Date.toTime r1.begin)) recordings } ! []
+
+        GetRecordingListCompleted (Err err) ->
+            let
+                x =
+                    Debug.log "GetRecordingListCompleted" err
+            in
+                model ! []
+
+        SetLastQueryTime time ->
+            { model | lastQuery = time } ! []
+
+        HideError ->
+            { model | error = Nothing } ! []
+
+        CreateNewRecording ->
+            let
+                ( createRecordingPageModel, cmd ) =
+                    CreateRecordingPageModel.init
+            in
+                { model | createRecordingPageModel = Just createRecordingPageModel } ! [ Cmd.map RecordingEdited cmd ]
+
+        RecordingEdited msg ->
+            let
+                ( createRecordingPageModel, cmd ) =
+                    model.createRecordingPageModel
+                        |> Maybe.map (CreateRecordingPageModel.update (RecordingApi.postRecording model.baseUrl.record model.tenant) msg)
+                        |> Maybe.map (Tuple.mapFirst Just)
+                        |> Maybe.withDefault ( Nothing, Cmd.none )
+            in
+                { model | createRecordingPageModel = createRecordingPageModel } ! [ cmd ]
+
+
+setLastQueryTime : Cmd Msg
+setLastQueryTime =
+    Task.perform SetLastQueryTime Time.now
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    WebSocket.listen "ws://localhost:3000" WSMessage
+    Sub.batch <|
+        case model.modus of
+            Just Live ->
+                if Tenant.isSelected model.tenant && List.length model.keywords > 0 then
+                    [ WebSocket.listen model.baseUrl.ws WSMessage
+                    , Time.every second Tick
+                    ]
+                else
+                    []
+
+            _ ->
+                []
 
 
+queryKeywordsCmd : Model -> Cmd Msg
 queryKeywordsCmd model =
     let
         keywordNames =
             List.map .name model.keywords
     in
-        Just (Communication.queryKeywordsCmd model.tenant keywordNames)
+        Just (Cmd.batch [ Communication.queryKeywordsCmd model.tenant model.baseUrl.ws keywordNames, setLastQueryTime ])
             |> Maybe.filter (\_ -> List.length keywordNames > 0)
             |> Maybe.withDefault Cmd.none
 
 
-colors =
-    [ "rgb(57,106,177)", "rgb(218,124,48)", "rgb(62,150,81)", "rgb(204,37,41)", "rgb(83,81,84)" ]
-
-
-view : Model -> Html Msg
-view model =
-    div [ class "container", style [ ( "max-width", "1440px" ) ] ]
-        [ node "link" [ rel "stylesheet", type_ "text/css", href "css/normalize.css" ] []
-        , node "link" [ rel "stylesheet", type_ "text/css", href "css/skeleton.css" ] []
-        , h1 [] [ text "Twitter Sentiment Analysis" ]
-        , div [ class "row" ]
-            [ div [ class "eight columns" ] [ viewGraph model.keywords model.data ]
-            , div [ class "four columns" ] <| tenantSelector model.tenant
-            , div [ class "four columns" ] [ table [ class "u-full-width" ] [ keywordHeading, (keywordRows model.keywords model.editedKeyword) ] ]
-            ]
-        ]
-
-
-tenantSelector tenant =
-    [ label []
-        [ input [ type_ "checkbox", onCheck TenantSelected ] []
-        , span [ class "label-body" ] [ text "Use own Twitter" ]
-        ]
-    , case Tenant.get tenant of
-        Just custom ->
-            form [ class "u-full-width" ]
-                (List.concat
-                    [ labeledTenantInput Tenant.ConsumerKey "Consumer Key" custom.consumerKey
-                    , labeledTenantInput Tenant.ConsumerSecret "Consumer Secret" custom.consumerSecret
-                    , labeledTenantInput Tenant.Token "Token" custom.token
-                    , labeledTenantInput Tenant.TokenSecret "Token Secret" custom.tokenSecret
-                    , [ button [ class "button-primary", type_ "button", onClick Query ] [ text "Reconnect" ]
-                      ]
-                    ]
-                )
-
-        Nothing ->
-            text ""
-    ]
-
-
-labeledTenantInput fieldId labelString content =
-    let
-        inputId =
-            labelString
-                |> String.toLower
-                |> Regex.replace All (regex " ") (\_ -> "-")
-                |> Regex.replace All (regex "[^a-z0-9]") (\_ -> "")
-    in
-        [ label [ for inputId ] [ text labelString ]
-        , input [ type_ "text", class "u-full-width", onInput (TenantEdited fieldId), id inputId ] [ text content ]
-        ]
-
-
-keywordsWithColor keywords =
-    keywords
-        |> List.map .name
-        |> List.map2 (\c k -> { name = k, color = c }) colors
-
-
-keywordHeading =
-    thead []
-        [ tr []
-            [ th [] [ text "Keyword" ]
-            , th [] [ text "Color" ]
-            , th [] [ text "Action" ]
-            ]
-        ]
-
-
-keywordRows keywords editedKeyword =
-    let
-        rows =
-            (List.map keywordRow keywords)
-                ++ [ inputRow editedKeyword ]
-                |> List.take 5
-    in
-        tbody [] rows
-
-
-keywordRow keyword =
-    tr []
-        [ td [] [ text keyword.name ]
-        , td [] [ coloredCircle keyword.color ]
-        , td [] [ button [ style [ ( "padding", "0 15px" ) ], onClick (Remove keyword.name) ] [ text "x" ] ]
-        ]
-
-
-inputRow editedKeyword =
-    tr []
-        [ td [] [ input [ type_ "text", placeholder "New keyword", onInput KeywordEdited ] [] ]
-        , td [] [ coloredCircle "rgba(0,0,0,0)" ]
-        , td [] [ button [ type_ "submit", class "button-primary", style [ ( "padding", "0 15px" ) ], onClick (Add editedKeyword) ] [ b [] [ text "+" ] ] ]
-        ]
-
-
-coloredCircle color =
-    Svg.svg [ SvgAttr.width "20", SvgAttr.height "20" ] [ Svg.circle [ SvgAttr.cx "10", SvgAttr.cy "10", SvgAttr.r "10", SvgAttr.fill color ] [] ]
-
-
-webSocketReceived data model =
-    case (Communication.handleMessage data) of
+webSocketReceived : String -> Model -> Model
+webSocketReceived encodedData model =
+    case (Communication.handleMessage encodedData) of
         Data data ->
             { model | data = (data :: model.data) }
 
@@ -239,6 +218,26 @@ webSocketReceived data model =
             model
 
 
-init : ( Model, Cmd Msg )
-init =
-    { keywords = [], data = [], editedKeyword = "", tenant = Tenant.init, lastQuery = 0 } ! []
+init : Location -> ( Model, Cmd Msg )
+init location =
+    { keywords = []
+    , data = []
+    , editedKeyword = ""
+    , tenant = Tenant.init
+    , lastQuery = 0
+    , modus = Nothing
+    , recordings = Nothing
+    , baseUrl = baseUrl location
+    , selectedRecording = Nothing
+    , createRecordingPageModel = Nothing
+    , error = Nothing
+    }
+        ! []
+
+
+baseUrl : Location -> BaseUrl
+baseUrl location =
+    { http = location.origin
+    , ws = Regex.replace (AtMost 1) (regex "http") (\_ -> "ws") location.origin
+    , record = "http://localhost:3010"
+    }
