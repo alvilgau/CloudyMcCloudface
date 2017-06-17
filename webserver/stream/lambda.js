@@ -22,8 +22,7 @@ const lambda = new aws.Lambda();
 
 const deleteLambdaFunction = () => new Promise((resolve) => {
   const params = {
-    FunctionName: 'analyzeTweets',
-    Qualifier: "1"
+    FunctionName: 'analyzeTweets'
   };
   lambda.deleteFunction(params, (err, data) => resolve({}));
 });
@@ -43,7 +42,7 @@ const createLambdaFunction = () => new Promise((resolve, reject) => {
     FunctionName: 'analyzeTweets',
     Handler: "main.handler",
     Runtime: "nodejs6.10",
-    Role: "r1"
+    Role: process.env.LAMBDA_ROLE
   };
   lambda.createFunction(params, (err, data) => {
     if (err) reject(err);
