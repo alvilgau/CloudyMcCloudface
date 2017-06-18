@@ -25,7 +25,7 @@ const trackKeywords = (tenant, userId, keywords) => {
   const tenantId = getId(tenant);
   console.log(`track keywords for tenant ${tenantId}`);
   return client.multi()
-    .set(`tenants->${tenantId}`, JSON.stringify(tenant))
+    .setnx(`tenants->${tenantId}`, JSON.stringify(tenant))
     .expire(`tenants->${tenantId}`, expiration)
     .lpush(`tenants:${tenantId}->users`, userId)
     .expire(`tenants:${tenantId}->users`, expiration)
