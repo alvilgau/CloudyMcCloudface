@@ -65,7 +65,7 @@ server.start((err) => {
 
 // web socket
 
-const wss = new WebSocket.Server({port: 3001});
+const wss = new WebSocket.Server({port: process.env.WEBSOCKET_PORT || 3001});
 
 const sockets = {};
 
