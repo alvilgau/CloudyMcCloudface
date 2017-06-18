@@ -48,9 +48,20 @@ In order to persist analyzed tweets, a DynamoDB is used.
 ### external cloud resource types
 
 ### scaling
-- tenants -> scale up main_tweetstreams
-- users -> scale up webserver.js
-- tweets -> scale up redis + auto scaling with AWS lambda
+
+There are three different kinds of scaling scenarios for *TSA*.
+
+1. Scale for tenants
+
+When the number of tenant increases, then there will be more http-connections to the twitter api stream. In order to handle several streams, new instances of the *tweet-stream service* are required.
+
+2. Scale for users
+
+When the number of user increases, then there are a lot of websocket connections (one per user). In order to handle a huge amount of users, new instances of the *webserver service* need to be started.
+
+3. Scale for tweets
+
+When there are a lot of tweets which have to be analyzed, there is nothing further to do! The analyzer function is a stateless AWS Lambda function which is scaled automatically by Amazon.
 
 ### multi-tenancy
 - twitter oauth credentials
