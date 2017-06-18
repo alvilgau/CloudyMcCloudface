@@ -42,7 +42,7 @@ const createLambdaFunction = () => new Promise((resolve, reject) => {
     FunctionName: 'analyzeTweets',
     Handler: "main.handler",
     Runtime: "nodejs6.10",
-    Role: process.env.LAMBDA_ROLE
+    Role: process.env.LAMBDA_ROLE || 'myrole'
   };
   lambda.createFunction(params, (err, data) => {
     if (err) reject(err);
