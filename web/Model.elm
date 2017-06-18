@@ -16,7 +16,6 @@ type Modus
 type alias BaseUrl =
     { http : String
     , ws : String
-    , record : String
     }
 
 
