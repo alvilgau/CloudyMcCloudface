@@ -1,3 +1,3 @@
 # record
 
-micro-service to store analyzed tweets with dynamodb.
+hapi plugin that allows recording of analyzed tweets

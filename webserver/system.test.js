@@ -19,7 +19,7 @@ const doNotRunSystemTest = (done) => {
 };
 
 const runSystemTest = (done) => {
-  const ws = new WebSocket('ws://::3000');
+  const ws = new WebSocket('ws://::3001');
   ws.on('open', () => {
     ws.send(JSON.stringify({
       tenant: null,
