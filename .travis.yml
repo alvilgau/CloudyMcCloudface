@@ -56,15 +56,28 @@ before_deploy:
   - mkdir deploy
   - zip --quiet -r "deploy/webserver--$TRAVIS_BRANCH--$TRAVIS_BUILD_NUMBER--$(date '+%Y-%M-%d--%H-%m-%S').zip" webserver
 deploy:
-  provider: s3
-  access_key_id: AKIAJZGVKYOBXBX7DR7A
-  secret_access_key:
-    secure: BkSfJVIwlsLS5lRcifGhu3BDgQs6ytibt82m/lRR6a2ZM5scrUzAwSJ9vHXpKMb1kvKmXuMK0DqKed15DXOan9iOlH89WsR1hiseAWFkPWzsNe7yfYwlqFng5akoJDlkn63xXsptHIWkWB5q8lDmsXd/iMPAqrE0NBAc4XqdoUF6urG+Z9AZVQ0gxMw2QItAFWfH0VNv1aynmc1rOI4XEb4I21QwNFQxvpDBJhGf+s5R33olZUCdq/RJ6obHHCwRB94AAPmi7GuX/g6/cmPYTy62oIgPWlBSZlNpnrt/I6t4FJswwokGoqgR/XQ+cidJhCKJIg5ELexk2VNL9+fFwmdWHM33vHZNlTgpStPaV0y96RyMDX6p5IZuKScenm8zLRszabVDwAkt9Bk3vNaY7FsYyFCNaOvJtV2RZwcuI4kyxaAjgENHQHB24lNs8lM3ItqQnx8zucFGcaUWJkaaJ9W144tpOMromHfJGQZ00UB+PFAtUBMh4m99WhaPYBlfkSCT+NxHTuC/U6O2OjwmtzJeBYBvHmMApu7R5B/PsUd2QuAk2vU8Y8WzRsl9IqWJu80byZEtnlgX6GJW17eVcSX8PhRL3BpPip0oGj/pRdaGBKaqdr6Sw1HODho9naOhQ4gRR0++MySl+0TfArgijhBCemWOp/1Dhu+bbolikCw=
-  bucket: cloudy-sentiment-analysis
-  region: eu-central-1
-  local_dir: deploy
-  skip_cleanup: true
-  upload-dir: webserver
-  on:
-    branch: master
-    node: 7
+  - provider: s3
+    access_key_id: AKIAJSKOWUWXRM2U473A
+    secret_access_key:
+      secure: JhB49loRKF6dEBx8tLRncCX7x5+UiO/tKXB30IcR6hoK4gL5Zg5HPT6Swq5OlfUU12LURs3WpHX314thNt8jmH6X1+/z8jLQbnNW9r8WxjjEsaS72NSbLiNyQTp4t6vy07q8P0FtpvNT7HUk+kgtbEIimc8D2ZpKJqTLgJD1azf1/sY/1rXqK5n0x4GHnlfNaioEVt9hQo3ss0b9C8xBdIybHbfNnlHago97Tj2t15bKw0zwUZggveyrN0t/onN5s5TuG3Ecym3SoYLVSPl5KZjWzigdr3jPwpfL9SSoB9Wm1w0c0O4A7/2u8MXNnlTNUXLHIOtxMYIlZ4S6E5mvdNyjBVIrZnXI88YTrE24If1zx5xHpgqqcwZ/mnaEprW2gaWMWDH5O9S8OTKEUhWPgbp0P9QyP9d3auk/D6FPaww0fOCvsUxiaORlcv8O4Im+IVwt1C0hKXWr6VUk66scLVd6Dqg8UH/6D6uWhXWYwa0HU/mmEQda0sBkOmALnIFtKggZXmdlvBEK8JLY2qcgiftBJM7iH+AjCsCYxPeSy6Om5LKW+pg+aka0GYMiToojWCOAJI0E/g1krvbs9U1g+GKKLDIiszgS0we/ZHde4zqd2ozjzHpxoZAJwYJB8v5z2oGv3rOhFSz5EWdWV3CexJ96Qb0jmgBunz2opprmvD0=
+    bucket: cloudy-sentiment-analysis-2
+    region: eu-central-1
+    local_dir: deploy
+    skip_cleanup: true
+    upload-dir: webserver
+    on:
+      branch: master
+      node: 7
+  - provider: lambda
+    access_key_id: AKIAJSKOWUWXRM2U473A
+    secret_access_key:
+      secure: JhB49loRKF6dEBx8tLRncCX7x5+UiO/tKXB30IcR6hoK4gL5Zg5HPT6Swq5OlfUU12LURs3WpHX314thNt8jmH6X1+/z8jLQbnNW9r8WxjjEsaS72NSbLiNyQTp4t6vy07q8P0FtpvNT7HUk+kgtbEIimc8D2ZpKJqTLgJD1azf1/sY/1rXqK5n0x4GHnlfNaioEVt9hQo3ss0b9C8xBdIybHbfNnlHago97Tj2t15bKw0zwUZggveyrN0t/onN5s5TuG3Ecym3SoYLVSPl5KZjWzigdr3jPwpfL9SSoB9Wm1w0c0O4A7/2u8MXNnlTNUXLHIOtxMYIlZ4S6E5mvdNyjBVIrZnXI88YTrE24If1zx5xHpgqqcwZ/mnaEprW2gaWMWDH5O9S8OTKEUhWPgbp0P9QyP9d3auk/D6FPaww0fOCvsUxiaORlcv8O4Im+IVwt1C0hKXWr6VUk66scLVd6Dqg8UH/6D6uWhXWYwa0HU/mmEQda0sBkOmALnIFtKggZXmdlvBEK8JLY2qcgiftBJM7iH+AjCsCYxPeSy6Om5LKW+pg+aka0GYMiToojWCOAJI0E/g1krvbs9U1g+GKKLDIiszgS0we/ZHde4zqd2ozjzHpxoZAJwYJB8v5z2oGv3rOhFSz5EWdWV3CexJ96Qb0jmgBunz2opprmvD0=
+    function_name: "analyzeTweets"
+    zip: lambda
+    region: "eu-central-1"
+    role: "arn:aws:iam::508323409197:role/lambda_basic_execution"
+    runtime: "nodejs6.10"
+    handler_name: "main.handler"
+    on:
+      branch: master
+      node: 7
