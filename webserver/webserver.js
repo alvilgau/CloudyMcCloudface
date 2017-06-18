@@ -1,9 +1,9 @@
 require('dotenv').config();
-const express = require('express');
-const bodyParser = require('body-parser');
+const Hapi = require('hapi');
+const Path = require('path');
+const Boom = require('boom');
 const http = require('http');
 const uuidV4 = require('uuid/v4');
-const tweetstream = require('./stream/tweetstream');
 const WebSocket = require('ws');
 const Joi = require('joi');
 const redisCommands = require('./redis/redis-commands');
@@ -11,22 +11,61 @@ const redisEvents = require('./redis/redis-events');
 const _ = require('lodash');
 const credentialsValidator = require('./credentials-validator');
 
-const app = express();
-const server = http.Server(app);
-const wss = new WebSocket.Server({server});
+// hapi web server
 
-// serve index.html
-app.use(express.static('public'));
-app.use(bodyParser.json());
-
-
-app.post('/tenants/validate', (req, res) => {
-  credentialsValidator.areCredentialsValid(req.body)
-    .then(ok => {
-      if (!ok) res.status(401).send({});
-      else     res.status(200).send({});
-    });
+const server = new Hapi.Server({
+  connections: {
+    routes: {
+      files: {
+        relativeTo: Path.join(__dirname, 'public')
+      }
+    }
+  }
 });
+
+server.connection({
+  host: 'localhost',
+  port: process.env.WEBSERVER_PORT || 3000
+});
+
+server.register([require('inert'), require('./record/record-rest')], () => {});
+
+server.route({
+  method: 'GET',
+  path: '/{param*}',
+  handler: {
+    directory: {
+      path: '.',
+      redirectToSlash: true,
+      index: true
+    }
+  }
+});
+
+server.route({
+  method: 'POST',
+  path: '/tenants/validate',
+  handler: (request, reply) => {
+    credentialsValidator.areCredentialsValid(request.payload)
+      .then(ok => {
+        if (!ok) return reply(Boom.unauthorized('then'));
+        else     return reply({});
+      })
+      .catch(err => reply(Boom.unauthorized('catch')));
+  }
+});
+
+server.start((err) => {
+  if (err) {
+    throw err;
+  }
+  console.log('Server running at:', server.info.uri);
+});
+
+
+// web socket
+
+const wss = new WebSocket.Server({port: process.env.WEBSOCKET_PORT || 3001});
 
 const sockets = {};
 
@@ -103,8 +142,3 @@ setInterval(() => {
       .map(tenant => redisCommands.getId(tenant))
   ).forEach(tenantId => redisCommands.refreshTenantExpiration(tenantId));
 }, process.env.KEEP_ALIVE_INTERVAL);
-
-// lets go
-server.listen(3000, () => {
-  console.log('listening on *:3000');
-});
