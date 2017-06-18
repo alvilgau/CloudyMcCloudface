@@ -1,6 +1,6 @@
 const WebSocket = require('ws');
 
-const numOfSockets = process.argv[2] || 1;
+const numOfSockets = process.argv[2] || 500;
 const sockets = [];
 const url = '';
 
@@ -35,8 +35,10 @@ const createWebSocketConnection = () => {
   sockets.push(ws);
 };
 
-
+// create one connection
 createWebSocketConnection();
+
+// wait 2 seconds, then open a lot of other connections
 setTimeout(() => {
   for (let i = 0; i < numOfSockets - 1; i++) {
     createWebSocketConnection();
