@@ -5,7 +5,7 @@ const WebSocket = require('ws');
 const numOfSockets = process.argv[2] || 100;
 const sockets = [];
 let scount = 0;
-const url = 'ws://ec2-54-93-250-11.eu-central-1.compute.amazonaws.com';
+const url = '';
 
 const keywords = ['trump', 'obama', 'twitter', 'london', 'apple', 'beer', 'dog', 'cat', 'life', 'party', 'sunday', 'monday', 'work', 'train', 'sf', 'drink', 'hangover'];
 
