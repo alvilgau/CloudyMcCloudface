@@ -14,8 +14,10 @@ const psubscriber = redis.createClient({
 
 const db = process.env.REDIS_DB || 0;
 
-// enable keyspace events
-psubscriber.config('set', 'notify-keyspace-events', 'KEA');
+if (!process.env.AWS) {
+  // enable keyspace events
+  psubscriber.config('set', 'notify-keyspace-events', 'KEA');
+}
 
 const eventEmitter = new EventEmitter();
 
