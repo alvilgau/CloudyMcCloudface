@@ -9,8 +9,8 @@ const threshold = 10;
 
 const handleNewTweet = function (stream, tweet) {
   const keywords = stream.keywords
-                         .sort((a, b) => b.length - a.length)
-                         .filter(kw => tweet.toLowerCase().includes(kw.toLowerCase()));
+    .sort((a, b) => b.length - a.length)
+    .filter(kw => tweet.toLowerCase().includes(kw.toLowerCase()));
   const tweets = stream.tweets;
   keywords.forEach(keyword => {
     // create key for keyword if not already exists
@@ -18,19 +18,19 @@ const handleNewTweet = function (stream, tweet) {
       tweets[keyword] = [];
     }
     // store tweet
-    tweets[keyword].push(tweet);  
+    tweets[keyword].push(tweet);
   });
 
   // analyze Tweets every 3 seconds
   if (Date.now() - tweets.__lastAnalysis > 3000) {
-      tweets.__lastAnalysis = Date.now();
-      stream.keywords
-        .forEach(keyword => {
-          if(tweets[keyword].length > 0){
-            stream.handleTweets(keyword, tweets[keyword])
-            tweets[keyword] = [];
-          }
-      });      
+    tweets.__lastAnalysis = Date.now();
+    stream.keywords
+      .forEach(keyword => {
+        if (tweets[keyword].length > 0) {
+          stream.handleTweets(keyword, tweets[keyword])
+          tweets[keyword] = [];
+        }
+      });
   }
 };
 
@@ -57,7 +57,8 @@ const installResponseHandler = function (stream) {
           if (tweetAsJson.text) {
             handleNewTweet(stream, tweetAsJson.text);
           }
-        } catch (ignored) { /* should never happen */ }
+        } catch (ignored) { /* should never happen */
+        }
         // now the new tweet message
         tweet = splitted[1];
       } else {
@@ -118,10 +119,11 @@ const startStream = (tenant) => {
   const stream = {
     tweets: {
       __lastAnalysis: Date.now()
-    },    
+    },
     keywords: [],
     needReconnect: false,
-    handleTweets: () => { },
+    handleTweets: () => {
+    },
     tenant: tenant,
     connection: undefined
   };
