@@ -10,7 +10,7 @@ const threshold = 10;
 const handleNewTweet = function (stream, tweet) {
   const keywords = stream.keywords
     .sort((a, b) => b.length - a.length)
-    .filter(kw => tweet.toLowerCase().includes(kw.toLowerCase()));
+    .filter(kw => tweet.toLowerCase().includes(kw));
   const tweets = stream.tweets;
   keywords.forEach(keyword => {
     // create key for keyword if not already exists
