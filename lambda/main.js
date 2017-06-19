@@ -37,13 +37,13 @@ const analyzeTweets = (tweets) => {
   };
 };
 
-exports.handler = (event, context, callback) => {
-  const tweets = event.tweets;
-  const analyzedTweets = analyzeTweets(tweets);
-  callback(null, analyzedTweets);
-};
 
 module.exports = {
   analyzeTweets,
-  analyzeTweet
+  analyzeTweet,
+  handler = (event, context, callback) => {
+    const tweets = event.tweets;
+    const analyzedTweets = analyzeTweets(tweets);
+    callback(null, analyzedTweets);
+  }
 };
