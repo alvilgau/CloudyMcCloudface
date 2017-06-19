@@ -97,7 +97,7 @@ update msg model =
         SelectModus modus ->
             { model | modus = Just modus, data = [], keywords = [], selectedRecording = Nothing, createRecordingPageModel = Nothing }
                 ! if modus == Tape then
-                    [ RecordingApi.getRecordingList model.baseUrl.record model.tenant ]
+                    [ RecordingApi.getRecordingList model.baseUrl.http model.tenant ]
                   else
                     []
 
@@ -109,11 +109,11 @@ update msg model =
                         |> Keyword.zipWithColor
             in
                 ( { model | selectedRecording = Just recording.id, keywords = keywords }
-                , RecordingApi.getRecordingData model.baseUrl.record recording.id
+                , RecordingApi.getRecordingData model.baseUrl.http recording.id
                 )
 
         NewRecording (Ok _) ->
-            { model | createRecordingPageModel = Nothing } ! [ RecordingApi.getRecordingList model.baseUrl.record model.tenant ]
+            { model | createRecordingPageModel = Nothing } ! [ RecordingApi.getRecordingList model.baseUrl.http model.tenant ]
 
         NewRecording (Err err) ->
             let
@@ -169,7 +169,7 @@ update msg model =
             let
                 ( createRecordingPageModel, cmd ) =
                     model.createRecordingPageModel
-                        |> Maybe.map (CreateRecordingPageModel.update (RecordingApi.postRecording model.baseUrl.record model.tenant) msg)
+                        |> Maybe.map (CreateRecordingPageModel.update (RecordingApi.postRecording model.baseUrl.http model.tenant) msg)
                         |> Maybe.map (Tuple.mapFirst Just)
                         |> Maybe.withDefault ( Nothing, Cmd.none )
             in
@@ -239,5 +239,6 @@ baseUrl : Location -> BaseUrl
 baseUrl location =
     { http = location.origin
     , ws = Regex.replace (AtMost 1) (regex "http") (\_ -> "ws") location.origin
-    , record = "http://localhost:3010"
+        |> Regex.replace (AtMost 1) (regex ":[0-9]{2,5}$") (\_ -> "")
+        |> (flip String.append) ":3001"
     }

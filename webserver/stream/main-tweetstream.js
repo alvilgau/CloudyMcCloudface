@@ -41,12 +41,18 @@ const createStreamForTenant = tenant => {
 };
 
 const battleForTenant = (tenantId) => {
-  redisCommands.battleForTenant(tenantId)
-    .then(battle => {
-      if (battle.wonBattle && battle.tenant) {
-        createStreamForTenant(battle.tenant);
-      }
-    });
+
+  // we punish those tweet-streams which already own a lot of tenants
+  const delay = Object.keys(streams).length * 30 /* ms */;
+
+  setTimeout(() => {
+    redisCommands.battleForTenant(tenantId)
+      .then(battle => {
+        if (battle.wonBattle && battle.tenant) {
+          createStreamForTenant(battle.tenant);
+        }
+      });
+  }, delay);
 };
 
 redisEvents.on('newTenant', (tenantId) => battleForTenant(tenantId));
