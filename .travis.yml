@@ -45,16 +45,17 @@ env:
   - secure: tQQVpmr3LF+Ro7JNW6jUEXNrEpnQ5fJUOeeYGTMeQ47HbUFDlPJfWoplN+g6J2lAMcNGU6H3o36B/C6X7JYQ2tZg/vY541RmVV2fiAs1exWGY5h3h+c5B+RGMDKDf9ITq8pSGgEpkYAbcNL5JCOGWEsNQHxxiNjXehUUV/GDW0y/+bY7Hblz+VMBf5f1BXuO8XBTa1XnGkqvn437MJBHolwQAlAc9+y4j9pByXWSY1znZhfh7gjhTjM2M0x76pjUkB5Sd/j7xSdP/l4yJ7MM8LXr3/lzUu2q4aQyuFNJDa1zWdQtd1CMtwrjA/I0f4c3Py2ou4rvRQ16JUoeawyl9O7zbTMcN35x/r/Ei98DL3yflY++Lgy6crOfvfNMZ9XqO8UnYutULC/ABuxSBNWnTSBBGsdImQ0vSAEZpItaSJ52CmWgct3gZs8N2ZzIxfRn92qjGYVzvzgly8BhMXaHd3wJD9eplCw2mOyawxU9rXqxCoKwdevLCHXqsLQYLt517lLU504YjD+ZJunxQYg94o6vgfsYDgZjfs7zJ/31DVpa0+RshPkVCXZS53gA4Ugei4t8Nx1UWMSLmV2Oo/yjJNrdSOEdACvzVXp295n6aIu96hVHiSFOrJtmJz83HmpR6SGjeU1xc6JQRydmkMqfAfc4St1TQ8NwVRleSjWXDYY=
   - secure: M+SonMzg2i05+SmqOLB/mn2S1ERJOkrT2zMewYlO0vAxr8u8QfMr653ypmB14tTE58rdg4oRb4Hq+QrjsTkz8GKT0BT2scahHXufaxc6VF+VouJrUoyHEdO93vsCcELm9Nk9QmtQmTC0skWjZupJ2R+CGp7aGeae27PPVVLEnlJ77QQuGNCNAHqeA5CCWDQvd3eq6qACdheoZpDpdH3BYRd1/lN7WHalWze+W2wLJGTbDbEPv8NykBi+R2Rlv7aRgPZwhIlOuv81xPNdupkuHNvVQe156jeYTwZAPie42/GKXy1bfNyiYcyg/y2xAnvnCsCQcxa4laQY1pcedUClD54nNG4FDMj/NP8N1qIOyvlXVchnymmK77t0TBtCRYd4uLF4x4bn68PKvg0PtD6UZeenNGwfjclOanzjQdIQTRL1x7pB9YgZqB1TnYBo+/0+EuJGL+ohuTRBWuRy1keC1Mbe6yBhaN4fRl+irz86I1Cb0QOIRoDMFVLpzfmwFI8+FtJnkEaFwhbWTkhp3RAl7QwdBSfFfEFpsOoc/dGvc9nGaif1v/Rbt+GmLqrdMRkSx5sWffr6PbNsw1lULKOu+duoMySqqWr8crcomaR5+q1+Pr8msKD9zPQR7Vgr/rHNxeCRD6ZTpuNuTsfS3RmZX1IXrBmVNA1WVYTQaOXraKg=
 before_deploy:
-- > if ! [ "$BEFORE_DEPLOY_RUN" ]; then
-      export BEFORE_DEPLOY_RUN=1;
-      cp web/index.html webserver/public/index.html
+- | 
+  if ! [ "$BEFORE_DEPLOY_RUN" ]; then
+    export BEFORE_DEPLOY_RUN=1;
+    cp web/index.html webserver/public/index.html
 
-      ssh-agent bash -c 'ssh-add sshkey; git clone git@github.com:markusheilig/cloudy-secrets prod-env'
-      cp prod-env/.env webserver/.env
+    ssh-agent bash -c 'ssh-add sshkey; git clone git@github.com:markusheilig/cloudy-secrets prod-env'
+    cp prod-env/.env webserver/.env
 
-      mkdir deploy
-      zip --quiet -r "deploy/webserver--$TRAVIS_BRANCH--$TRAVIS_BUILD_NUMBER--$(date '+%Y-%M-%d--%H-%m-%S').zip" webserver
-    fi
+    mkdir deploy
+    zip --quiet -r "deploy/webserver--$TRAVIS_BRANCH--$TRAVIS_BUILD_NUMBER--$(date '+%Y-%M-%d--%H-%m-%S').zip" webserver
+  fi
 
 deploy:
 - provider: s3
