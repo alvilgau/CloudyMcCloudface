@@ -46,7 +46,7 @@ const createLambdaFunction = () => new Promise((resolve, reject) => {
   };
   lambda.createFunction(params, (err, data) => {
     if (err) reject(err);
-    else     resolve(data);
+    else resolve(data);
   });
 });
 
@@ -56,13 +56,13 @@ const analyzeTweets = (tweets) => new Promise((resolve, reject) => {
     resolve(lambdaMain.analyzeTweets(tweets));
   } else {
     const params = {
-        FunctionName: 'analyzeTweets',
-        Payload: JSON.stringify({tweets})
-      };
-      lambda.invoke(params, (err, data) => {
-        if (err) reject(err);
-        else     resolve(data.Payload);
-      });      
+      FunctionName: 'analyzeTweets',
+      Payload: JSON.stringify({ tweets })
+    };
+    lambda.invoke(params, (err, data) => {
+      if (err) reject(err);
+      else resolve(JSON.parse(data.Payload));
+    });
   }
 });
 
