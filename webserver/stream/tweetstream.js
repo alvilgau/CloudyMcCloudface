@@ -26,7 +26,7 @@ const handleNewTweet = function (stream, tweet) {
     tweets.__lastAnalysis = Date.now();
     stream.keywords
       .forEach(keyword => {
-        if (tweets[keyword].length > 0) {
+        if (tweets[keyword] && tweets[keyword].length > 0) {
           stream.handleTweets(keyword, tweets[keyword]);
           tweets[keyword] = [];
         }
