@@ -80,7 +80,8 @@ deploy:
   region: eu-central-1
   role: arn:aws:iam::508323409197:role/lambda_basic_execution
   runtime: nodejs6.10
-  handler_name: main.handler
+  module_name: main
+  handler_name: handler
   on:
     branch: master
     node: 7
