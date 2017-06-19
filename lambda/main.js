@@ -41,7 +41,7 @@ const analyzeTweets = (tweets) => {
 module.exports = {
   analyzeTweets,
   analyzeTweet,
-  handler = (event, context, callback) => {
+  handler: (event, context, callback) => {
     const tweets = event.tweets;
     const analyzedTweets = analyzeTweets(tweets);
     callback(null, analyzedTweets);
