@@ -27,7 +27,7 @@ const handleNewTweet = function (stream, tweet) {
     stream.keywords
       .forEach(keyword => {
         if (tweets[keyword].length > 0) {
-          stream.handleTweets(keyword, tweets[keyword])
+          stream.handleTweets(keyword, tweets[keyword]);
           tweets[keyword] = [];
         }
       });
