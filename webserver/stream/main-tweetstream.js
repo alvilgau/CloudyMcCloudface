@@ -4,13 +4,16 @@ const redisCommands = require('./../redis/redis-commands');
 const ts = require('./tweetstream');
 const lambda = require('./lambda');
 
-lambda.deleteLambdaFunction()
-  .then(ok => lambda.createLambdaFunction())
-  .then(console.log)
-  .catch(err => {
-    console.error(`could not create lambda function: ${err}`);
-    process.exit(1);
-  });
+if (!process.env.AWS) {
+  lambda.deleteLambdaFunction()
+    .then(ok => lambda.createLambdaFunction())
+    .then(console.log)
+    .catch(err => {
+      console.error(`could not create lambda function: ${err}`);
+      process.exit(1);
+    });
+}
+
 
 const streams = {};
 
