@@ -8,8 +8,8 @@ cache:
   - web/elm-stuff/packages
   - web/sysconfcpus
 before_install:
-- openssl aes-256-cbc -K $encrypted_1a25257e8deb_key -iv $encrypted_1a25257e8deb_iv
-  -in sshkey.enc -out .\\sshkey -d
+- openssl aes-256-cbc -K $encrypted_a0e672a7d53d_key -iv $encrypted_a0e672a7d53d_iv
+  -in sshkey.enc -out sshkey -d
 - echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 install:
 - cd webserver && npm install && cd ..
