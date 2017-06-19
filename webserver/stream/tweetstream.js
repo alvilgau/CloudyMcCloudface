@@ -51,13 +51,15 @@ const installResponseHandler = function (stream) {
         const splitted = chunk.split('\r\n');
         // first part belongs to 'current' tweet
         tweet += splitted[0];
+        const tweetAsJson;
         try {
           // publish tweet
-          const tweetAsJson = JSON.parse(tweet);
-          if (tweetAsJson.text) {
-            handleNewTweet(stream, tweetAsJson.text);
-          }
-        } catch (ignored) { /* should never happen */
+          tweetAsJson = JSON.parse(tweet);
+        } catch (ignored) {
+          /* should never happen */
+        }
+        if (tweetAsJson.text) {
+          handleNewTweet(stream, tweetAsJson.text);
         }
         // now the new tweet message
         tweet = splitted[1];
