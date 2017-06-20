@@ -58,10 +58,7 @@ The sentiment analysis is realized with a Node.js module called [sentiment](http
 After the calculation is done, the *tweetstream-service* publishes the results on redis channels on which other services can subscribe to. This way, the *webserver-service* is able to subscribe for analyzed tweets and send the results back to the client applications via websocket messages; the *recorder service* is able to subscribe in order to store the analyzed tweets results.
 
 #### Persisting analyzed tweets
-
-In order to persist analyzed tweets, a DynamoDB is used.
-TODO: alex
-
+TODO: alex ...
 
 ### implementation of the functionality
 
@@ -84,14 +81,27 @@ When the number of user increases, then there are a lot of websocket connections
 
 When there are a lot of tweets which have to be analyzed, there is nothing further to do! The analyzer function is a stateless AWS Lambda function which is scaled automatically by Amazon.
 
+todo: alex, which scaling groups are defined and how are they configured?
+
 ### multi-tenancy
 
-*TSA* has multi-tenancy support.
+#### Definition of user
+A user is defined as a consumer of our service, e.g. someone who uses the *TSA web application*.
+From the technical point of view, a user is represented as a websocket connection to the websocket server. Each websocket-connection is mapped by a uuid which will last for the whole socket session. This uuid (we call it 'user-id') also maps the keywords the user wants to track. The mapping is used to decide wich analyzed tweets will be sent to which users.
 
-- twitter oauth credentials
-- one tenant equals one http-stream
-- one tenant may have unlimited users
-- 'default tenant'
+#### Definition of tenant
+When you want to access the twitter api, you have to register a twitter application before to get access tokens. These access tokens are used from twitter to identify API access.
+*TSA* has multi-tenancy support built-in. In the context of *TSA* a tenant is defined as a twitter application. When you register a twitter application twitter generates four significant values which are required to access the twitter api:
+ - Consumer Key (API Key)
+ - Consumer Secret (API Secret)
+ - Access Token
+ - Access Token Secret
+
+So *TSA* gives you the opportunity to use your own twitter application credentials to access the twitter api. When different users share the same credentials to use *TSA*, they will be seen as 'one tenant' belonging to one organization (twitter account) from *TSA*s point of view.
+
+*TSA* has a predefined tenant (we call it 'default tenant', which is a twitter application called 'CloudyMcCloudface-tweet-analyzer') for users who don't want to register a twitter application theirselves.
+
+
 
 ### 12 factors
 - codebase
