@@ -1,5 +1,6 @@
 const redisCommands = require('./redis-commands');
 
+i want the tests to fail!!!! sorry for that guys!
 
 afterEach((done) => {
   redisCommands.flushDb().then(ok => done());
