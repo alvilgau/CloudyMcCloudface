@@ -164,7 +164,7 @@ The first stage is called *build stage* and contains the steps to fetch external
 
 In the second stage named *release* Travis fetches the `.env` file from the private Git repository and bundles it with the rest of the code to a .zip file. This zip-file then will be deployed to a AWS S3 instance.
 
-In the third and last stage *run* Travis triggers AWS CodeDeploay which then extracts the previously uploaded zip-file and starts the service instances.
+In the third and last stage *run* Travis triggers AWS CodeDeploy which then extracts the previously uploaded zip-file and starts the service instances.
 
 All three stages are highly automated and don't require any intervention of a developer. When any the build or release stage would fail, Travis updates a `batch`(.svg-image) which is imported in the projects' [README.md-file](https://github.com/cloudy-sentiment-analysis/CloudyMcCloudface/blob/master/README.md). This way, each developer instantly can recognize any build failure.
 
