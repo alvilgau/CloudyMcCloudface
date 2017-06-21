@@ -14,11 +14,17 @@ The *TSA* backend is realized with microservices, all written in JavaScript for 
 
 These services are:
 
-- *webserver service*: The webserver serves the client application file (index.html), exposes a REST API for recording analyzed tweets for given keywords and also starts a websocket server.
+- *webserver service*:
     
-- *tweetstream service*: The Tweetstream service subscribes to the twitter api and receives tweets in real time. These tweets are then published to the tweet analyzer.
+    The webserver serves the client application file (index.html), exposes a REST API for recording analyzed tweets for given keywords and also starts a websocket server.
     
-- *tweet-analyzer service*: The tweet-analyzer is a AWS LAMBDA function which computes statistical parameters for a bunch of tweets based on the sentiment of the tweets' text.
+- *tweetstream service*:
+
+    The Tweetstream service subscribes to the twitter api and receives tweets in real time. These tweets are then published to the tweet analyzer.
+    
+- *tweet-analyzer service*:
+
+    The tweet-analyzer is a AWS LAMBDA function which computes statistical parameters for a bunch of tweets based on the sentiment of the tweets' text.
           
 - *log service*:
 
@@ -104,19 +110,32 @@ So *TSA* gives you the opportunity to use your own twitter application credentia
 
 
 ### 12 factors
-- codebase
-- dependencies
-- config
-- backing services
-- build, release, run
-- processes
-- port binding
-- concurrency
-- disposability
-- dev/prod parity
-- logs
-- admin processes
-### security
+
+*TSA* is build around the twelve-factor methodology in order to fulfill the requirements for a software-as-a-service application. The steps performed will be described in the following subsections.
+
+#### I. Codebase
+
+The source code for the project is tracked in a public Git repository on [GitHub](https://github.com/cloudy-sentiment-analysis/CloudyMcCloudface). This repository contains the whole application (backend-services as well as frontend-client) and thus can easily be used for deployments on different systems (e.g. for production-deployment on AWS or local deployment for development reasons running with [localstack](https://github.com/atlassian/localstack)).
+
+Note: 
+The configuration file for the *TSA-services* is tracked in a separate private Git repository on [GitHub] due to security issues like private o-auth credentials.
+
+#### II. Dependencies
+
+To manage their dependencies, the Node.js-services use the node package manager `npm` which is shiped with a common Node.js-installation. The dependencies are declared in a configuration file called `package.json` and can easily be installed running the console command `npm i`, so there is no need to store external modules in the repository itself.
+
+#### III. Config
+
+
+#### IV. Backing services
+#### V. Build, release, run
+#### VI. Processes
+#### VII. Port binding
+#### VIII. concurrency
+#### IX. Disposability
+#### X. Dev/prod parity
+#### XI. Logs
+#### XII. Admin processes
 
 ## Implementation
 
