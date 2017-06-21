@@ -25,6 +25,10 @@ These services are:
 - *tweet-analyzer service*:
 
     The tweet-analyzer is a AWS LAMBDA function which computes statistical parameters for a bunch of tweets based on the sentiment of the tweets' text.
+    
+- *recorder service*:
+    
+    The recorder service persists the analyzed tweets for a certain time in the AWS DynamoDB.
           
 - *log service*:
 
@@ -63,8 +67,10 @@ The sentiment analysis is realized with a Node.js module called [sentiment](http
 
 After the calculation is done, the *tweetstream-service* publishes the results on redis channels on which other services can subscribe to. This way, the *webserver-service* is able to subscribe for analyzed tweets and send the results back to the client applications via websocket messages; the *recorder service* is able to subscribe in order to store the analyzed tweets results.
 
-#### Persisting analyzed tweets
-TODO: alex ...
+#### Tweet recording
+Through a REST-API which is included in the webserver, the user has the possibility to record analyzed tweets for a certain period of time. All necessary data for recording will be persisted in a DynamoDB. The start and end time for the record will be cached in Redis. When one of this keys expires, Redis sends a notification to the recorder service. Through this notifications the recorder service knows when he has to record and when not. During the recording the analysed tweets will be persisted in a DynamoDB so that the user can access them later.
+
+
 
 ### implementation of the functionality
 
