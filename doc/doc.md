@@ -1,6 +1,6 @@
 # Twitter Sentiment Analysis
 
-*from Alexander Vilgauk, Andreas Sayn und Markus Heilig* 
+*from Alexander Vilgauk, Andreas Sayn and Markus Heilig* 
 
 ## Intruduction
 
@@ -14,11 +14,17 @@ The *TSA* backend is realized with microservices, all written in JavaScript for 
 
 These services are:
 
-- *webserver service*: The webserver serves the client application file (index.html), exposes a REST API for recording analyzed tweets for given keywords and also starts a websocket server.
+- *webserver service*:
     
-- *tweetstream service*: The Tweetstream service subscribes to the twitter api and receives tweets in real time. These tweets are then published to the tweet analyzer.
+    The webserver serves the client application file (index.html), exposes a REST API for recording analyzed tweets for given keywords and also starts a websocket server.
     
-- *tweet-analyzer service*: The tweet-analyzer is a AWS LAMBDA function which computes statistical parameters for a bunch of tweets based on the sentiment of the tweets' text.
+- *tweetstream service*:
+
+    The Tweetstream service subscribes to the twitter api and receives tweets in real time. These tweets are then published to the tweet analyzer.
+    
+- *tweet-analyzer service*:
+
+    The tweet-analyzer is a AWS LAMBDA function which computes statistical parameters for a bunch of tweets based on the sentiment of the tweets' text.
           
 - *log service*:
 
@@ -104,19 +110,51 @@ So *TSA* gives you the opportunity to use your own twitter application credentia
 
 
 ### 12 factors
-- codebase
-- dependencies
-- config
-- backing services
-- build, release, run
-- processes
-- port binding
-- concurrency
-- disposability
-- dev/prod parity
-- logs
-- admin processes
-### security
+
+*TSA* is build around the twelve-factor methodology in order to fulfill the requirements for a software-as-a-service application. The steps performed will be described in the following subsections.
+
+#### I. Codebase
+
+The source code for the project is tracked in a public Git repository on [GitHub](https://github.com/cloudy-sentiment-analysis/CloudyMcCloudface). This repository contains the whole application (backend-services as well as frontend-client) and thus can easily be used for deployments on different systems (e.g. for production-deployment on AWS or local deployment for development reasons running with [localstack](https://github.com/atlassian/localstack)).
+
+Note: 
+The configuration file for the *TSA-services* is tracked in a separate private Git repository on [GitHub] due to security issues like private o-auth credentials.
+
+#### II. Dependencies
+
+To manage their dependencies, the Node.js-services use the node package manager `npm` which is shiped with a common Node.js-installation. The dependencies are declared in a configuration file called `package.json` and can easily be installed running the following console command, so there is no need to store external modules in the repository itself:
+
+```bash
+npm i
+```
+
+#### III. Config
+
+The services receive their configuration during their startup by processing a file called `.env`. This file defines the required configuration as environment variable for each service so that the services' code and configuration are completely detached from each other. The advantage of this approach is that the configuration can easily be replaced for different deployments (e.g. production system, local developmer system or test system)
+without the need to adjust any code.
+
+#### IV. Backing services
+
+The resources each service consumes (custom services as well as third party services) are declared in the previsouly explained environment file. The following snippet shows an excerpt of the `.env`-file:
+
+````
+# configuration of redis cache
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+
+# configuration of twitter endpoint
+TWITTER_URL=https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true
+````
+
+
+#### V. Build, release, run
+#### VI. Processes
+#### VII. Port binding
+#### VIII. concurrency
+#### IX. Disposability
+#### X. Dev/prod parity
+#### XI. Logs
+#### XII. Admin processes
 
 ## Implementation
 
