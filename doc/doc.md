@@ -135,9 +135,13 @@ without the need to adjust any code.
 
 #### IV. Backing services
 
-The resources each service consumes (custom services as well as third party services) are declared in the previsouly explained environment file. The following snippet shows an excerpt of the `.env`-file:
+The resources each service consumes are declared in the previsouly explained environment file. This applies to third party resources (Twitter Api, AWS Lambda, redis cache, ...) as well as to our own services, so there is no distinction between them. The following snippet shows an excerpt of the `.env`-file:
 
 ````
+# configuration of AWS Lambda
+LAMBDA_REGION=eu-central-1
+LAMBDA_ROLE=arn:aws:iam::508323409197:role/lambda_basic_execution
+
 # configuration of redis cache
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
@@ -146,8 +150,23 @@ REDIS_PORT=6379
 TWITTER_URL=https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true
 ````
 
-
 #### V. Build, release, run
+
+The twelve-factor app guideline advises three separated stages to bring an application from source up and running.
+
+The first stage is called *build stage* and contains the steps to fetch external dependencies and create a build. Due JavaScript is an interpreted and thus no compile step is required, we can disregard any code compilation for the backend services and only have to download external dependencies via node. At that point, also the dependencies for the Elm-application are resolved and the Elm-scripts get compiled to vanilla JavaScript, HTML and Css.  The steps for the first stage are automatically invoked from Travis CI when code changes are commited and pushed to the master branch (see `Continous Integration` for a detailed explanation). At this time, Travis triggers all code test. If any test would fail, the release cycle would stop right now. If everything went fine, Travis continues with the second stage.
+
+In the second stage named *release* Travis fetches the `.env` file from the private Git repository and bundles it with the rest of the code to a .zip file. This zip-file then will be deployed to a AWS S3 instance.
+
+In the third and last stage *run* Travis triggers AWS CodeDeploay which then extracts the previously uploaded zip-file and starts the service instances.
+
+All three stages are highly automated and don't require any intervention of a developer. When any the build or release stage would fail, Travis updates a `batch`(.svg-image) which is imported in the projects' [README.md-file](https://github.com/cloudy-sentiment-analysis/CloudyMcCloudface/blob/master/README.md). This way, each developer instantly can recognize any build failure.
+
+![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/build-passing.png "Badge for a passing build")
+
+![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/build-failing.png "Badge for a failing build")
+
+
 #### VI. Processes
 #### VII. Port binding
 #### VIII. concurrency
