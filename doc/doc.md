@@ -130,8 +130,8 @@ So *TSA* gives you the opportunity to use your own twitter application credentia
 
 ## Continuous Integration
 
-The continuous integration server of choice of many open source projects is currently Travis-CI.
-Travis-CI is a cloud based service that provides contiuous integration for most of the common languages.
+The continuous integration server of choice for many open source projects is currently Travis-CI.
+Travis-CI is a cloud based service that provides contiuous integration for a multitude languages.
 It is free of charge for open source software.
 After signing in to Travis-CI with a github account, the accounts repositories can be activated for CI.
 Every push to an activated repository triggers a build.
@@ -152,8 +152,14 @@ In our case the required build steps are roughly:
 * Create a versioned ZIP file of the webserver.
 * Save that ZIP into an AWS S3 bucket.
 * Deploy the lambda module to AWS lambda.
+* Trigger AWS CodeDeploy to deploy ZIP from AWS S3 bucket.
 
 The deploy steps are configure to only run when changes to the master branch occur.
+With this setup, a single push or merge to the master triggers the build and deployment of all production relevant code.
+Additionally deployments to dedicated development instances on AWS could be configured in just a few minutes.
+This would allow to have two identical AWS setups running at the same time, where one setups represents the master branch and the other the development branch of the project.
+Because of the additional costs that come with running two instances of every service we decided against running a production and development environment simultaneously.
+
 
 ## Operations
 ### how to monitor the app
