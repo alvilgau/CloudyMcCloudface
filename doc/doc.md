@@ -25,6 +25,10 @@ These services are:
 - *tweet-analyzer service*:
 
     The tweet-analyzer is a AWS LAMBDA function which computes statistical parameters for a bunch of tweets based on the sentiment of the tweets' text.
+    
+- *recorder service*:
+    
+    The recorder service persists the analyzed tweets for a certain time in the AWS DynamoDB.
           
 - *log service*:
 
@@ -63,8 +67,10 @@ The sentiment analysis is realized with a Node.js module called [sentiment](http
 
 After the calculation is done, the *tweetstream-service* publishes the results on redis channels on which other services can subscribe to. This way, the *webserver-service* is able to subscribe for analyzed tweets and send the results back to the client applications via websocket messages; the *recorder service* is able to subscribe in order to store the analyzed tweets results.
 
-#### Persisting analyzed tweets
-TODO: alex ...
+#### Tweet recording
+Through a REST-API which is included in the webserver, the user has the possibility to record analyzed tweets for a certain period of time. All necessary data for recording will be persisted in a DynamoDB. The start and end time for the record will be cached in Redis. When one of this keys expires, Redis sends a notification to the recorder service. Through this notifications the recorder service knows when he has to record and when not. During the recording the analysed tweets will be persisted in a DynamoDB so that the user can access them later.
+
+
 
 ### implementation of the functionality
 
@@ -187,8 +193,8 @@ All three stages are highly automated and don't require any intervention of a de
 
 ## Continuous Integration
 
-The continuous integration server of choice of many open source projects is currently Travis-CI.
-Travis-CI is a cloud based service that provides contiuous integration for most of the common languages.
+The continuous integration server of choice for many open source projects is currently Travis-CI.
+Travis-CI is a cloud based service that provides contiuous integration for a multitude languages.
 It is free of charge for open source software.
 After signing in to Travis-CI with a github account, the accounts repositories can be activated for CI.
 Every push to an activated repository triggers a build.
@@ -209,8 +215,14 @@ In our case the required build steps are roughly:
 * Create a versioned ZIP file of the webserver.
 * Save that ZIP into an AWS S3 bucket.
 * Deploy the lambda module to AWS lambda.
+* Trigger AWS CodeDeploy to deploy ZIP from AWS S3 bucket.
 
 The deploy steps are configure to only run when changes to the master branch occur.
+With this setup, a single push or merge to the master triggers the build and deployment of all production relevant code.
+Additionally deployments to dedicated development instances on AWS could be configured in just a few minutes.
+This would allow to have two identical AWS setups running at the same time, where one setups represents the master branch and the other the development branch of the project.
+Because of the additional costs that come with running two instances of every service we decided against running a production and development environment simultaneously.
+
 
 ## Operations
 ### how to monitor the app

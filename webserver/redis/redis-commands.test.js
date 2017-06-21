@@ -1,6 +1,5 @@
 const redisCommands = require('./redis-commands');
 
-
 afterEach((done) => {
   redisCommands.flushDb().then(ok => done());
 });
