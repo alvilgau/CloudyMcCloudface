@@ -1,6 +1,6 @@
 # Twitter Sentiment Analysis
 
-*from Alexander Vilgauk, Andreas Sayn und Markus Heilig* 
+*from Alexander Vilgauk, Andreas Sayn and Markus Heilig* 
 
 ## Intruduction
 
@@ -122,12 +122,31 @@ The configuration file for the *TSA-services* is tracked in a separate private G
 
 #### II. Dependencies
 
-To manage their dependencies, the Node.js-services use the node package manager `npm` which is shiped with a common Node.js-installation. The dependencies are declared in a configuration file called `package.json` and can easily be installed running the console command `npm i`, so there is no need to store external modules in the repository itself.
+To manage their dependencies, the Node.js-services use the node package manager `npm` which is shiped with a common Node.js-installation. The dependencies are declared in a configuration file called `package.json` and can easily be installed running the following console command, so there is no need to store external modules in the repository itself:
+
+```bash
+npm i
+```
 
 #### III. Config
 
+The services receive their configuration during their startup by processing a file called `.env`. This file defines the required configuration as environment variable for each service so that the services' code and configuration are completely detached from each other. The advantage of this approach is that the configuration can easily be replaced for different deployments (e.g. production system, local developmer system or test system)
+without the need to adjust any code.
 
 #### IV. Backing services
+
+The resources each service consumes (custom services as well as third party services) are declared in the previsouly explained environment file. The following snippet shows an excerpt of the `.env`-file:
+
+````
+# configuration of redis cache
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+
+# configuration of twitter endpoint
+TWITTER_URL=https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none&stall_warnings=true
+````
+
+
 #### V. Build, release, run
 #### VI. Processes
 #### VII. Port binding
