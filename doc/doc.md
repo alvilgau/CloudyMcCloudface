@@ -147,6 +147,33 @@ To manage their dependencies, the Node.js-services use the node package manager 
 ### deployment model
 ### how is app deployed
 
+## Continuous Integration
+
+The continuous integration server of choice of many open source projects is currently Travis-CI.
+Travis-CI is a cloud based service that provides contiuous integration for most of the common languages.
+It is free of charge for open source software.
+After signing in to Travis-CI with a github account, the accounts repositories can be activated for CI.
+Every push to an activated repository triggers a build.
+The configuration for the build is done via the YAML file `.travis.yml` that needs to reside in the root directory of the repository.
+
+In our case the required build steps are roughly:
+
+*Build*
+* Install the dependencies of the webserver module.
+* Install the dependencies of the lambda module.
+* Run the test against the webserver.
+* Compile the Elm project to an HTML file.
+
+*Deploy*
+* Move the generated HTML file to the webserver.
+* Fetch the production .env file from a private repository.
+* Move the .env file to the webserver.
+* Create a versioned ZIP file of the webserver.
+* Save that ZIP into an AWS S3 bucket.
+* Deploy the lambda module to AWS lambda.
+
+The deploy steps are configure to only run when changes to the master branch occur.
+
 ## Operations
 ### how to monitor the app
 ### how to troubleshoot
