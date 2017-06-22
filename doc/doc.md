@@ -315,7 +315,7 @@ const battleForTenant = (tenantId) => new Promise((resolve, reject) => {
     }
     })                
     .catch(err => reject(err)); // problem with redis?  
-};
+});
 ```
 
 As long as the battle is held from any *tweetstream*-instance, each `battleForTenant`-call from any *tweetstream*-instance will just increment the battle counter and thus won't win the battle.
