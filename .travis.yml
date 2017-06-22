@@ -114,3 +114,16 @@ deploy:
   on:
     branch: master
     node: 7
+- provider: codedeploy
+  access_key_id: AKIAJSKOWUWXRM2U473A
+  secret_access_key:
+    secure: JhB49loRKF6dEBx8tLRncCX7x5+UiO/tKXB30IcR6hoK4gL5Zg5HPT6Swq5OlfUU12LURs3WpHX314thNt8jmH6X1+/z8jLQbnNW9r8WxjjEsaS72NSbLiNyQTp4t6vy07q8P0FtpvNT7HUk+kgtbEIimc8D2ZpKJqTLgJD1azf1/sY/1rXqK5n0x4GHnlfNaioEVt9hQo3ss0b9C8xBdIybHbfNnlHago97Tj2t15bKw0zwUZggveyrN0t/onN5s5TuG3Ecym3SoYLVSPl5KZjWzigdr3jPwpfL9SSoB9Wm1w0c0O4A7/2u8MXNnlTNUXLHIOtxMYIlZ4S6E5mvdNyjBVIrZnXI88YTrE24If1zx5xHpgqqcwZ/mnaEprW2gaWMWDH5O9S8OTKEUhWPgbp0P9QyP9d3auk/D6FPaww0fOCvsUxiaORlcv8O4Im+IVwt1C0hKXWr6VUk66scLVd6Dqg8UH/6D6uWhXWYwa0HU/mmEQda0sBkOmALnIFtKggZXmdlvBEK8JLY2qcgiftBJM7iH+AjCsCYxPeSy6Om5LKW+pg+aka0GYMiToojWCOAJI0E/g1krvbs9U1g+GKKLDIiszgS0we/ZHde4zqd2ozjzHpxoZAJwYJB8v5z2oGv3rOhFSz5EWdWV3CexJ96Qb0jmgBunz2opprmvD0=
+  bucket: cloudy-sentiment-analysis-2
+  region: eu-central-1
+  application: cloudy
+  deployment_group: cloudy_webserver
+  key: webserver/webserver--master--latest.zip
+  bundle_type: zip
+  on:
+    branch: master
+    node: 7
