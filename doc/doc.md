@@ -335,8 +335,6 @@ As long as the battle is held from any *tweetstream*-instance, each `battleForTe
 We also set an expiration trigger (see 4.) which automatically deletes the redis key after a short amount of time if the expiration has not been refreshed. If a service wants to hold the lock, it has to refresh the expiration periodically e.g. with a timer. The reason for this is that when the service crashes, redis automatically will delete the key after when it expires and then all the other *tweetstream*-instances can start a new battle for this tenant.
 
 # Installation
-## deployment model
-## how is app deployed
 
 # Continuous Integration
 
@@ -374,6 +372,15 @@ Additionally deployments to dedicated development instances on AWS could be conf
 This would allow to have two identical AWS setups running at the same time, where one setups represents the master branch and the other the development branch of the project.
 Because of the additional costs that come with running two instances of every service we decided against running a production and development environment simultaneously.
 
+## Deployment model
+
+## How is the app deployed
+
+The deployment of the app is realized with AWS CodeDeploy and get triggered from Travis CI. In order to deploy and run each service separately we configured three different deployment groups which can be triggered separately. The deployment groups are shown in the following image. 
+
+![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/deployment-groups.png "AWS deployment groups") AWS deployment groups.
+
+Each of the deployment group recognize the affected EC2 instances by their membership in an auto scaling group. Due this setup CodeDeploy can easily deploy one service to several EC2 instances. Also CodeDeploy will be triggered automatically when the configured auto scaling groups create a new instance.
 
 # Operations
 ## how to monitor the app
