@@ -81,15 +81,12 @@ server.route({
   handler: (request, reply) => {
     const params = {
       TableName: tableName,
-      FilterExpression: '#service = :service and #timestamp between :begin and :end',
+      FilterExpression: '#service = :service',
       ExpressionAttributeNames: {
-        '#service': 'service',
-        '#timestamp': 'logs.timestamp'
+        '#service': 'service'        
       },
       ExpressionAttributeValues: {
-        ':service': request.params.service,
-        ':begin': request.query.begin || new Date(2017, 1, 1).getTime(),
-        ':end': request.query.end || new Date().getTime()
+        ':service': request.params.service
       }
     };
     console.log(params);
