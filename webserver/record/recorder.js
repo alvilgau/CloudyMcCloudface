@@ -4,7 +4,7 @@ const redisCommands = require('../redis/redis-commands');
 const dynamoRecords = require('./dynamo-records-api');
 const dynamoTweets = require('./dynamo-tweets-api');
 
-const PERSIST_INTERVAL = 10000;
+const PERSIST_INTERVAL = 20000;
 const THREE_SECONDS = 3000;
 const records = {};
 
