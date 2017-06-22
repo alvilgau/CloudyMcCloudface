@@ -301,18 +301,18 @@ const battleForTenant = (tenantId) => new Promise((resolve, reject) => {
     // 5. start the transaction  
     .execAsync()
     .then(response => {
-    // redis response is an array because we executed a transaction
-    const oAuthCredentials = JSON.parse(response[0]);
-    const battleCounter = response[1];
-    // only one service will receive battleCounter with value 1        
-    const wonBattle = (battleCounter == 1);
-    if (oAuthCredentials && wonBattle) {
-      // we won the battle
-      resolve({wonBattle: true, tenant: oAuthCredentials});
-    } else {    
-      // we lost the battle but we still fulfill our promise                    
-      resolve({wonBattle: false, tenant: null});    
-    }
+      // redis response is an array because we executed a transaction
+      const oAuthCredentials = JSON.parse(response[0]);
+      const battleCounter = response[1];
+      // only one service will receive battleCounter with value 1        
+      const wonBattle = (battleCounter == 1);
+      if (oAuthCredentials && wonBattle) {
+        // we won the battle
+        resolve({wonBattle: true, tenant: oAuthCredentials});
+      } else {    
+        // we lost the battle but we still fulfill our promise                    
+        resolve({wonBattle: false, tenant: null});    
+      }
     })                
     .catch(err => reject(err)); // problem with redis?  
 });
