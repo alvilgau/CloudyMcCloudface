@@ -192,13 +192,51 @@ Note: In contrast to REST-APIs which are stateless by convention, websocket conn
 
 Due the services are implemented with Node.js, there is no need for an external webserver container like Apache or HTTPD. So all our services are completely self-contained by relying on Node.js' internal http module. The port binding itself is declared in the configuration environment file `.env` whereby the services can be sticked to each other as described in the section `Backing Services`.
 
-#### VIII. concurrency
+#### VIII. Concurrency
 
-
+// TODO: versteh ich nicht
 
 #### IX. Disposability
+
+Using Node.js with the slightly V8 Chrome engine, the overhead for startup time as well as shutdown time for a service / process is picayune. This brings a great benefit when it comes to a new deployment becase down time can be neglected.
+By the usage of redis, our apps are designed to be robust again sudden death events. A detailed explanation about the robustness of the services including different scenarios can be found in the section `Let the battles begin`.
+
 #### X. Dev/prod parity
+
+The twelve-factor principles defines three substantial gaps between developemtn and production:
+
+1. The time gap: With a twelve-factor app, the time between deployments should be performed in a few hours. We even fall below this time with our automated Continous Deployment strategy which lasts only for several minutes.
+
+2. The personnal gap: We as developers are also those who are responsible for the deployment and production processes. Thus we follow  the statement of Werner Vogels (CTO at Amazon) from 2006: `You build it, you run it`.
+
+3. The tools gap: The gap between the development environment and the production environment should be as small as possible by using the same tools and services on both systems. Our production system is running on AWS whereby we used Localstack for local development. Localstack is an open source project from atlassian which provides a fully functional local AWS cloud stack. Therefore we are able to develop and test our application before changes are pushed to the production system on the amazon servers.
+
 #### XI. Logs
+
+Each of our services writes relevant log messages to the console (stdout and stderr) as suggested for a twelve-factor app.  
+We then developed two different scripts for logging purposes:
+
+1. *dynamodb-logger.js*:
+
+    This script receives log messages from other services via the operating system pipe. Both channels, stdin and stderr are supported to allow different log levels. This script then stores the incoming log messages into a DynamoDB. The service which is logged can be given a name as a command line argument for the *dynamodb-logger*.
+    To be able to identify the logs of each service, the dynamodb-logger creates a uuid4 each time it gets started which is also tracked in the database. This is necessary when multiple instances of the same service type (i.e. the same name) are logged. This unique identifier enables the possibility to retrace which service instance created which log statements.
+
+    The following snippet shows how to use the *dynamodb-logger* script to log the messages from an imaginary service called *some-cool-service* which is implemented in the file `someCoolService.js`:
+
+    ```
+    node someCoolService.js | node dynamodb-logger.js some-cool-service
+    ```
+
+    A huge gain of this concept is that the services theirselves don't have to care about log files or log strategies. This way of logging can also be used for non-Node.js-services because logging is done with the help of the operating system (pipe) and does not rely on a specific log library.
+
+2. *log-rest.js*:
+
+    This service provides a REST API to query the logs stored the previously mentioned DynamoDB. The output of the *log-rest-service* itself can also be logged using the *dynamodb-logger*-script:
+
+    ```
+    node log-rest.js | node dynamodb-logger.js log-rest-service
+    ```
+
 #### XII. Admin processes
 
 ## Implementation
