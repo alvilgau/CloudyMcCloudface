@@ -261,8 +261,61 @@ Twitter imposes very strict limitations for their API usage. This means that it 
 Whenever a user tracks some keywords, then the information (tenant + user + keywords) is stored in the redis database. As a result the *tweetstream-service* will automatically be notified via redis keyspace events  that there is a new user who wants to track some keywords. Hereupon the *tweetstream-service* will create a connection to the twitter stream API in order to receive tweets for the given keywords.
 When there are two or more instances of the *tweetstream-service* up and running, each instance tries to connect to the Twitter API what could result in an IP ban. This is why we had to invent a distributed synchronization mechanism to prevent the creation of multiple streams for one twitter account / o-auth-token / tenant.
 
-### The battle algorithm
+### Requirements for the synchronization algorithm
 
+We defined the following requirements the synchronization algorithm has to fulfill in order to ensure a faultless behavior for *TSA*:
+
+- operate correctly with any number of *tweetstream*-instances
+- exactly one *tweetstream*-instance must(!) 'win the battle', i.e. get a lock
+- a lock is hold for the whole lifetime of the *tweetstream*-instance
+- when a *tweetstream-service* holds a lock but then goes down or crashes, the lock must be freed automatically
+- when a lock is freed, all the other services must be allowed to restart a `battle` to fight for the lock
+
+### The `battle` algorithm
+
+The algorithm was implemented with the help of redis' synchroinzation objects. The following code shows the algorithm works:
+
+```javascript
+/*
+battleForTenant is a function which expects a tenantId and returns a promise which resolves the following object:
+{
+    wonBattle: true if you won the battle (i.e. you hold the lock), otherwise false
+    tenant:    o-auth token we need to connect to twitter
+}
+*/
+const battleForTenant = (tenantId) => {  
+  return new Promise((resolve, reject) => {    
+    // 1. create a redis transaction     
+    redisClient.multi()         
+        // 2. get o-auth-credentials for the tenant with id 'tenantId' 
+        .get(`tenants->${tenantId}`) 
+        /* 3. increment the 'battle-counter' for this tenant
+         note: incr(x) returns the incremented value or 1 if the key has not existed yet */
+        .incr(`battle:tenants->${tenantId}`)
+        /* 4. set an expiration for the redis key so that the the battle will automatically expire after a few seconds
+         note: if you want to hold the lock (and you want this!), you have to refresh the expiration periodically (e.g. with a timer) */
+        .expire(`battle:tenants->${tenantId}`, expiration)           
+        // 5. start the transaction  
+        .execAsync()
+
+      .then(response => {
+        // redis response is an array because we executed a transaction
+        const oAuthCredentials = JSON.parse(response[0]);
+        const battleCounter = response[1];
+        // only one service will receive battleCounter with value 1        
+        const wonBattle = (battleCounter == 1);
+        if (oAuthCredentials && wonBattle) {
+          // we won the battle
+          resolve({wonBattle: true, tenant: oAuthCredentials});
+        } else {    
+          // we lost the battle but we still fulfill our promise                    
+          resolve({wonBattle: false, tenant: null});    
+        }
+      })                
+      .catch(err => reject(err)); // problem with redis?  
+  });
+};
+```
 
 
 ## Installation
