@@ -20,7 +20,7 @@ view keywords data =
 lineColoredWhereKeyword name color =
     { axis = normalAxis
     , interpolation = Monotone Nothing [ stroke color ]
-    , toDataPoints = List.filter (\dp -> dp.keyword == name) >> List.map (\dp -> clear dp.time dp.value)
+    , toDataPoints = List.filter (\dp -> String.toLower dp.keyword == String.toLower name) >> List.map (\dp -> clear dp.time dp.value)
     }
 
 
