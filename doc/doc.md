@@ -37,7 +37,7 @@ These services are:
     
 The *TSA* frontend is written in Elm, a functional programming which compiles to HTML, CSS and JavaScript. Client applications connect to the serverside websocket server in order to receive statistics for analyzed tweets. The analyzed tweets are then visualized with curve charts.
 
-## overall design and data stores
+## Overall design and data stores
 
 ### Interprocess communication
 
