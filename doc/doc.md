@@ -239,11 +239,84 @@ We then developed two different scripts for logging purposes:
 
 #### XII. Admin processes
 
+// todo: check ich nicht
+
 ## Implementation
 
-- first steps with rabbitmq -> not working for our purposes (information is lost if service goes down)
-- now: redis
-- "tenant battles"
+
+## RabbitMQ vs Redis
+
+A prototype of *TSA* was implemented using RabbitMQ for inter-service communication, e.g. passing analyzed tweets from *tweetstream-service* to the *webserver-service*.
+This implementation worked quite well for message passing but RabbitMQ was not enough to fulfill our requirements: the state information (i.e. which user tracked which keywords) was lost when a *tweetstream-service* went down because the service stored this information in main memory. This lead to the problem that the clients didn't receive any more tweets, because after a restart, the *tweetstream-service* did no longer know about which state he had before. This absolutely disagreed with the stateless process and share-nothing concept. This is why we choose redis as a distributed cache storing the app's state. When a service went down and then restarted a few seconds later, it is now able to query the current state information from redis and create a new connection to the twitter api. Due to the fact that redis also provides a reliable fast publish/subscribe messaging model, we have also choosen redis over RabbitMQ for inter-service communication.
+This was the time when the *tweetstream-service* worked pretty fine ... except when you run multiple instances of that service at the same time!
+
+## Let the battles begin
+
+### Twitter API restrictions 
+
+Twitter imposes very strict limitations for their API usage. This means that it is only allowed to hold one connection to the stream api at the same time with the same twitter account credentials (i.e. an o-auth-token, in the context of *TSA* we define one tenant as one twitter app account). The creation of a new connection will cause the oldest one to be disconnected. Twitter also checks for inflative connection tries which may follow in an IP ban.
+
+### Running multiple instances of *tweetstream-service*
+
+Whenever a user tracks some keywords, then the information (tenant + user + keywords) is stored in the redis database. As a result the *tweetstream-service* will automatically be notified via redis keyspace events  that there is a new user who wants to track some keywords. Hereupon the *tweetstream-service* will create a connection to the twitter stream API in order to receive tweets for the given keywords.
+When there are two or more instances of the *tweetstream-service* up and running, each instance tries to connect to the Twitter API what could result in an IP ban. This is why we had to invent a distributed synchronization mechanism to prevent the creation of multiple streams for one twitter account / o-auth-token / tenant.
+
+### Requirements for the synchronization algorithm
+
+We defined the following requirements the synchronization algorithm has to fulfill in order to ensure a faultless behavior for *TSA*:
+
+- operate correctly with any number of *tweetstream*-instances
+- exactly one *tweetstream*-instance must(!) 'win the battle', i.e. get a lock
+- a lock is hold for the whole lifetime of the *tweetstream*-instance
+- when a *tweetstream-service* holds a lock but then goes down or crashes, the lock must be freed automatically
+- when a lock is freed, all the other services must be allowed to restart a `battle` to fight for the lock
+
+### The `battle` algorithm
+
+The algorithm was implemented with the help of redis' synchroinzation objects. The following code shows the algorithm works:
+
+```javascript
+/*
+battleForTenant is a function which expects a tenantId and returns a promise which resolves the following object:
+{
+    wonBattle: true if you won the battle (i.e. you hold the lock), otherwise false
+    tenant:    o-auth token we need to connect to twitter
+}
+*/
+const battleForTenant = (tenantId) => {  
+  return new Promise((resolve, reject) => {    
+    // 1. create a redis transaction     
+    redisClient.multi()         
+        // 2. get o-auth-credentials for the tenant with id 'tenantId' 
+        .get(`tenants->${tenantId}`) 
+        /* 3. increment the 'battle-counter' for this tenant
+         note: incr(x) returns the incremented value or 1 if the key has not existed yet */
+        .incr(`battle:tenants->${tenantId}`)
+        /* 4. set an expiration for the redis key so that the the battle will automatically expire after a few seconds
+         note: if you want to hold the lock (and you want this!), you have to refresh the expiration periodically (e.g. with a timer) */
+        .expire(`battle:tenants->${tenantId}`, expiration)           
+        // 5. start the transaction  
+        .execAsync()
+
+      .then(response => {
+        // redis response is an array because we executed a transaction
+        const oAuthCredentials = JSON.parse(response[0]);
+        const battleCounter = response[1];
+        // only one service will receive battleCounter with value 1        
+        const wonBattle = (battleCounter == 1);
+        if (oAuthCredentials && wonBattle) {
+          // we won the battle
+          resolve({wonBattle: true, tenant: oAuthCredentials});
+        } else {    
+          // we lost the battle but we still fulfill our promise                    
+          resolve({wonBattle: false, tenant: null});    
+        }
+      })                
+      .catch(err => reject(err)); // problem with redis?  
+  });
+};
+```
+
 
 ## Installation
 ### deployment model
