@@ -247,7 +247,7 @@ We then developed two different scripts for logging purposes:
 ## RabbitMQ vs Redis
 
 A prototype of *TSA* was implemented using RabbitMQ for inter-service communication, e.g. passing analyzed tweets from *tweetstream-service* to the *webserver-service*.
-This implementation worked quite well for message passing but RabbitMQ was not enough to fulfill our requirements: the state information (i.e. which user tracked which keywords) was lost when a *tweetstream-service* went down because the service stored this information in main memory. This lead to the problem that the clients didn't receive any more tweets, because after a restart, the *tweetstream-service* did no longer know about which state he had before. This absolutely disagreed with the stateless process and share-nothing concept. This is why we choose redis as a distributed cache storing the app's state. When a service went down and then restarted a few seconds later, it is now able to query the current state information from redis and create a new connection to the twitter api. Due to the fact that redis also provides a reliable fast publish/subscribe messaging model, we have also choosen redis over RabbitMQ for inter-service communication.
+This implementation worked quite well for message passing but RabbitMQ was not enough to fulfill our requirements: the state information (i.e. which user tracked which keywords) was lost when a *tweetstream-service* went down because the service stored this information in main memory. This lead to the problem that the clients didn't receive any more tweets, because after a restart, the *tweetstream-service* no longer knew about the state he had before. This absolutely disagreed with the stateless process and share-nothing concept. This is why we choose redis as a distributed cache for storing the app's state. When a service went down and then restarted a few seconds later, it is now able to query the current state information from redis and create a new connection to the twitter api. Due to the fact that redis also provides a reliable fast publish/subscribe messaging model, we have also choosen redis over RabbitMQ for inter-service communication.
 This was the time when the *tweetstream-service* worked pretty fine ... except when you run multiple instances of that service at the same time!
 
 ## Let the battles begin
@@ -267,7 +267,7 @@ We defined the following requirements the synchronization algorithm has to fulfi
 
 - operate correctly with any number of *tweetstream*-instances
 - exactly one *tweetstream*-instance must(!) 'win the battle', i.e. get a lock
-- a lock is hold for the whole lifetime of the *tweetstream*-instance
+- when a lock is hold from any *tweetstream*-instance, no other instance may get the lock as long as the lock is hold
 - when a *tweetstream-service* holds a lock but then goes down or crashes, the lock must be freed automatically
 - when a lock is freed, all the other services must be allowed to restart a `battle` to fight for the lock
 
@@ -275,7 +275,7 @@ We defined the following requirements the synchronization algorithm has to fulfi
 
 The algorithm was implemented with the help of redis' `incr`-command which atomically increments the value of a redis key by 1 and returns the new value.
 If the redis key has not existed yet it, this command will create the variable with value 0 first.
-The return value then can be used to decide whether we won the battle  for the tenant (return value = 1) or not (return value > 1).
+The return value then can be used to decide whether we won the battle for the tenant (return value = 1) or not (return value > 1).
 
 The following code shows the algorithm works:
 
@@ -295,8 +295,7 @@ const battleForTenant = (tenantId) => {
         .get(`tenants->${tenantId}`) 
         // 3. increment the 'battle-counter' for this tenant
         .incr(`battle:tenants->${tenantId}`)
-        /* 4. set an expiration for the redis key so that the the battle will automatically expire after a few seconds
-         note: if you want to hold the lock (and you want this!), you have to refresh the expiration periodically (e.g. with a timer) */
+        // 4. set an expiration on the battle
         .expire(`battle:tenants->${tenantId}`, expiration)           
         // 5. start the transaction  
         .execAsync()
@@ -320,7 +319,9 @@ const battleForTenant = (tenantId) => {
 };
 ```
 
-We also set an expiration trigger (see 4.) which automatically deletes the redis key after a short amount of time if the expiration is not refreshed. If a service wants to hold the lock, it has to refresh the expiration periodically e.g. with the help of a timer. The reason for this is that when the service crashes, redis automatically will delete the key and then all the other *tweetstream*-instances can start a new battle for this tenant.
+As long as the battle is held from any *tweetstream-service*-instance, each `battleForTenant`-call from any *tweetstream-service*-instance will increment the battle counter further and further and thus won't win the battle.
+
+We also set an expiration trigger (see 4.) which automatically deletes the redis key after a short amount of time if the expiration is not refreshed. If a service wants to hold the lock, it has to refresh the expiration periodically e.g. with the help of a timer. The reason for this is that when the service crashes, redis automatically will delete the key after its expiration and then all the other *tweetstream*-instances can start a new battle for this tenant.
 
 ## Installation
 ### deployment model
