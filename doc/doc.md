@@ -271,9 +271,13 @@ We defined the following requirements the synchronization algorithm has to fulfi
 - when a *tweetstream-service* holds a lock but then goes down or crashes, the lock must be freed automatically
 - when a lock is freed, all the other services must be allowed to restart a `battle` to fight for the lock
 
-### The `battle` algorithm
+### The 'battle' algorithm
 
-The algorithm was implemented with the help of redis' synchroinzation objects. The following code shows the algorithm works:
+The algorithm was implemented with the help of redis' `incr`-command which atomically increments the value of a redis key by 1 and returns the new value.
+If the redis key has not existed yet it, this command will create the variable with value 0 first.
+The return value then can be used to decide whether we won the battle  for the tenant (return value = 1) or not (return value > 1).
+
+The following code shows the algorithm works:
 
 ```javascript
 /*
@@ -289,8 +293,7 @@ const battleForTenant = (tenantId) => {
     redisClient.multi()         
         // 2. get o-auth-credentials for the tenant with id 'tenantId' 
         .get(`tenants->${tenantId}`) 
-        /* 3. increment the 'battle-counter' for this tenant
-         note: incr(x) returns the incremented value or 1 if the key has not existed yet */
+        // 3. increment the 'battle-counter' for this tenant
         .incr(`battle:tenants->${tenantId}`)
         /* 4. set an expiration for the redis key so that the the battle will automatically expire after a few seconds
          note: if you want to hold the lock (and you want this!), you have to refresh the expiration periodically (e.g. with a timer) */
@@ -317,6 +320,7 @@ const battleForTenant = (tenantId) => {
 };
 ```
 
+We also set an expiration trigger (see 4.) which automatically deletes the redis key after a short amount of time if the expiration is not refreshed. If a service wants to hold the lock, it has to refresh the expiration periodically e.g. with the help of a timer. The reason for this is that when the service crashes, redis automatically will delete the key and then all the other *tweetstream*-instances can start a new battle for this tenant.
 
 ## Installation
 ### deployment model
