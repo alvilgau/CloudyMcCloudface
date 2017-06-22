@@ -4,6 +4,7 @@ const redisCommands = require('../redis/redis-commands');
 const dynamoRecords = require('./dynamo-records-api');
 const dynamoTweets = require('./dynamo-tweets-api');
 
+const PERSIST_INTERVAL = 5000;
 const THREE_SECONDS = 3000;
 const records = {};
 
@@ -19,6 +20,8 @@ const battleForRecord = (recordId) => {
 const startRecording = (recordId) => {
     dynamoRecords.getRecord(recordId)
         .then(record => {
+            // create array to cache tweets
+            record.tweets = [];
             records[record.id] = record;
             const tenantId = redisCommands.getId(record.tenant);
 
@@ -27,7 +30,8 @@ const startRecording = (recordId) => {
 
             redisCommands.trackKeywords(record.tenant, record.id, record.keywords);
             redisEvents.subscribe(tenantId, record.id, (tenantId, recordId, tweets) => {
-                dynamoTweets.insertAnalyzedTweets(tenantId, recordId, tweets);
+                // cache tweets to persist them later
+                record.tweets.push(tweets);
             });
         });
 };
@@ -61,6 +65,7 @@ redisEvents.on('stopRecord', stopRecording);
 // Look for possible recording when service get started
 lookForRecording();
 
+// send keep alive
 setInterval(() => {
     new Set(
         Object.values(records)
@@ -72,3 +77,19 @@ setInterval(() => {
         redisCommands.refreshRecordExpiration(ret.recordId);
     });
 }, process.env.KEEP_ALIVE_INTERVAL);
+
+// persist analyzed tweets
+setInterval(() => {
+    Object.values(records)
+        .forEach(record => {
+            if (record.tweets.length > 0) {
+                // new tweets available, persist now
+                const tenantId = redisCommands.getId(record.tenant);
+                dynamoTweets.insertAnalyzedTweets(tenantId, record.id, record.tweets)
+                    .then(() => {
+                        // clear cached tweets
+                        record.tweets = [];
+                    });
+            }
+        });
+}, PERSIST_INTERVAL);

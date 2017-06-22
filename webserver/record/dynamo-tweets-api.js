@@ -34,8 +34,8 @@ const createTable = (tenantId) => {
     });
 };
 
-const insertAnalyzedTweets = (tenantId, recordId, tweets) => {
-    console.log('Inserting analyzed tweets...');
+const insertAnalyzedTweets = (tenantId, recordId, tweets) => new Promise((resolve, reject) => {
+    console.log('Inserting analyzed tweets for record:', recordId);
 
     const params = {
         TableName: tenantId,
@@ -47,7 +47,7 @@ const insertAnalyzedTweets = (tenantId, recordId, tweets) => {
             '#data': 'data'
         },
         ExpressionAttributeValues: {
-            ':data': [tweets],
+            ':data': tweets,
             ':empty_list': []
         },
         ReturnValues: 'UPDATED_NEW'
@@ -56,11 +56,13 @@ const insertAnalyzedTweets = (tenantId, recordId, tweets) => {
     docClient.update(params, function (err) {
         if (err) {
             console.error('Unable to insert analyzed tweets. Error JSON:', JSON.stringify(err, null, 2));
+            reject(err);
         } else {
-            console.log('Insert succeeded.');
+            console.log('Insert succeeded for record:', recordId);
+            resolve();
         }
     });
-};
+});
 
 const queryTweets = (tenantId, recordId) => new Promise((resolve, reject) => {
     const params = {
