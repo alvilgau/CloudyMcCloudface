@@ -47,6 +47,9 @@ exports.register = function (server, options, next) {
           else if (payload.end < payload.begin) {
             return reply(Boom.badData('end must be after begin.'));
           }
+          else if (!payload.keywords || payload.keywords.length < 1) {
+              return reply(Boom.badData('No keywords are set.'));
+          }
           dynamoRecords.insertRecord(payload).then(record => {
             redisCommands.scheduleRecording(record.id, record.begin, record.end);
             return reply(record);
