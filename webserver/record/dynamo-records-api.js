@@ -22,8 +22,8 @@ const createTable = () => {
             {AttributeName: 'id', KeyType: 'HASH'}
         ],
         ProvisionedThroughput: {
-            ReadCapacityUnits: 10,
-            WriteCapacityUnits: 10
+            ReadCapacityUnits: 5,
+            WriteCapacityUnits: 5
         }
     };
 
