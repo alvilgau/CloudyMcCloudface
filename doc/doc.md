@@ -246,8 +246,7 @@ We then developed two different scripts for logging purposes:
 
 ## RabbitMQ vs Redis
 
-A prototype of *TSA* was implemented using RabbitMQ for inter-service communication, e.g. passing analyzed tweets from *tweetstream-service* to the *webserver-service*.
-This implementation worked quite well for message passing but RabbitMQ was not enough to fulfill our requirements: the state information (i.e. which user tracked which keywords) was lost when a *tweetstream-service* went down because the service stored this information in main memory. This lead to the problem that the clients didn't receive any more tweets, because after a restart, the *tweetstream-service* no longer knew about the state he had before. This absolutely disagreed with the stateless process and share-nothing concept. This is why we choose redis as a distributed cache for storing the app's state. When a service went down and then restarted a few seconds later, it is now able to query the current state information from redis and create a new connection to the twitter api. Due to the fact that redis also provides a reliable fast publish/subscribe messaging model, we have also choosen redis over RabbitMQ for inter-service communication.
+A prototype of *TSA* was implemented using RabbitMQ for inter-service communication, e.g. passing analyzed tweets from *tweetstream-service* to the *webserver-service*. This implementation worked quite well for message passing but RabbitMQ was not enough to fulfill our requirements: the state information (i.e. which user tracked which keywords) was lost when a *tweetstream-service* went down because the service stored this information in main memory. This lead to the problem that the clients didn't receive any more tweets, because after a restart, the *tweetstream-service* no longer knew about the state he had before. This absolutely disagreed with the stateless process and share-nothing concept. This is why we choose redis as a distributed cache for storing the app's state. When a service went down and then restarted a few seconds later, it is now able to query the current state information from redis and create a new connection to the twitter api. Due to the fact that redis also provides a reliable fast publish/subscribe messaging model, we have also choosen redis over RabbitMQ for inter-service communication.
 This was the time when the *tweetstream-service* worked pretty fine ... except when you run multiple instances of that service at the same time!
 
 ## Let the battles begin
@@ -299,7 +298,6 @@ const battleForTenant = (tenantId) => {
         .expire(`battle:tenants->${tenantId}`, expiration)           
         // 5. start the transaction  
         .execAsync()
-
       .then(response => {
         // redis response is an array because we executed a transaction
         const oAuthCredentials = JSON.parse(response[0]);
