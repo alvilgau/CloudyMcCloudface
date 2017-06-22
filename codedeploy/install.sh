@@ -16,4 +16,7 @@ then
 elif [ "$DEPLOYMENT_GROUP_NAME" == "cloudy_stream" ]
 then
     forever start stream/main-tweetstream.js
+elif [ "$DEPLOYMENT_GROUP_NAME" == "cloudy_recorder" ]
+then
+    forever start record/recorder.js
 fi

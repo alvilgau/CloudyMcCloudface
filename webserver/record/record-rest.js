@@ -39,16 +39,16 @@ exports.register = function (server, options, next) {
             payload.end = payload.begin + ONE_MINUTE;
           }
           else if (!(payload.begin && payload.end)) {
-            return reply(Boom.badData({
-              type: 'error',
-              message: 'When 1 time parameter is set, the other time parameter must be set too'
-            }));
+            return reply(Boom.badData('When 1 time parameter is set, the other time parameter must be set too'));
           }
           else if (payload.begin < currentTime) {
-            return reply(Boom.badData({type: 'error', message: 'begin must be in the future.'}));
+            return reply(Boom.badData('begin must be in the future.'));
           }
           else if (payload.end < payload.begin) {
-            return reply(Boom.badData({type: 'error', message: 'end must be after begin.'}));
+            return reply(Boom.badData('end must be after begin.'));
+          }
+          else if (!payload.keywords || payload.keywords.length < 1) {
+              return reply(Boom.badData('No keywords are set.'));
           }
           dynamoRecords.insertRecord(payload).then(record => {
             redisCommands.scheduleRecording(record.id, record.begin, record.end);
@@ -65,7 +65,7 @@ exports.register = function (server, options, next) {
     method: 'GET',
     path: '/tenants/{tenantId}/records',
     handler: function (request, reply) {
-      return reply(dynamoRecords.scanRecordsByTenant(request.params.tenantId));
+      return reply(dynamoRecords.getRecordsByTenant(request.params.tenantId));
     }
   });
 
