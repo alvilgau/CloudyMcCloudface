@@ -4,7 +4,7 @@ const redisCommands = require('../redis/redis-commands');
 const dynamoRecords = require('./dynamo-records-api');
 const dynamoTweets = require('./dynamo-tweets-api');
 
-const PERSIST_INTERVAL = 5000;
+const PERSIST_INTERVAL = 20000;
 const THREE_SECONDS = 3000;
 const records = {};
 
@@ -30,6 +30,7 @@ const startRecording = (recordId) => {
 
             redisCommands.trackKeywords(record.tenant, record.id, record.keywords);
             redisEvents.subscribe(tenantId, record.id, (tenantId, recordId, tweets) => {
+                delete tweets.analyzedTweets;
                 // cache tweets to persist them later
                 record.tweets.push(tweets);
             });

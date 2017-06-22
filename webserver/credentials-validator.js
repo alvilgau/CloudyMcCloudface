@@ -6,10 +6,10 @@ const _ = require('lodash');
 
 
 const tenantSchema = Joi.object().keys({
-  consumerKey: Joi.string().min(3).max(30).required(),
-  token: Joi.string().length(50).required(),
-  consumerSecret: Joi.string().length(50).required(),
-  tokenSecret: Joi.string().min(30).max(60).required()
+  consumerKey: Joi.string().required(),
+  token: Joi.string().required(),
+  consumerSecret: Joi.string().required(),
+  tokenSecret: Joi.string().required()
 });
 
 const isTenantSchemaValid = (tenant) => {
