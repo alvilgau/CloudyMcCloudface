@@ -166,16 +166,36 @@ In the second stage named *release* Travis fetches the `.env` file from the priv
 
 In the third and last stage *run* Travis triggers AWS CodeDeploy which then extracts the previously uploaded zip-file and starts the service instances.
 
-All three stages are highly automated and don't require any intervention of a developer. When any the build or release stage would fail, Travis updates a `batch`(.svg-image) which is imported in the projects' [README.md-file](https://github.com/cloudy-sentiment-analysis/CloudyMcCloudface/blob/master/README.md). This way, each developer instantly can recognize if the build failed and act accordingly.
+All three stages are highly automated and don't require any intervention of a developer. When any the build or release stage would fail, Travis updates a `batch` (.svg-image with a fixed url) which is imported in the projects' [README.md-file](https://github.com/cloudy-sentiment-analysis/CloudyMcCloudface/blob/master/README.md). This way, each developer instantly can recognize if the build failed and act accordingly.
 
-![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/build-passing.png "Badge for a passing build")
+![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/build-passing.png "Badge for a passing build") Travis badge for a passing build.
 
-![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/build-failing.png "Badge for a failing build")
-
+![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/build-failing.png "Badge for a failing build") Travis badge for a failing build.
 
 #### VI. Processes
+
+The twelve-factor app guideline insists to run the app as one or more stateless processes with a share-nothing attitude. This concept simplifies the replacing of existing service instances with new ones as well as the additional startup of new instances while the rest of the system is already up.
+
+The *TSA* app has two different kinds of state:
+
+- *State 1*: which user belonging to which tenant tracked which keywords
+
+    The mapping between tenants, users, and keywords is stored in the redis cache. E.g. when the *tweetstream-service* goes down for a few seconds, the information is still kept in the distributed key value store. When the service restarts, it requests the information from redis and thus is able to reconnect to twitter with the given credentials and keywords. This stateless flow allows us to shutdown each service type and the application will continue working when the specific service gets restarted. This is also valid for the *recorder-service / webserver-serivce*.
+
+- *State 2*: which user belonging to which tenant wants to record which keywords for what time range
+
+    It is not sufficient to store this type of information only in redis, because a user could schedule a record for in a few weeks or months. When the redis-db would be restarted, this information would be lost, so the record schedule is stored additionally in the permanent NoSQL storage DynamoDB. 
+
+Note: In contrast to REST-APIs which are stateless by convention, websocket connections can be seen as a kind of state. In this case, the client won't receive any more analyzed tweets when the *webserver-service* goes down and the connection is lost. We circumvent this issue by resend the 'track'-message from our Elm-Client to the *webserver-service* when the client didn't receive any response from the *webserver-service* for a given amount of time (20 seconds). This will reestablish a lost connection and thus the flow of analyzed tweets will continue automatically without the need of the user having to reload the page manually.
+
 #### VII. Port binding
+
+Due the services are implemented with Node.js, there is no need for an external webserver container like Apache or HTTPD. So all our services are completely self-contained by relying on Node.js' internal http module. The port binding itself is declared in the configuration environment file `.env` whereby the services can be sticked to each other as described in the section `Backing Services`.
+
 #### VIII. concurrency
+
+
+
 #### IX. Disposability
 #### X. Dev/prod parity
 #### XI. Logs
