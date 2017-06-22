@@ -54,9 +54,11 @@ before_deploy:
 
     ssh-agent bash -c 'ssh-add sshkey; git clone git@github.com:markusheilig/cloudy-secrets prod-env'
     cp prod-env/.env webserver/.env
+    cp codedeploy/install.sh install.sh
+    cp codedeploy/appspec.yml appspec.yml
 
     mkdir deploy
-    zip --quiet -r deploy/webserver--$TRAVIS_BRANCH--latest.zip webserver codedeploy/*   
+    zip --quiet -r deploy/webserver--$TRAVIS_BRANCH--latest.zip webserver appspec.yml install.sh
     cp deploy/webserver--$TRAVIS_BRANCH--latest.zip deploy/webserver--$TRAVIS_BRANCH--$TRAVIS_BUILD_NUMBER--$(date '+%Y-%m-%d--%H-%M-%S').zip
   fi
 deploy:
