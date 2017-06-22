@@ -289,34 +289,32 @@ returns a promise which resolves the following object:
     tenant:    o-auth token we need to connect to twitter or null, if you lost the battle
 }
 */
-const battleForTenant = (tenantId) => {  
-  return new Promise((resolve, reject) => {    
+const battleForTenant = (tenantId) => new Promise((resolve, reject) => {    
     // 1. create a redis transaction     
-    redisClient.multi()         
-        // 2. get o-auth-credentials for the tenant with id 'tenantId' 
-        .get(`tenants->${tenantId}`) 
-        // 3. increment the 'battle-counter' for this tenant
-        .incr(`battle:tenants->${tenantId}`)
-        // 4. set an expiration on the battle
-        .expire(`battle:tenants->${tenantId}`, expiration)           
-        // 5. start the transaction  
-        .execAsync()
-      .then(response => {
-        // redis response is an array because we executed a transaction
-        const oAuthCredentials = JSON.parse(response[0]);
-        const battleCounter = response[1];
-        // only one service will receive battleCounter with value 1        
-        const wonBattle = (battleCounter == 1);
-        if (oAuthCredentials && wonBattle) {
-          // we won the battle
-          resolve({wonBattle: true, tenant: oAuthCredentials});
-        } else {    
-          // we lost the battle but we still fulfill our promise                    
-          resolve({wonBattle: false, tenant: null});    
-        }
-      })                
-      .catch(err => reject(err)); // problem with redis?  
-  });
+  redisClient.multi()         
+    // 2. get o-auth-credentials for the tenant with id 'tenantId' 
+    .get(`tenants->${tenantId}`) 
+    // 3. increment the 'battle-counter' for this tenant
+    .incr(`battle:tenants->${tenantId}`)
+    // 4. set an expiration on the battle
+    .expire(`battle:tenants->${tenantId}`, expiration)           
+    // 5. start the transaction  
+    .execAsync()
+    .then(response => {
+    // redis response is an array because we executed a transaction
+    const oAuthCredentials = JSON.parse(response[0]);
+    const battleCounter = response[1];
+    // only one service will receive battleCounter with value 1        
+    const wonBattle = (battleCounter == 1);
+    if (oAuthCredentials && wonBattle) {
+      // we won the battle
+      resolve({wonBattle: true, tenant: oAuthCredentials});
+    } else {    
+      // we lost the battle but we still fulfill our promise                    
+      resolve({wonBattle: false, tenant: null});    
+    }
+    })                
+    .catch(err => reject(err)); // problem with redis?  
 };
 ```
 
@@ -340,13 +338,17 @@ The configuration for the build is done via the YAML file `.travis.yml` that nee
 In our case the required build steps are roughly:
 
 *Build*
+
 * Install the dependencies of the webserver module.
+
 * Install the dependencies of the lambda module.
 * Run the test against the webserver.
 * Compile the Elm project to an HTML file.
 
 *Deploy*
+
 * Move the generated HTML file to the webserver.
+
 * Fetch the production .env file from a private repository.
 * Move the .env file to the webserver.
 * Create a versioned ZIP file of the webserver.
