@@ -146,7 +146,7 @@ The resources each service consumes are declared in the previsouly explained env
 ````
 # configuration of AWS Lambda
 LAMBDA_REGION=eu-central-1
-LAMBDA_ROLE=arn:aws:iam::508323409197:role/lambda_basic_execution
+LAMBDA_ROLE=arn:aws:iam::418015462131:role/lambda_basic_execution
 
 # configuration of redis cache
 REDIS_HOST=127.0.0.1
@@ -166,7 +166,7 @@ In the second stage named *release* Travis fetches the `.env` file from the priv
 
 In the third and last stage *run* Travis triggers AWS CodeDeploay which then extracts the previously uploaded zip-file and starts the service instances.
 
-All three stages are highly automated and don't require any intervention of a developer. When any the build or release stage would fail, Travis updates a `batch`(.svg-image) which is imported in the projects' [README.md-file](https://github.com/cloudy-sentiment-analysis/CloudyMcCloudface/blob/master/README.md). This way, each developer instantly can recognize any build failure.
+All three stages are highly automated and don't require any intervention of a developer. When any the build or release stage would fail, Travis updates a `batch`(.svg-image) which is imported in the projects' [README.md-file](https://github.com/cloudy-sentiment-analysis/CloudyMcCloudface/blob/master/README.md). This way, each developer instantly can recognize if the build failed and act accordingly.
 
 ![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/build-passing.png "Badge for a passing build")
 
