@@ -68,32 +68,44 @@ The sentiment analysis is realized with a Node.js module called [sentiment](http
 After the calculation is done and the *tweetstream-service* receives the analysis, it publishes the results through redis channels on which other services can subscribe to. This way, the *webserver-service* is able to subscribe for analyzed tweets and send the results back to the client applications via websocket messages; the *recorder service* is able to subscribe in order to store the analyzed tweets results.
 
 ### Tweet recording
-Through a REST-API which is included in the webserver, the user has the possibility to record analyzed tweets for a certain period of time. All necessary data for recording will be persisted in a DynamoDB. The start and end time for the record will be cached in Redis. When one of this keys expires, Redis sends a notification to the recorder service. Through this notifications the recorder service knows when he has to start or stop recording. During the recording the analyzed tweets will be persisted in a DynamoDB so that the user can access them later.
+Through a REST-API which is included in the webserver, the user has the possibility to record analyzed tweets for a certain period of time. All necessary data for recording will be persisted in a DynamoDB. The start and end time for the record will be cached in Redis. When one of this cached keys expires, Redis sends a notification to the recorder service. Through this notifications the recorder service knows when he has to start or stop recording. During the recording the analyzed tweets will be persisted in a DynamoDB so that the user can access them later. For each tenant the analyzed tweets will be persisted in a separate table. To minimize the write throughput, the analyzed tweets will be cached first for 20 seconds and then persisted.
 
 
 
-## implementation of the functionality
+## Implementation of the functionality
 
 
-## external cloud resource types
+## External cloud resource types
 
-## scaling
+## Scaling
 
 There are three different kinds of scaling scenarios for *TSA*.
 
 1. Scale for tenants
 
-When the number of tenant increases, then there will be more http-connections to the Twitter Streaming API (which is one per tenant). In order to handle a massive amount of streams concurrently, new instances of the *tweetstream-service* are required.
+When the number of tenant increases, then there will be more http-connections to the Twitter Streaming API (which is one per tenant). In order to handle a massive amount of streams concurrently, new instances of the *tweetstream-service* are required. For this purpose we created an auto scaling group for the *tweetstream-service*. This auto scaling group is configured as follow:
+
+- Start a new *tweetstream-service* instance when the average incoming network traffic is greater than 85 Megabyte for two minutes.
+- Stop a *tweetstream-service* instance when the average incoming network traffic is less than 30 Megabyte for 10 minutes.
+- Every 30 seconds a health check will be executed to exchange dead instances. 
 
 2. Scale for users
 
-When the number of user increases, then there are a lot of websocket connections (one per user). In order to handle a huge amount of users, new instances of the *webserver-service* need to be started.
+When the number of user increases, then there are a lot of websocket connections (one per user). In order to handle a huge amount of users, new instances of the *webserver-service* need to be started. For this purpose a auto scaling group and a elastic load balancer was created. The auto scaling group has the following scaling policies:
+
+- Start a new *webserver-service* instance when the average outgoing network traffic is greater than 85 Megabyte for two minutes.
+- Stop a *webserver-service* instance when the average outgoing network traffic is less than 30 Megabyte for 10 minutes.
+- To exchange dead instances, the health check of the elastic load balancer will be used.
+
+The elastic load balancer distributes all incoming HTTP requests and incoming websocket connections to evenly distribute the load on the *webserver-service* instances.
 
 3. Scale for tweets
 
 When there are a lot of tweets which have to be analyzed, there is nothing further to do! The analyzer function is a stateless AWS Lambda function which is scaled automatically by Amazon.
 
-todo: alex, which scaling groups are defined and how are they configured?
+4. Scale for records
+
+When the number of records increases, then there will be a lot of redis notifications that must be handled. For this reason an auto scaling group for the *recorder-service* was created too. This auto scaling group is configured exactly like the auto scaling group of *tweetstream-service*. Only the health check period is set to 5 minutes.
 
 ## multi-tenancy
 
