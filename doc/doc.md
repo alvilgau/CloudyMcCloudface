@@ -239,11 +239,31 @@ We then developed two different scripts for logging purposes:
 
 #### XII. Admin processes
 
+// todo: check ich nicht
+
 ## Implementation
 
-- first steps with rabbitmq -> not working for our purposes (information is lost if service goes down)
-- now: redis
-- "tenant battles"
+
+## RabbitMQ vs Redis
+
+A prototype of *TSA* was implemented using RabbitMQ for inter-service communication, e.g. passing analyzed tweets from *tweetstream-service* to the *webserver-service*.
+This implementation worked quite well for message passing but RabbitMQ was not enough to fulfill our requirements: the state information (i.e. which user tracked which keywords) was lost when a *tweetstream-service* went down because the service stored this information in main memory. This lead to the problem that the clients didn't receive any more tweets, because after a restart, the *tweetstream-service* did no longer know about which state he had before. This absolutely disagreed with the stateless process and share-nothing concept. This is why we choose redis as a distributed cache storing the app's state. When a service went down and then restarted a few seconds later, it is now able to query the current state information from redis and create a new connection to the twitter api. Due to the fact that redis also provides a reliable fast publish/subscribe messaging model, we have also choosen redis over RabbitMQ for inter-service communication.
+This was the time when the *tweetstream-service* worked pretty fine ... except when you run multiple instances of that service at the same time!
+
+## Let the battles begin
+
+### Twitter API restrictions 
+
+Twitter imposes very strict limitations for their API usage. This means that it is only allowed to hold one connection to the stream api at the same time with the same twitter account credentials (i.e. an o-auth-token, in the context of *TSA* we define one tenant as one twitter app account). The creation of a new connection will cause the oldest one to be disconnected. Twitter also checks for inflative connection tries which may follow in an IP ban.
+
+### Running multiple instances of *tweetstream-service*
+
+Whenever a user tracks some keywords, then the information (tenant + user + keywords) is stored in the redis database. As a result the *tweetstream-service* will automatically be notified via redis keyspace events  that there is a new user who wants to track some keywords. Hereupon the *tweetstream-service* will create a connection to the twitter stream API in order to receive tweets for the given keywords.
+When there are two or more instances of the *tweetstream-service* up and running, each instance tries to connect to the Twitter API what could result in an IP ban. This is why we had to invent a distributed synchronization mechanism to prevent the creation of multiple streams for one twitter account / o-auth-token / tenant.
+
+### The battle algorithm
+
+
 
 ## Installation
 ### deployment model
