@@ -4,6 +4,7 @@ const redisCommands = require('../redis/redis-commands');
 const dynamoRecords = require('./dynamo-records-api');
 const dynamoTweets = require('./dynamo-tweets-api');
 
+const THREE_SECONDS = 3000;
 const records = {};
 
 const battleForRecord = (recordId) => {
@@ -42,9 +43,23 @@ const stopRecording = (recordId) => {
         .then(ok => delete records[recordId]);
 };
 
+const lookForRecording = () => {
+    dynamoRecords.getRecordsInFuture()
+        .then(records => {
+            const currentTime = new Date().getTime() + THREE_SECONDS;
+            records.forEach(record => {
+                const begin = Math.max(record.begin, currentTime);
+                redisCommands.scheduleRecording(record.id, begin, record.end);
+            });
+        });
+};
+
 redisEvents.on('startRecord', battleForRecord);
 redisEvents.on('recordBattleExpired', battleForRecord);
 redisEvents.on('stopRecord', stopRecording);
+
+// Look for possible recording when service get started
+lookForRecording();
 
 setInterval(() => {
     new Set(

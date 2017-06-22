@@ -62,7 +62,7 @@ exports.register = function (server, options, next) {
     method: 'GET',
     path: '/tenants/{tenantId}/records',
     handler: function (request, reply) {
-      return reply(dynamoRecords.scanRecordsByTenant(request.params.tenantId));
+      return reply(dynamoRecords.getRecordsByTenant(request.params.tenantId));
     }
   });
 

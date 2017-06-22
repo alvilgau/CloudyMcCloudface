@@ -75,7 +75,7 @@ const getRecord = (recordId) => new Promise((resolve, reject) => {
     });
 });
 
-const scanRecordsByTenant = (tenantId) => new Promise((resolve, reject) => {
+const getRecordsByTenant = (tenantId) => {
     const params = {
         TableName: tableName,
         ProjectionExpression: 'id, keywords, #begin, #end',
@@ -88,7 +88,28 @@ const scanRecordsByTenant = (tenantId) => new Promise((resolve, reject) => {
             ':tenantId': tenantId
         }
     };
+    return scanRecords(params);
+};
 
+const getRecordsInFuture = () => {
+    // record end is at least 15 sec in future
+    const currentTime = new Date().getTime() + 15000;
+    const params = {
+        TableName: tableName,
+        ProjectionExpression: 'id, keywords, #begin, #end',
+        FilterExpression: '#end > :now',
+        ExpressionAttributeNames: {
+            '#begin': 'begin',
+            '#end': 'end'
+        },
+        ExpressionAttributeValues: {
+            ':now': currentTime
+        }
+    };
+    return scanRecords(params);
+};
+
+const scanRecords = (params) => new Promise((resolve, reject) => {
     docClient.scan(params, (err, data) => {
         if (err) {
             console.error(`Unable to scan table: ${JSON.stringify(err, null, 2)}`);
@@ -103,5 +124,6 @@ module.exports = {
     createTable,
     insertRecord,
     getRecord,
-    scanRecordsByTenant
+    getRecordsByTenant,
+    getRecordsInFuture
 };
