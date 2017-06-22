@@ -105,7 +105,7 @@ When there are a lot of tweets which have to be analyzed, there is nothing furth
 
 4. Scale for records
 
-When the number of records increases, then there will be a lot of redis notifications that must be handled. For this reason an auto scaling group for the *recorder-service* was created too. This auto scaling group is configured exactly like the auto scaling group of *tweetstream-service*. Only the health check period is set to 5 minutes.
+When the number of records increases, then there will be a lot of analyzed tweets that must be handled. For this reason an auto scaling group for the *recorder-service* was created too. This auto scaling group is configured exactly like the auto scaling group of *tweetstream-service*. Only the health check period is set to 5 minutes.
 
 ## multi-tenancy
 
