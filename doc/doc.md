@@ -406,5 +406,24 @@ Because our deployment procedure is highly automated, no manual steps are requir
 
 # Cost Calculation
 ## cost model
-## possible charging model
-## costs for an halb an hour test run
+The following graphic gives an estimate of the monthly cost for running the application in the AWS cloud.
+
+The calculation assumes 1000 concurrent users and 100 concurrent recordings at any given time.
+
+![AWS monthly cost](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/monthly-cost.png "AWS monthly cost") AWS monthly cost. *Calculated with cloudcraft.io*
+
+Not included in this graphic is the cost for outgoing network traffic, which adds another 140€ each month for 1000 concurrent users and increases the monthly total to ~340€.
+
+## Possible Charging Model
+
+When creating a charging model the two main features of the app have to be taken into consideration. The first is the real time analysis which produces a huge amount of outgoing network traffic. Here it would make sense to charge each user or tenant by the total analysis time. This data can be gathered relatively ease by listening to redis events.
+The second component is the recording of tweets. Outgoing network traffic is not as much an issue in this case, but storing the analyzed tweets is a massiv cost factor.
+What needs to be taken into consideration as well, is the fact that recordings are stored by tenant.
+Therefor it would make sense to charge each tenant for the total time of all stored recordings.
+
+## Costs for an Half an Hour Test Run
+
+It would cost about 15 cents to run the service for half an hour.
+
+
+
