@@ -41,6 +41,7 @@ The following graphic gives an overview of the application in the AWS cloud. Log
 
     
 The *TSA* front end is written in Elm, a functional programming language which compiles to Javascript. The client application connect to the server via web sockets in order to receive statistics for the desired keywords.
+The following graphic shows how the data is presented.
 
 ![Elm UI](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/ui.png "Elm web app")
 
