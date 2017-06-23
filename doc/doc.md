@@ -380,7 +380,10 @@ The deployment of the app is realized with AWS CodeDeploy and get triggered from
 
 ![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/deployment-groups.png "AWS deployment groups") AWS deployment groups.
 
-Each of the deployment groups recognize the affected EC2 instances by their membership in an auto scaling group. Due this setup, CodeDeploy can easily deploy one service to several EC2 instances. Also CodeDeploy will be triggered automatically when the configured auto scaling groups create a new instance. With the `appspec.yml` file we describe which actions should be executed during deployment. In our case we call an installation bash script after CodeDeploy extracted the archive into the EC2 instance. This bash script updates the code and restarts the service depending on the deployment group.  
+Each of the deployment groups recognize the affected EC2 instances by their membership in an auto scaling group. Due this setup, CodeDeploy can easily deploy one service to several EC2 instances. Also CodeDeploy will be triggered automatically when the configured auto scaling groups create a new instance. With the `appspec.yml` file we describe which actions should be executed during deployment. In our case we call an installation bash script after CodeDeploy extracted the archive into the EC2 instance. This bash script updates the code and restarts the service depending on the deployment group.
+
+Because our deployment procedure is highly automated, no manual steps are required to reproduce a deployment. Just push code changes to the master branch and a new deployment will be initiated automatically.
+  
 
 # Operations
 ## how to monitor the app
