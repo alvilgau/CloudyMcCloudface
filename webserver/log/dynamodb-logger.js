@@ -74,18 +74,16 @@ const log = (logLevel, message) => new Promise ((resolve, reject) => {
   });
 });
 
-const handleChunk = (chunk, logLevel) => {
-  const lines = chunk.split('\n');
-  lines.filter(line => line.length !== 0)
-    .forEach(line => {
-      log(logLevel, line)
-        .then(ok => verbose && console.log(`[${logLevel} - ${service}] ${line}`))
-        .catch(err => console.error(`could not log ${logLevel} message [${service}] ${line} -> ${err}`));
-    });
+const handleChunk = (chunk) => {     
+  const match = chunk.match(/^\[(.*)\]/);
+  const data = {
+        message: chunk.replace(match && match[0] + ' ', ''),
+        logLevel: match && match[1]
+    };
+  data.logLevel && log(data.logLevel, data.message);
 };
 
-process.stdin.on('data', (chunk) => handleChunk(chunk, 'info'));
-process.stderr.on('data', (chunk) => handleChunk(chunk, 'error'));
+process.stdin.on('data', (chunk) => handleChunk(chunk));
 
 if (process.argv.includes('delete')) {
   deleteTable()
