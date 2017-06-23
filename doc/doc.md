@@ -37,14 +37,15 @@ These services are:
 
 The following graphic gives an overview of the application in the AWS cloud. Logging relevant services were omitted for more clarity.
 
-![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/aws-setup.png "AWS Setup")
+![AWS Setup](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/aws-setup.png "AWS Setup")
 
     
-The *TSA* front end is written in Elm, a functional programming which compiles to HTML, CSS and JavaScript. Client applications connect to the server side websocket server in order to receive statistics for analyzed tweets. The analyzed tweets are then plotted with curve charts.
+The *TSA* front end is written in Elm, a functional programming language which compiles to Javascript. The client application connect to the server via web sockets in order to receive statistics for the desired keywords.
+The following graphic shows how the data is presented.
 
-## Overall design and data stores
+![Elm UI](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/ui.png "Elm web app")
 
-### Inter-process communication
+## Inter-process communication
 
 When a new user launches the app and enters the keywords he or she wants to track, the client sends a JSON encoded message to the websocket server with the specified keywords and optionally some tenant information.
 After the server receives such a message, the following information will be tracked in redis:
@@ -55,7 +56,7 @@ This means that the redis cache stores the information about which user belongs 
 
 When redis variables, also called *keys*, are set, changed, deleted or expire, redis publishes so called keyspace events which can be subscribed to from other services to receive app specific notifications. *TSA* uses these events in the *tweetstream-service* to get notified when a user wants to track keywords. In this case, the *tweetstream-service* can create a new stream connection to the Twitter Streaming API.
 
-### Tweet analysis
+## Tweet analysis
 
 Shortly after the *tweetstream-service* created a streaming connection to the Twitter API, the service will receive tweets based on the specified keywords. Tweets are JSON objects that include the tweet text with emojis, the time when the tweet was created, how many times a tweet was retweeted, geolocation information and much more. Right now, only the tweet text including the emojis is used for sentiment analysis and thus will be extracted from the tweet JSON object and stored temporarily in memory. 
 A periodic timer in the *tweetstream-service* triggers the service to send all temporarily stored tweets to *tweetanalyzer-service*, an AWS Lambda function. 
@@ -72,13 +73,8 @@ The sentiment analysis is realized with a Node.js module called [sentiment](http
 
 After the calculation is done and the *tweetstream-service* receives the analysis, it publishes the results through redis channels on which other services can subscribe to. This way, the *webserver-service* is able to subscribe to analyzed tweets and send the results back to the client applications via websocket messages; the *recorder service* is able to subscribe in order to store the analyzed tweets results.
 
-### Tweet recording
+## Tweet recording
 Through a REST-API which is included in the webserver, the user has the possibility to record analyzed tweets for a certain period of time. All necessary data for recording will be persisted in a DynamoDB. The start and end time for the record will be cached in Redis. When one of this cached keys expires, Redis sends a notification to the recorder service. Through this notifications the recorder service knows when it has to start or stop recording. During the recording the analyzed tweets will be persisted in a DynamoDB so that the user can access them later. For each tenant the analyzed tweets will be persisted in a separate table. To minimize the write throughput, the analyzed tweets will be cached first for 20 seconds and then persisted.
-
-## Implementation of the functionality
-
-
-## External cloud resource types
 
 ## Scaling
 
@@ -111,6 +107,8 @@ When there are a lot of tweets which have to be analyzed, there is nothing furth
 When the number of records increases, there will be a lot of analyzed tweets that must be handled. For this reason an auto scaling group for the *recorder-service* was created too. This auto scaling group is configured exactly like the auto scaling group of *tweetstream-service*. Only the health check period is set to 5 minutes.
 
 ## Multi-Tenancy
+
+This section describes the multi-tenancy support provided by *TSA*.
 
 ### Definition of user
 A user is defined as a consumer of our service, e.g. someone who uses the *TSA* Elm-client.
@@ -212,12 +210,14 @@ Due to the fact that the services are implemented with Node.js, there is no need
 
 ### VIII. Concurrency
 
-// TODO: versteh ich nicht
+According to the twelve-factor methodology an application should scale out via the process model. 
+This was achieved by storing all state in redis and synchronizing the different processes via redis event.
+A detailed description of how this was achieved can be found in the section `Let the Battles Begin`.
 
 ### IX. Disposability
 
 Using Node.js with the V8 Chrome engine, the overhead for startup time as well as shutdown time for a service / process is insignificant. This brings a great benefit when it comes to a new deployment because down time can be neglected.
-By the usage of redis, the apps are designed to be robust against sudden death events. A detailed explanation about the robustness of the services including different scenarios can be found in the section `Let the battles begin`.
+By the usage of redis, the apps are designed to be robust against sudden death events. A detailed explanation about the robustness of the services including different scenarios can be found in the section `Let the Battles Begin`.
 
 ### X. Dev/prod parity
 
@@ -251,7 +251,7 @@ Twelve-factor advises to create scripts for repetitive tasks like database migra
 
 # Implementation
 
-The following subsections describe challenges that occurred during the implementation phase. 
+This chapter focuses on the implementation of the most critical components of the application, the state management and the synchronization strategies.
 
 ## RabbitMQ vs Redis
 
@@ -371,13 +371,7 @@ Additionally deployments to dedicated development instances on AWS could be conf
 This would allow to have two identical AWS setups running at the same time, where one setups represents the master branch and the other the development branch of the project.
 Because of the additional costs that come with running two instances of every service we decided against running a production and development environment simultaneously.
 
-# Installation
-
-## Deployment model
-
-TSA has a public deployment model, then all used services such as CodeDeploy or DynamoDB are provided by AWS and are publicly accessible. Furthermore our app is running completely in the AWS Cloud and we don't use any private hosted data centers. An important reason for using a public deployment model is the mega scalable infrastructure that is available for all.
-
-## How is the app deployed
+# Deployment
 
 The deployment of the app is realized with AWS CodeDeploy and get triggered from Travis CI. CodeDeploy receives deployment information such as bucket name, archive name and which AWS EC2 instances (deployment group) to deploy from Travis as well. In AWS CodeDeploy a set of EC2 instances is called as a *deployment group*. In order to deploy and run each of our services separately we configured three different deployment groups which can be triggered separately. The deployment groups included the last deployment status are shown in the following image. 
 
@@ -406,10 +400,9 @@ Using these metrics also helped us to configure our auto scaling groups correctl
 
 ## How to troubleshoot
 
-When an error occurs, then several steps can be done to troubleshoot. Firstly, we can look at the metrics and logs provided by AWS CloudWatch. This metrics can give a hint which instance operates not as desired. Next we can look at the logs of the services, which are persisted in AWS DynamoDB. After the error was found, we can reproduce him locally and fix him. Thanks to our highly automated deployment process, we can quickly deploy the fix withing a few minutes just by pushing the code changes to the master branch.
+When an error occurs, then several steps can be done to troubleshoot. Firstly, we can look at the metrics and logs provided by AWS CloudWatch. This metrics can give a hint which instance operates not as desired. Next we can look at the logs of the services, which are persisted in AWS DynamoDB. After the error was found, we can reproduce him locally and fix him. Thanks to our highly automated deployment process, we can quickly deploy the fix withing a few minutes.
 
 # Cost Calculation
-## cost model
 The following graphic gives an estimate of the monthly cost for running the application in the AWS cloud.
 
 The calculation assumes 1000 concurrent users and 100 concurrent recordings at any given time.
@@ -427,7 +420,4 @@ Therefor it would make sense to charge each tenant for the total time of all sto
 
 ## Costs for an Half an Hour Test Run
 
-It would cost about 15 cents to run the service for half an hour.
-
-
-
+It would cost about 15 cents to run the application for half an hour.
