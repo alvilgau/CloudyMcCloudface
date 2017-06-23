@@ -37,10 +37,12 @@ These services are:
 
 The following graphic gives an overview of the application in the AWS cloud. Logging relevant services were omitted for more clarity.
 
-![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/aws-setup.png "AWS Setup")
+![AWS Setup](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/aws-setup.png "AWS Setup")
 
     
-The *TSA* front end is written in Elm, a functional programming which compiles to HTML, CSS and JavaScript. Client applications connect to the server side websocket server in order to receive statistics for analyzed tweets. The analyzed tweets are then plotted with curve charts.
+The *TSA* front end is written in Elm, a functional programming language which compiles to Javascript. The client application connect to the server via web sockets in order to receive statistics for the desired keywords.
+
+![Elm UI](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/ui.png "Elm web app")
 
 ## Overall design and data stores
 
@@ -111,6 +113,8 @@ When there are a lot of tweets which have to be analyzed, there is nothing furth
 When the number of records increases, there will be a lot of analyzed tweets that must be handled. For this reason an auto scaling group for the *recorder-service* was created too. This auto scaling group is configured exactly like the auto scaling group of *tweetstream-service*. Only the health check period is set to 5 minutes.
 
 ## Multi-Tenancy
+
+This section describes the multi-tenancy support provided by *TSA*.
 
 ### Definition of user
 A user is defined as a consumer of our service, e.g. someone who uses the *TSA* Elm-client.
@@ -212,7 +216,8 @@ Due to the fact that the services are implemented with Node.js, there is no need
 
 ### VIII. Concurrency
 
-// TODO: versteh ich nicht
+According to the twelve-factor methodology an application should scale out via the process model. Although some issues arose in the beginning as a direct violation of this rule, described mo
+
 
 ### IX. Disposability
 
@@ -261,8 +266,7 @@ Two different scripts were developed for logging purposes:
 
 # Implementation
 
-// todo: kurzer text
-
+This chapter focuses on the implementation of the most critical components of the application, the state management and the synchronization strategies.
 
 ## RabbitMQ vs Redis
 
@@ -382,13 +386,7 @@ Additionally deployments to dedicated development instances on AWS could be conf
 This would allow to have two identical AWS setups running at the same time, where one setups represents the master branch and the other the development branch of the project.
 Because of the additional costs that come with running two instances of every service we decided against running a production and development environment simultaneously.
 
-# Installation
-
-## Deployment model
-
-TSA has a public deployment model, then all used services such as CodeDeploy or DynamoDB are provided by AWS and are publicly accessible. Furthermore our app is running completely in the AWS Cloud and we don't use any private hosted data centers. An important reason for using a public deployment model is the mega scalable infrastructure that is available for all.
-
-## How is the app deployed
+# Deployment
 
 The deployment of the app is realized with AWS CodeDeploy and get triggered from Travis CI. CodeDeploy receives deployment information such as bucket name, archive name and which AWS EC2 instances (deployment group) to deploy from Travis as well. In AWS CodeDeploy a set of EC2 instances is called as a *deployment group*. In order to deploy and run each of our services separately we configured three different deployment groups which can be triggered separately. The deployment groups included the last deployment status are shown in the following image. 
 
@@ -439,6 +437,3 @@ Therefor it would make sense to charge each tenant for the total time of all sto
 ## Costs for an Half an Hour Test Run
 
 It would cost about 15 cents to run the service for half an hour.
-
-
-
