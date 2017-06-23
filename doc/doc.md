@@ -78,7 +78,7 @@ Through a REST-API which is included in the webserver, the user has the possibil
 
 ## Scaling
 
-There are three different kinds of scaling scenarios for *TSA*.
+There are four different kinds of scaling scenarios for *TSA*.
 
 1. Scale for tenants
 
@@ -333,8 +333,6 @@ As long as the battle is held from any *tweetstream*-instance, each `battleForTe
 
 We also set an expiration trigger (see 4.) which automatically deletes the redis key after a short amount of time if the expiration has not been refreshed. If a service wants to hold the lock, it has to refresh the expiration periodically e.g. with a timer. The reason for this is that when the service crashes, redis automatically will delete the key after when it expires and then all the other *tweetstream*-instances can start a new battle for this tenant.
 
-# Installation
-
 # Continuous Integration
 
 The continuous integration server of choice for many open source projects is currently Travis-CI.
@@ -371,15 +369,17 @@ Additionally deployments to dedicated development instances on AWS could be conf
 This would allow to have two identical AWS setups running at the same time, where one setups represents the master branch and the other the development branch of the project.
 Because of the additional costs that come with running two instances of every service we decided against running a production and development environment simultaneously.
 
+# Installation
+
 ## Deployment model
 
 ## How is the app deployed
 
-The deployment of the app is realized with AWS CodeDeploy and get triggered from Travis CI. CodeDeploy receives deployment information such as bucket name, archive name and which AWS EC2 instance to deploy from Travis as well. In AWS CodeDeploy a set of EC2 instances is called as a *deployment group*. In order to deploy and run each of our services separately we configured three different deployment groups which can be triggered separately. The deployment groups included the last deployment status are shown in the following image. 
+The deployment of the app is realized with AWS CodeDeploy and get triggered from Travis CI. CodeDeploy receives deployment information such as bucket name, archive name and which AWS EC2 instances (deployment group) to deploy from Travis as well. In AWS CodeDeploy a set of EC2 instances is called as a *deployment group*. In order to deploy and run each of our services separately we configured three different deployment groups which can be triggered separately. The deployment groups included the last deployment status are shown in the following image. 
 
 ![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/deployment-groups.png "AWS deployment groups") AWS deployment groups.
 
-Each of the deployment groups recognize the affected EC2 instances by their membership in an auto scaling group. Due this setup, CodeDeploy can easily deploy one service to several EC2 instances. Also CodeDeploy will be triggered automatically when the configured auto scaling groups create a new instance. With the `appspec.yml` file we describe which actions should be executed during deployment. In our case we call an installation bash script after CodeDeploy extracted the archive into the EC2 instance. This bash script updates the code and restarts the service depending on the deployment group.
+Each of the deployment groups recognize the affected EC2 instances by their membership in an auto scaling group. Due this setup, CodeDeploy can easily deploy one service to several EC2 instances. Also CodeDeploy will be triggered automatically when the configured auto scaling groups create a new instance. With the `appspec.yml` file we describe which actions should be executed during deployment. In our case we call an installation bash script after CodeDeploy extracted the archive on the EC2 instance. This bash script updates the code and restarts the service depending on the deployment group.
 
 Because our deployment procedure is highly automated, no manual steps are required to reproduce a deployment. Just push code changes to the master branch and a new deployment will be initiated automatically.
   
