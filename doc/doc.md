@@ -431,4 +431,4 @@ Therefor it would make sense to charge each tenant for the total time of all sto
 
 ## Costs for an Half an Hour Test Run
 
-It would cost about 15 cents to run the service for half an hour.
+It would cost about 15 cents to run the application for half an hour.
