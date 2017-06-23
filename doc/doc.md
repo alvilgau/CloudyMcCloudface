@@ -2,21 +2,22 @@ Twitter Sentiment Analysis
 
 *from Alexander Vilgauk, Andreas Sayn and Markus Heilig* 
 
-# Intruduction
+# Introduction
 
-Twitter Sentiment Analysis *TSA* is a cloud software platform for massive tweet analysis. TSA is a multi tenancy application which allows the user to run real-time sentiment analysis on one or multiple twitter keywords. A web client visualizes the analysis results in real time. TSA also gives the user the possibility to record the stream for a specified time.
+Twitter Sentiment Analysis *TSA* is a cloud ready multi tenancy twitter analysis application. *TSA* enables users to analyse the sentiment of tweets on any desired subject.
+The gathered data is plotted in a web application in real time. Besides real time analysis *TSA* also allows scheduling an analysis for a specific time frame.
 
-In order to handle a any amount of tweets and clients concurrently, TSA needs to be highly scalable and is therefore a perfect fit for "The Cloud".
+In order to handle a any amount of tweets and clients concurrently, *TSA* needs to be highly scalable and is therefore a perfect fit for "The Cloud".
 
 # Application Design
 
-The *TSA* backend is realized with Node.js-microservices written in JavaScript.
+The *TSA* back end is realized with Node.js-micro services written in JavaScript.
 
 These services are:
 
 - *webserver-service*:
     
-    The webserver serves the client application file (index.html), exposes a REST API for recording analyzed tweets for given keywords and also starts a websocket server.
+    The webserver serves the client application file (index.html), exposes a REST API for recording analyzed tweets for given keywords and also exposes an websocket endpoint.
     
 - *tweetstream-service*:
 
@@ -24,36 +25,36 @@ These services are:
     
 - *tweetanalyzer-service*:
 
-    The *tweetanalyzer* is a AWS LAMBDA function which computes statistical parameters for a bunch of tweets based on the sentiment of the tweets' text.
+    The *tweetanalyzer* is an AWS Lambda function which computes statistical parameters for a bunch of tweets based on the sentiment of the tweets' content.
     
 - *recorder-service*:
     
-    The recorder service persists the analyzed tweets for a certain time in the AWS DynamoDB.
+    The recorder service persists the analyzed tweets for scheduled analysis.
           
 - *log-service*:
 
-    The log services is a simple Node.js application which receives console outputs from other services via operating system pipes. These messages are then stored into a AWS DynamoDB. 
+    The log services is a simple Node.js application which receives console outputs from other services via operating system pipes. These messages are then stored in an AWS DynamoDB. 
     
     
-The *TSA* frontend is written in Elm, a functional programming which compiles to HTML, CSS and JavaScript. Client applications connect to the serverside websocket server in order to receive statistics for analyzed tweets. The analyzed tweets are then visualized with curve charts.
+The *TSA* front end is written in Elm, a functional programming which compiles to HTML, CSS and JavaScript. Client applications connect to the server side websocket server in order to receive statistics for analyzed tweets. The analyzed tweets are then plotted with curve charts.
 
 ## Overall design and data stores
 
-### Interprocess communication
+### Inter-process communication
 
-When a new user launches the app and enters some keywords to track, the client sends a JSON message to the websocket server with the specified keywords and optionally some tenant information.
+When a new user launches the app and enters the keywords he or she wants to track, the client sends a JSON encoded message to the websocket server with the specified keywords and optionally some tenant information.
 After the server receives such a message, the following information will be tracked in redis:
 - tenant information if specified, i.e. twitter o-auth credentials
 - user information, represented as uuid
 - keywords the user wants to track
-So the redis cache stores the information about which user belonging to which tenant tracked which keywords. The *TSA* application provides a 'default tenant' for all users which have not specified a tenant.
+This means that the redis cache stores the information about which user belongs to which tenant and which keywords each user wants to track. The *TSA* application provides a 'default tenant' for all users which have not specified a tenant.
 
-When redis variables (called *keys*) are set, changed, deleted or expired, redis publishes so called keyspace events which can be subscribed from other services to receive app specific notifications. *TSA* uses this events in the *tweetstream-service* to get notified when a user wants to track keywords. In this case, the *tweetstream-service* can create a new stream connection to Twitter Streaming API.
+When redis variables, also called *keys*, are set, changed, deleted or expire, redis publishes so called keyspace events which can be subscribed to from other services to receive app specific notifications. *TSA* uses these events in the *tweetstream-service* to get notified when a user wants to track keywords. In this case, the *tweetstream-service* can create a new stream connection to the Twitter Streaming API.
 
 ### Tweet analysis
 
-Shortly after the *tweetstream-service* created a streaming connection to the Twitter API, the service will receive tweets based on the specified keywords. Tweets are JSON objects including the tweet text with emojis, the time when the tweet was created, how many times a tweet was retweeted, geolocation information and much more. Right now, only the tweet text including the emojis is used for sentiment analysis and thus will be extracted from the tweet JSON object and stored temporarily in memory. 
-The *tweetstream-service* has configured a periodic timer which expires after three seconds. A callback function registered on the timer will then send all temporarily stored tweet to the *tweetanalyzer-service*. 
+Shortly after the *tweetstream-service* created a streaming connection to the Twitter API, the service will receive tweets based on the specified keywords. Tweets are JSON objects that include the tweet text with emojis, the time when the tweet was created, how many times a tweet was retweeted, geolocation information and much more. Right now, only the tweet text including the emojis is used for sentiment analysis and thus will be extracted from the tweet JSON object and stored temporarily in memory. 
+A periodic timer in the *tweetstream-service* triggers the service to send all temporarily stored tweets to *tweetanalyzer-service*, an AWS Lambda function. 
 This AWS Lambda function takes an array of strings as input parameter and returns a json object containing the following statistical parameters about the tweets' sentiment:
 
     - mean
@@ -63,14 +64,12 @@ This AWS Lambda function takes an array of strings as input parameter and return
     - 0.50 quantile (i.e. median)
     - 0.75 quantile
 
-The sentiment analysis is realized with a Node.js module called [sentiment](https://github.com/thisandagain/sentiment) which is based on the AFINN-165 wordlist as well as Emoji Sentiment Ranking to perform the analysis.
+The sentiment analysis is realized with a Node.js module called [sentiment](https://github.com/thisandagain/sentiment) which is based on the AFINN-165 word list as well as Emoji Sentiment Ranking to perform the analysis.
 
-After the calculation is done and the *tweetstream-service* receives the analysis, it publishes the results through redis channels on which other services can subscribe to. This way, the *webserver-service* is able to subscribe for analyzed tweets and send the results back to the client applications via websocket messages; the *recorder service* is able to subscribe in order to store the analyzed tweets results.
+After the calculation is done and the *tweetstream-service* receives the analysis, it publishes the results through redis channels on which other services can subscribe to. This way, the *webserver-service* is able to subscribe to analyzed tweets and send the results back to the client applications via websocket messages; the *recorder service* is able to subscribe in order to store the analyzed tweets results.
 
 ### Tweet recording
-Through a REST-API which is included in the webserver, the user has the possibility to record analyzed tweets for a certain period of time. All necessary data for recording will be persisted in a DynamoDB. The start and end time for the record will be cached in Redis. When one of this cached keys expires, Redis sends a notification to the recorder service. Through this notifications the recorder service knows when he has to start or stop recording. During the recording the analyzed tweets will be persisted in a DynamoDB so that the user can access them later. For each tenant the analyzed tweets will be persisted in a separate table. To minimize the write throughput, the analyzed tweets will be cached first for 20 seconds and then persisted.
-
-
+Through a REST-API which is included in the webserver, the user has the possibility to record analyzed tweets for a certain period of time. All necessary data for recording will be persisted in a DynamoDB. The start and end time for the record will be cached in Redis. When one of this cached keys expires, Redis sends a notification to the recorder service. Through this notifications the recorder service knows when it has to start or stop recording. During the recording the analyzed tweets will be persisted in a DynamoDB so that the user can access them later. For each tenant the analyzed tweets will be persisted in a separate table. To minimize the write throughput, the analyzed tweets will be cached first for 20 seconds and then persisted.
 
 ## Implementation of the functionality
 
@@ -83,7 +82,7 @@ There are three different kinds of scaling scenarios for *TSA*.
 
 1. Scale for tenants
 
-When the number of tenant increases, then there will be more http-connections to the Twitter Streaming API (which is one per tenant). In order to handle a massive amount of streams concurrently, new instances of the *tweetstream-service* are required. For this purpose we created an auto scaling group for the *tweetstream-service*. This auto scaling group is configured as follow:
+When the number of tenant increases, then there will be more http-connections to the Twitter Streaming API (which is one per tenant). In order to handle a massive amount of streams concurrently, multiple instances of the *tweetstream-service* may be required. For this purpose an auto scaling group was created for the *tweetstream-service*. This auto scaling group is configured as follow:
 
 - Start a new *tweetstream-service* instance when the average incoming network traffic is greater than 85 Megabyte for two minutes.
 - Stop a *tweetstream-service* instance when the average incoming network traffic is less than 30 Megabyte for 10 minutes.
@@ -91,13 +90,13 @@ When the number of tenant increases, then there will be more http-connections to
 
 2. Scale for users
 
-When the number of user increases, then there are a lot of websocket connections (one per user). In order to handle a huge amount of users, new instances of the *webserver-service* need to be started. For this purpose a auto scaling group and a elastic load balancer was created. The auto scaling group has the following scaling policies:
+When the number of user increases, then there are a lot of websocket connections to handle, one for each user. In order to handle a huge amount of users, new instances of the *webserver-service* need to be started. For this purpose a auto scaling group and a elastic load balancer was created. The auto scaling group has the following scaling policies:
 
 - Start a new *webserver-service* instance when the average outgoing network traffic is greater than 85 Megabyte for two minutes.
 - Stop a *webserver-service* instance when the average outgoing network traffic is less than 30 Megabyte for 10 minutes.
 - To exchange dead instances, the health check of the elastic load balancer will be used.
 
-The elastic load balancer distributes all incoming HTTP requests and incoming websocket connections to evenly distribute the load on the *webserver-service* instances.
+The elastic load balancer distributes all incoming HTTP requests and incoming websocket connections evenly to distribute the load on the *webserver-service* instances.
 
 3. Scale for tweets
 
@@ -111,11 +110,10 @@ When the number of records increases, then there will be a lot of analyzed tweet
 
 ### Definition of user
 A user is defined as a consumer of our service, e.g. someone who uses the *TSA* Elm-client.
-From the technical point of view, a user is represented as a websocket connected to the websocket server. Each websocket connection is mapped by a uuid which will last for the whole socket session. This uuid (we call it 'user-id') also maps the keywords the user wants to track. The mapping is used to decide wich analyzed tweets will be sent to which users.
+From the technical point of view, a user is represented by a websocket connection. When a new websocket is established by a user, a unique token is generated and used as the identification of the user. Consequently the user can only be uniquely identified for the duration of the websocket session. The unique token is also used to assign the desired keywords to the user. This allows determining which analyzed tweets need to be send to which user respectively websocket.
 
 ### Definition of tenant
-When you want to access the Twitter API, you have to register a twitter application before to get access tokens. These access tokens are used from twitter to identify API access.
-*TSA* has multi-tenancy support built-in. In the context of *TSA* a tenant is defined as a twitter application. When you register a twitter application, twitter generates four significant values which are required to access the twitter api:
+To make a connection to the Twitter Streaming API, OAuth access tokens are required. These can be obtained by creating a twitter application and are used by Twitter for the purpose of authentication. *TSA* has multi-tenancy support built-in. In the context of *TSA* a tenant is defined as a twitter application. When a twitter application is registered, Twitter generates four significant values which are required to access the twitter api:
 
  - Consumer Key (API Key)
 
@@ -125,9 +123,9 @@ When you want to access the Twitter API, you have to register a twitter applicat
 
  - Access Token Secret
 
-So *TSA* gives you the opportunity to use your own twitter application credentials to access the Twitter API. When different users share the same credentials to use *TSA*, they will be seen as 'one tenant' belonging to one organization (twitter account) from *TSA*s point of view.
+This enables a user or a group of users to use their own twitter credentials when analyzing tweets with *TSA*. If multiple users share the same credentials to use *TSA*, they will be seen as 'one tenant' belonging to one organization from *TSA*s point of view.
 
-*TSA* has a predefined tenant (we call it 'default tenant', which is a twitter application called 'CloudyMcCloudface-tweet-analyzer') for users who don't want to register a twitter application theirselves.
+*TSA* has also provides a default tenant which is shared by all users who don't want to register a twitter application themselves.
 
 
 ## 12 factors
@@ -200,7 +198,7 @@ The *TSA* app has two different kinds of state:
 
     It is not sufficient to store this type of information only in redis, because a user could schedule a record for in a few weeks or months. When the redis cache would be restarted, this information would be lost, so the record schedule is stored additionally in the permanent NoSQL storage DynamoDB. 
 
-Note: In contrast to REST-APIs which are stateless by convention, websocket connections can be seen as a kind of state. In this case, the client won't receive any more analyzed tweets when the *webserver-service* goes down and the connection is lost. We circumvent this issue by resend the 'track'-message from our Elm-Client to the *webserver-service* when the client didn't receive any response from the *webserver-service* for a given amount of time (20 seconds). This will reestablish a lost connection and thus the flow of analyzed tweets will continue automatically without the need of the user having to reload the page manually.
+Note: In contrast to REST-APIs which are stateless by convention, websocket connections can be seen as a kind of state. In this case, the client won't receive any more analyzed tweets when the *webserver-service* goes down and the connection is lost. We circumvent this issue by resending the 'track'-message from our Elm-Client to the *webserver-service* when the client didn't receive any response from the *webserver-service* for a given amount of time (20 seconds). This will reestablish a lost connection and thus the flow of analyzed tweets will continue automatically without the need of the user having to reload the page manually.
 
 ### VII. Port binding
 
@@ -260,19 +258,20 @@ We then developed two different scripts for logging purposes:
 
 ## RabbitMQ vs Redis
 
-A prototype of *TSA* was implemented using RabbitMQ for inter-service communication, e.g. passing analyzed tweets from *tweetstream-service* to the *webserver-service*. This implementation worked quite well for message passing but RabbitMQ was not enough to fulfill our requirements: the state information (i.e. which user tracked which keywords) was lost when a *tweetstream-service* went down because the service stored this information in main memory. This lead to the problem that the clients didn't receive any more tweets, because after a restart, the *tweetstream-service* no longer knew about the state he had before. This absolutely disagreed with the stateless process and share-nothing concept. This is why we choose redis as a distributed cache for storing the app's state. When a service went down and then restarted a few seconds later, it is now able to query the current state information from redis and create a new connection to the Twitter Streaming API. Due to the fact that redis also provides a reliable fast publish/subscribe messaging model, we have also choosen redis over RabbitMQ for inter-service communication.
-This was the time when the *tweetstream-service* worked pretty fine ... except when you run multiple instances of it at the same time!
+A prototype of *TSA* was implemented using RabbitMQ for inter-service communication, e.g. passing analyzed tweets from *tweetstream-service* to the *webserver-service*. This implementation worked quite well for message passing but RabbitMQ was not enough to fulfill our requirements: the state information (i.e. which user tracked which keywords) was lost when a *tweetstream-service* went down because the service stored this information in main memory. This lead to the problem that the clients didn't receive any more tweets, because after a restart, the *tweetstream-service* no longer knew about the state he had before. This absolutely disagreed with the stateless process and share-nothing concept. 
+This is why redis was chosen as a distributed cache for storing the app's state. When a service goes down and restarts a few seconds later, it is now able to query the current state information from redis and is able to create a new connection to the Twitter Streaming API. Due to the fact that redis also provides a reliable fast publish/subscribe messaging model, it was chosen instead of RabbitMQ for inter-service communication.
+This seemed to fix the state loss problems. Except when multiple instances of the *tweetstream-service* were started at the same time.
 
 ## Let the battles begin
 
 ### Twitter API restrictions 
 
-Twitter imposes very strict limitations for their API usage. This means that it is only allowed to hold one connection to the Streaming API at the same time with the same twitter account credentials (i.e. an o-auth-token, in the context of *TSA* we define one tenant as one twitter app account). The creation of a new connection will cause the oldest one to be disconnected. Twitter also checks for inflative connection tries which may follow in an IP ban.
+Twitter imposes very strict limitations for their API usage. This means that it is only allowed to hold one connection to the Streaming API at the same time with the same twitter account credentials, i.e. an o-auth-token. The creation of a new connection causes the oldest connection to be closed. Twitter also checks for inflative connection tries which may entail an IP ban.
 
 ### Running multiple instances of *tweetstream-service*
 
 Whenever a user tracks some keywords, then the information (tenant + user + keywords) is stored in the redis database. As a result the *tweetstream-service* will automatically be notified via redis keyspace events that there is a new user whose keywords need to be tracked. Hereupon the *tweetstream-service* will create a connection to the Twitter Streaming API in order to receive tweets for the given keywords.
-When there are two or more instances of the *tweetstream-service* up and running, each instance tries to connect to the Twitter API what could result in an IP ban. This is why we had to invent a distributed synchronization mechanism to prevent the creation of multiple streams for one twitter account (respectively  o-auth-token / tenant).
+When there are two or more instances of the *tweetstream-service* up and running, each instance tries to connect to the Twitter API, what could potentially result in an IP ban. This is why a distributed synchronization mechanism to prevent the creation of multiple streams for one twitter account, respectively o-auth-token / tenant, had to be invented.
 
 ### Requirements for the synchronization algorithm
 
