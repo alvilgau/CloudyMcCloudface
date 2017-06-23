@@ -386,7 +386,7 @@ Because of the additional costs that come with running two instances of every se
 
 ## Deployment model
 
-TSA has a public deployment model, then all used services such as CodeDeploy or DynamoDB are provided by AWS and are publicly accessible. Furthermore our app is running completely in the AWS Cloud and we don't use any private hosted data centers. An important reason for using a public deployment model is the mega scalable infrastructure.
+TSA has a public deployment model, then all used services such as CodeDeploy or DynamoDB are provided by AWS and are publicly accessible. Furthermore our app is running completely in the AWS Cloud and we don't use any private hosted data centers. An important reason for using a public deployment model is the mega scalable infrastructure that is available for all.
 
 ## How is the app deployed
 
@@ -400,9 +400,24 @@ Because our deployment procedure is highly automated, no manual steps are requir
   
 
 # Operations
-## how to monitor the app
-## how to troubleshoot
-## how to deploy a new version
+
+## How to monitor the app
+
+For monitoring the app we use AWS CloudWatch, a monitoring service that is provided by AWS. With AWS CloudWatch we have access to several metrics and log files. The important metrics for the app are:
+
+- Incoming Network Traffic
+- Outgoing Network Traffic
+- CPU Utilization
+
+Especially the incoming and outgoing network traffic is very important, because CloudWatch uses them to set alarms which trigger the different auto scaling groups for creating or deleting an EC2 instance. The following image shows the incoming network traffic for the three defined auto scaling groups of our app.
+
+![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/cloudwatch-networkIn-metric.png "AWS CloudWatch monitoring incoming network traffic") AWS CloudWatch monitoring incoming network traffic.
+
+Using these metrics also helped us to configure our auto scaling groups correctly. In addition to the metrics we can also read the logs of AWS Lambda which will be provided by CloudWatch too.
+
+## How to troubleshoot
+
+When an error occurs, then several steps can be done to troubleshoot. Firstly, we can look at the metrics and logs provided by AWS CloudWatch. This metrics can give a hint which instance operates not as desired. Next we can look at the logs of the services, which are persisted in AWS DynamoDB. After the error was found, we can reproduce him locally and fix him. Thanks to our highly automated deployment process, we can quickly deploy the fix withing a few minutes.
 
 # Cost Calculation
 ## cost model
