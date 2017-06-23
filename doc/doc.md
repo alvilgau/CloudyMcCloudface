@@ -45,9 +45,7 @@ The following graphic shows how the data is presented.
 
 ![Elm UI](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/ui.png "Elm web app")
 
-## Overall design and data stores
-
-### Inter-process communication
+## Inter-process communication
 
 When a new user launches the app and enters the keywords he or she wants to track, the client sends a JSON encoded message to the websocket server with the specified keywords and optionally some tenant information.
 After the server receives such a message, the following information will be tracked in redis:
@@ -58,7 +56,7 @@ This means that the redis cache stores the information about which user belongs 
 
 When redis variables, also called *keys*, are set, changed, deleted or expire, redis publishes so called keyspace events which can be subscribed to from other services to receive app specific notifications. *TSA* uses these events in the *tweetstream-service* to get notified when a user wants to track keywords. In this case, the *tweetstream-service* can create a new stream connection to the Twitter Streaming API.
 
-### Tweet analysis
+## Tweet analysis
 
 Shortly after the *tweetstream-service* created a streaming connection to the Twitter API, the service will receive tweets based on the specified keywords. Tweets are JSON objects that include the tweet text with emojis, the time when the tweet was created, how many times a tweet was retweeted, geolocation information and much more. Right now, only the tweet text including the emojis is used for sentiment analysis and thus will be extracted from the tweet JSON object and stored temporarily in memory. 
 A periodic timer in the *tweetstream-service* triggers the service to send all temporarily stored tweets to *tweetanalyzer-service*, an AWS Lambda function. 
@@ -75,13 +73,8 @@ The sentiment analysis is realized with a Node.js module called [sentiment](http
 
 After the calculation is done and the *tweetstream-service* receives the analysis, it publishes the results through redis channels on which other services can subscribe to. This way, the *webserver-service* is able to subscribe to analyzed tweets and send the results back to the client applications via websocket messages; the *recorder service* is able to subscribe in order to store the analyzed tweets results.
 
-### Tweet recording
+## Tweet recording
 Through a REST-API which is included in the webserver, the user has the possibility to record analyzed tweets for a certain period of time. All necessary data for recording will be persisted in a DynamoDB. The start and end time for the record will be cached in Redis. When one of this cached keys expires, Redis sends a notification to the recorder service. Through this notifications the recorder service knows when it has to start or stop recording. During the recording the analyzed tweets will be persisted in a DynamoDB so that the user can access them later. For each tenant the analyzed tweets will be persisted in a separate table. To minimize the write throughput, the analyzed tweets will be cached first for 20 seconds and then persisted.
-
-## Implementation of the functionality
-
-
-## External cloud resource types
 
 ## Scaling
 
@@ -217,13 +210,14 @@ Due to the fact that the services are implemented with Node.js, there is no need
 
 ### VIII. Concurrency
 
-According to the twelve-factor methodology an application should scale out via the process model. Although some issues arose in the beginning as a direct violation of this rule, described mo
-
+According to the twelve-factor methodology an application should scale out via the process model. 
+This was achieved by storing all state in redis and synchronizing the different processes via redis event.
+A detailed description of how this was achieved can be found in the section `Let the Battles Begin`.
 
 ### IX. Disposability
 
 Using Node.js with the V8 Chrome engine, the overhead for startup time as well as shutdown time for a service / process is insignificant. This brings a great benefit when it comes to a new deployment because down time can be neglected.
-By the usage of redis, the apps are designed to be robust against sudden death events. A detailed explanation about the robustness of the services including different scenarios can be found in the section `Let the battles begin`.
+By the usage of redis, the apps are designed to be robust against sudden death events. A detailed explanation about the robustness of the services including different scenarios can be found in the section `Let the Battles Begin`.
 
 ### X. Dev/prod parity
 
