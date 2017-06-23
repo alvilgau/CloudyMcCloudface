@@ -5,7 +5,7 @@ Twitter Sentiment Analysis
 # Introduction
 
 Twitter Sentiment Analysis *TSA* is a cloud ready multi tenancy twitter analysis application. *TSA* enables users to analyse the sentiment of tweets on any desired subject.
-The gathered data is plotted in a web application in real time. Besides real time analysis *TSA* also allows scheduling an analysis for a specific time frame.
+The gathered data is plotted in a web application in real time. Besides real time analysis *TSA* also allows scheduling an analysis for a specific time frame. This analyzed data can be accessed any time.
 
 In order to handle a any amount of tweets and clients concurrently, *TSA* needs to be highly scalable and is therefore a perfect fit for "The Cloud".
 
@@ -34,7 +34,11 @@ These services are:
 - *log-service*:
 
     The log services is a simple Node.js application which receives console outputs from other services via operating system pipes. These messages are then stored in an AWS DynamoDB. 
-    
+
+The following graphic gives an overview of the application in the AWS cloud. Logging relevant services were omitted for more clarity.
+
+![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/aws-setup.png "AWS Setup")
+
     
 The *TSA* front end is written in Elm, a functional programming which compiles to HTML, CSS and JavaScript. Client applications connect to the server side websocket server in order to receive statistics for analyzed tweets. The analyzed tweets are then plotted with curve charts.
 
@@ -60,9 +64,9 @@ This AWS Lambda function takes an array of strings as input parameter and return
     - mean
     - variance
     - standard deviation
-    - 0.25 quantile
-    - 0.50 quantile (i.e. median)
-    - 0.75 quantile
+    - 0.25 quartile
+    - 0.50 quartile (i.e. median)
+    - 0.75 quartile
 
 The sentiment analysis is realized with a Node.js module called [sentiment](https://github.com/thisandagain/sentiment) which is based on the AFINN-165 word list as well as Emoji Sentiment Ranking to perform the analysis.
 
@@ -268,7 +272,7 @@ This seemed to fix the state loss problems. Except when multiple instances of th
 
 ## Let the Battles Begin
 
-// todo: kurzer text
+The following chapters describes the problems that occurred when running multiple instances of the *tweetstream-service* and the implementations details of the  synchronization algorithm that was used to solve these problems.
 
 ### Twitter API Restrictions 
 
