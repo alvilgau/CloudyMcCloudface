@@ -345,8 +345,8 @@ const battleForTenant = (tenantId) => new Promise((resolve, reject) => {
 
 ### Keeping the Lock
 
-In redis a key can receive an expiration time. When the key expires it is deleted and an event is sent. This event triggers the *tweetstream*-instances to start a `battle` for a tenant. By setting a new expiration time the previous set expiration time can be overridden. This mechanism is used to automatically release a lock if a service goes down.
-To keep their locks each *tweetstream*-instance periodically resets the expiration time for all locks it holds. If an instance fails to do so the key expires and all the other *tweetstream*-instances start to `battle`.
+In redis a key can receive an expiration time. When the key expires it is deleted and an event is published. By setting a new expiration time the previous set expiration time can be overridden. This mechanism is used to automatically release a lock if a service goes down.
+To keep their locks each *tweetstream*-instance periodically resets the expiration time for all keys, i.e. locks, it holds. If an instance fails to do so the key expires and all the other *tweetstream*-instances receive an event that a key was deleted and start to `battle` for the tenant associated with that key.
 
 # Continuous Integration
 
