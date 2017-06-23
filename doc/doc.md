@@ -257,12 +257,11 @@ Two different scripts were developed for logging purposes:
 
 ### XII. Admin processes
 
-// todo: check ich nicht
+Twelve-factor advises to create scripts for repetitive tasks like database migrations or the cleanup of corrupt data. This is the reason why twelve-apps strongly favors programming languages that are shipped with a REPL, i.e. a shell especially designed for this language to run commands or start scripts. Node.js also comes with a REPL which can be used to run JavaScript commands. Until now we had no need for admin-tasks or databse migrations and thus have no configuration scripts.
 
 # Implementation
 
-// todo: kurzer text
-
+The following subsections describe challenges that occurred during the implementation phase. 
 
 ## RabbitMQ vs Redis
 
