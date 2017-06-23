@@ -400,9 +400,22 @@ Because our deployment procedure is highly automated, no manual steps are requir
   
 
 # Operations
-## how to monitor the app
-## how to troubleshoot
-## how to deploy a new version
+
+## How to monitor the app
+
+For monitoring the app we use AWS CloudWatch, a monitoring service that is provided by AWS. With AWS CloudWatch we have access to several metrics and log files. The important metrics for the app are:
+
+- Incoming Network Traffic
+- Outgoing Network Traffic
+- CPU Utilization
+
+Especially the incoming and outgoing network traffic is very important, because CloudWatch uses them to set alarms which trigger the different auto scaling groups for creating or deleting an EC2 instance. The following image shows the incoming network traffic for the three defined auto scaling groups of our app.
+
+![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/cloudwatch-networkIn-metric.png "AWS CloudWatch monitoring incoming network traffic") AWS CloudWatch monitoring incoming network traffic.
+
+
+
+## How to troubleshoot
 
 # Cost Calculation
 ## cost model
