@@ -98,9 +98,9 @@ The elastic load balancer distributes all incoming HTTP requests and incoming we
 
 When there are a lot of tweets which have to be analyzed, there is nothing further to do! The analyzer function is a stateless AWS Lambda function which is scaled automatically by Amazon.
 
-4. Scale for records
+4. Scale for recording
 
-When the number of records increases, there will be a lot of analyzed tweets that must be handled. For this reason an auto scaling group for the *recorder-service* was created too. This auto scaling group is configured exactly like the auto scaling group of *tweetstream-service*. Only the health check period is set to 5 minutes.
+When the number of recordings increases, there will be a lot of analyzed tweets that must be handled. For this reason an auto scaling group for the *recorder-service* was created too. This auto scaling group is configured exactly like the auto scaling group of *tweetstream-service*. Only the health check period is set to 5 minutes.
 
 ## Multi-Tenancy
 
@@ -186,7 +186,7 @@ All three stages are highly automated and don't require any intervention of a de
 
 ### VI. Processes
 
-The twelve-factor app guideline insists to run the app as one or more stateless processes with a share-nothing attitude. This concept simplifies the replacing of existing service instances with new ones as well as the additional startup of new instances when the rest of the system is already up and running.
+The twelve-factor app guideline requires the app to be run as one or more stateless processes with a share-nothing attitude. This concept simplifies the replacement of existing service instances with new ones as well as the additional startup of new instances when the rest of the system is already up and running.
 
 The *TSA* app has two different kinds of state:
 
@@ -369,11 +369,11 @@ Because of the additional costs that come with running two instances of every se
 
 # Deployment
 
-The deployment of the app is realized with AWS CodeDeploy and get triggered from Travis CI. CodeDeploy receives deployment information such as bucket name, archive name and which AWS EC2 instances (deployment group) to deploy from Travis as well. In AWS CodeDeploy a set of EC2 instances is called as a *deployment group*. In order to deploy and run each of our services separately we configured three different deployment groups which can be triggered separately. The deployment groups included the last deployment status are shown in the following image. 
+The deployment of the app is realized with AWS CodeDeploy and gets triggered from Travis CI. CodeDeploy receives deployment information such as bucket name, archive name and which AWS EC2 instances (deployment group) to deploy from Travis as well. In AWS CodeDeploy a set of EC2 instances is called a *deployment group*. In order to deploy and run each of our services separately we configured three different deployment groups which can be triggered separately. The deployment groups including the last deployment status are shown in the following image. 
 
 ![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/deployment-groups.png "AWS deployment groups") AWS deployment groups.
 
-Each of the deployment groups recognize the affected EC2 instances by their membership in an auto scaling group. Due this setup, CodeDeploy can easily deploy one service to several EC2 instances. Also CodeDeploy will be triggered automatically when the configured auto scaling groups create a new instance. With the `appspec.yml` file we describe which actions should be executed during deployment. In our case we call an installation bash script after CodeDeploy extracted the archive on the EC2 instance. This bash script updates the code and restarts the service depending on the deployment group.
+Each of the deployment groups recognizes the affected EC2 instances by their membership in an auto scaling group. Due to this setup, CodeDeploy can easily deploy one service to several EC2 instances. Also CodeDeploy will be triggered automatically when the configured auto scaling groups create a new instance. With the `appspec.yml` file we describe which actions should be executed during deployment. In our case we call an installation bash script after CodeDeploy extracted the archive on the EC2 instance. This bash script updates the code and restarts the service depending on the deployment group.
 
 Because our deployment procedure is highly automated, no manual steps are required to reproduce a deployment. Just push code changes to the master branch and a new deployment will be initiated automatically.
   
@@ -396,23 +396,23 @@ Using these metrics also helped us to configure our auto scaling groups correctl
 
 ## How to Troubleshoot
 
-When an error occurs, then several steps can be done to troubleshoot. Firstly, we can look at the metrics and logs provided by AWS CloudWatch. This metrics can give a hint which instance operates not as desired. Next we can look at the logs of the services, which are persisted in AWS DynamoDB. After the error was found, we can reproduce him locally and fix him. Thanks to our highly automated deployment process, we can quickly deploy the fix withing a few minutes.
+If an error occurs, then several steps can be taken to troubleshoot the application. Firstly, we can look at the metrics and logs provided by AWS CloudWatch. These metrics can give a hint which instance does not operate as desired. Next we can look at the logs of the services, which are persisted in AWS DynamoDB. After the error was found, we can reproduce it locally and fix it. Due to our highly automated deployment process, we can quickly deploy the fix within a few minutes.
 
 # Cost Calculation
-The following graphic gives an estimate of the monthly cost for running the application in the AWS cloud.
+The following graphic gives an estimate of the monthly costs for running the application in the AWS cloud.
 
 The calculation assumes 1000 concurrent users and 100 concurrent recordings at any given time.
 
 ![AWS monthly cost](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/monthly-cost.png "AWS monthly cost") AWS monthly cost. *Calculated with cloudcraft.io*
 
-Not included in this graphic is the cost for outgoing network traffic, which adds another 140€ each month for 1000 concurrent users and increases the monthly total to ~340€.
+The costs for outgoing network traffic is not included in this graphic, which adds another 140€ each month for 1000 concurrent users and increases the monthly total to ~340€.
 
 ## Possible Charging Model
 
-When creating a charging model the two main features of the app have to be taken into consideration. The first is the real time analysis which produces a huge amount of outgoing network traffic. Here it would make sense to charge each user or tenant by the total analysis time. This data can be gathered relatively ease by listening to redis events.
-The second component is the recording of tweets. Outgoing network traffic is not as much an issue in this case, but storing the analyzed tweets is a massiv cost factor.
+When creating a charging model the two main features of the app need to be taken into consideration. The first feature is the real time analysis which produces a huge amount of outgoing network traffic. Here it would make sense to charge each user or tenant by the total analysis time. This data can be gathered relatively easy by listening to redis events.
+The second feature is the recording of tweets. Outgoing network traffic is not as much an issue in this case, but storing the analyzed tweets is a massiv cost factor.
 What needs to be taken into consideration as well, is the fact that recordings are stored by tenant.
-Therefor it would make sense to charge each tenant for the total time of all stored recordings.
+Therefore it would make sense to charge each tenant for the total time of all stored recordings.
 
 ## Costs for an Half an Hour Test Run
 
