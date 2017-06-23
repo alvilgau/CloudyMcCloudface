@@ -9,7 +9,7 @@ mv webserver/ CloudyMcCloudface/
 
 # restart service
 cd /home/ec2-user/CloudyMcCloudface/webserver
-
+forever stopall
 if [ "$DEPLOYMENT_GROUP_NAME" == "cloudy_webserver" ]
 then
     { { { node webserver.js; } 2>&3 | sed >&2 's/^/[INFO] /'; } 3>&1 1>&2 | sed 's/^/[ERROR] /';} 2>&1 | node log/dynamodb-logger.js webserver-service
