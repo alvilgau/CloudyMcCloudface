@@ -12,11 +12,11 @@ cd /home/ec2-user/CloudyMcCloudface/webserver
 forever stopall
 if [ "$DEPLOYMENT_GROUP_NAME" == "cloudy_webserver" ]
 then
-    { { { node webserver.js; } 2>&3 | sed >&2 's/^/[INFO] /'; } 3>&1 1>&2 | sed 's/^/[ERROR] /';} 2>&1 | node log/dynamodb-logger.js webserver-service
+    { { { node webserver.js; } 2>&3 | sed >&2 's/^/[INFO] /'; } 3>&1 1>&2 | sed 's/^/[ERROR] /';} 2>&1 | node log/dynamodb-logger.js webserver-service &
 elif [ "$DEPLOYMENT_GROUP_NAME" == "cloudy_stream" ]
 then
-    { { { node stream/main-tweetstream.js; } 2>&3 | sed >&2 's/^/[INFO] /'; } 3>&1 1>&2 | sed 's/^/[ERROR] /';} 2>&1 | node log/dynamodb-logger.js tweetstream-service
+    { { { node stream/main-tweetstream.js; } 2>&3 | sed >&2 's/^/[INFO] /'; } 3>&1 1>&2 | sed 's/^/[ERROR] /';} 2>&1 | node log/dynamodb-logger.js tweetstream-service &
 elif [ "$DEPLOYMENT_GROUP_NAME" == "cloudy_recorder" ]
 then
-    { { { node record/recorder.js; } 2>&3 | sed >&2 's/^/[INFO] /'; } 3>&1 1>&2 | sed 's/^/[ERROR] /';} 2>&1 | node log/dynamodb-logger.js recorder-service
+    { { { node record/recorder.js; } 2>&3 | sed >&2 's/^/[INFO] /'; } 3>&1 1>&2 | sed 's/^/[ERROR] /';} 2>&1 | node log/dynamodb-logger.js recorder-service &
 fi
