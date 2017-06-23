@@ -1,7 +1,3 @@
-Twitter Sentiment Analysis
-
-*from Alexander Vilgauk, Andreas Sayn and Markus Heilig* 
-
 # Introduction
 
 Twitter Sentiment Analysis *TSA* is a cloud ready multi tenancy twitter analysis application. *TSA* enables users to analyse the sentiment of tweets on any desired subject.
@@ -45,7 +41,7 @@ The following graphic shows how the data is presented.
 
 ![Elm UI](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/ui.png "Elm web app")
 
-## Inter-process communication
+## Inter-Process Communication
 
 When a new user launches the app and enters the keywords he or she wants to track, the client sends a JSON encoded message to the websocket server with the specified keywords and optionally some tenant information.
 After the server receives such a message, the following information will be tracked in redis:
@@ -56,7 +52,7 @@ This means that the redis cache stores the information about which user belongs 
 
 When redis variables, also called *keys*, are set, changed, deleted or expire, redis publishes so called keyspace events which can be subscribed to from other services to receive app specific notifications. *TSA* uses these events in the *tweetstream-service* to get notified when a user wants to track keywords. In this case, the *tweetstream-service* can create a new stream connection to the Twitter Streaming API.
 
-## Tweet analysis
+## Tweet Analysis
 
 Shortly after the *tweetstream-service* created a streaming connection to the Twitter API, the service will receive tweets based on the specified keywords. Tweets are JSON objects that include the tweet text with emojis, the time when the tweet was created, how many times a tweet was retweeted, geolocation information and much more. Right now, only the tweet text including the emojis is used for sentiment analysis and thus will be extracted from the tweet JSON object and stored temporarily in memory. 
 A periodic timer in the *tweetstream-service* triggers the service to send all temporarily stored tweets to *tweetanalyzer-service*, an AWS Lambda function. 
@@ -73,8 +69,8 @@ The sentiment analysis is realized with a Node.js module called [sentiment](http
 
 After the calculation is done and the *tweetstream-service* receives the analysis, it publishes the results through redis channels on which other services can subscribe to. This way, the *webserver-service* is able to subscribe to analyzed tweets and send the results back to the client applications via websocket messages; the *recorder service* is able to subscribe in order to store the analyzed tweets results.
 
-## Tweet recording
-Through a REST-API which is included in the webserver, the user has the possibility to record analyzed tweets for a certain period of time. All necessary data for recording will be persisted in a DynamoDB. The start and end time for the record will be cached in Redis. When one of this cached keys expires, Redis sends a notification to the recorder service. Through this notifications the recorder service knows when it has to start or stop recording. During the recording the analyzed tweets will be persisted in a DynamoDB so that the user can access them later. For each tenant the analyzed tweets will be persisted in a separate table. To minimize the write throughput, the analyzed tweets will be cached first for 20 seconds and then persisted.
+## Tweet Recording
+Through a REST-API which is included in the webserver, the user has the possibility to record analyzed tweets for a certain period of time. All necessary data for recording will be persisted in a DynamoDB. The start and end time for the record will be cached in redis. When one of this cached keys expires, redis sends a notification to the recorder service. Through this notifications the recorder service knows when it has to start or stop recording. During the recording the analyzed tweets will be persisted in a DynamoDB so that the user can access them later. For each tenant the analyzed tweets will be persisted in a separate table. To minimize the write throughput, the analyzed tweets will be cached first for 20 seconds and then persisted.
 
 ## Scaling
 
@@ -110,11 +106,11 @@ When the number of records increases, there will be a lot of analyzed tweets tha
 
 This section describes the multi-tenancy support provided by *TSA*.
 
-### Definition of user
+### Definition of a User
 A user is defined as a consumer of our service, e.g. someone who uses the *TSA* Elm-client.
 From the technical point of view, a user is represented by a websocket connection. When a new websocket is established by a user, a unique token is generated and used as the identification of the user. Consequently the user can only be uniquely identified for the duration of the websocket session. The unique token is also used to assign the desired keywords to the user. This allows determining which analyzed tweets need to be send to which user respectively websocket.
 
-### Definition of tenant
+### Definition of a Tenant
 To make a connection to the Twitter Streaming API, OAuth access tokens are required. These can be obtained by creating a twitter application and are used by Twitter for the purpose of authentication. *TSA* has multi-tenancy support built-in. In the context of *TSA* a tenant is defined as a twitter application. When a twitter application is registered, Twitter generates four significant values which are required to access the twitter api:
 
  - Consumer Key (API Key)
@@ -130,7 +126,7 @@ This enables a user or a group of users to use their own twitter credentials whe
 *TSA* has also provides a default tenant which is shared by all users who don't want to register a twitter application themselves.
 
 
-## 12 factors
+## 12 Factors
 
 *TSA* is build around the twelve-factor methodology in order to fulfill the requirements for a software-as-a-service application. The steps performed will be described in the following subsections.
 
@@ -155,7 +151,7 @@ The same applies to the Elm dependencies. The only difference is that the config
 
 The services receive their configuration during startup by processing a file called `.env`. This file defines the required configuration as environment variable for each service so that the services' code and configuration are completely detached from each other. The advantage of this approach is that the configuration can easily be replaced for different deployments (e.g. production system, local developer system or test system) without the need to adjust any code.
 
-### IV. Backing services
+### IV. Backing Services
 
 The resources each service consumes are declared in the previously explained environment file. This applies to third party resources (Twitter API, AWS Lambda, redis cache, ...) as well as to our own services, so there is no distinction between them. The following snippet shows an excerpt of the `.env`-file:
 
@@ -172,7 +168,7 @@ REDIS_PORT=6379
 TWITTER_URL=https://stream.twitter.com/1.1/statuses/filter.json?filter_level=none
 ````
 
-### V. Build, release, run
+### V. Build, Release, Run
 
 The twelve-factor app guideline advises three separated stages to bring an application from source up and running.
 
@@ -204,7 +200,7 @@ The *TSA* app has two different kinds of state:
 
 Note: In contrast to REST-APIs which are stateless by convention, websocket connections can be seen as a kind of state. In this case, the client won't receive any more analyzed tweets when the *webserver-service* goes down and the connection is lost. We circumvent this issue by resending the 'track'-message from our Elm-Client to the *webserver-service* when the client didn't receive any response from the *webserver-service* for a given amount of time (20 seconds). This will reestablish a lost connection and thus the flow of analyzed tweets will continue automatically without the need of the user having to reload the page manually.
 
-### VII. Port binding
+### VII. Port Binding
 
 Due to the fact that the services are implemented with Node.js, there is no need for an external webserver container like Apache or HTTPD. So all our services are completely self-contained by relying on Node.js' internal http module. The port binding itself is declared in the configuration environment file `.env` whereby the services can be sticked to each other as described in the section `Backing Services`.
 
@@ -219,7 +215,7 @@ A detailed description of how this was achieved can be found in the section `Let
 Using Node.js with the V8 Chrome engine, the overhead for startup time as well as shutdown time for a service / process is insignificant. This brings a great benefit when it comes to a new deployment because down time can be neglected.
 By the usage of redis, the apps are designed to be robust against sudden death events. A detailed explanation about the robustness of the services including different scenarios can be found in the section `Let the Battles Begin`.
 
-### X. Dev/prod parity
+### X. Dev/prod Parity
 
 The twelve-factor principles defines three substantial gaps between development and production:
 
@@ -245,7 +241,7 @@ Two different scripts were developed for logging purposes:
 
     This service provides a REST API to query the logs stored the previously mentioned DynamoDB.
 
-### XII. Admin processes
+### XII. Admin Processes
 
 Twelve-factor advises to create scripts for repetitive tasks like database migrations or the cleanup of corrupt data. This is the reason why twelve-apps strongly favors programming languages that are shipped with a REPL, i.e. a shell especially designed for this language to run commands or start scripts. Node.js also comes with a REPL which can be used to run JavaScript commands. Until now we had no need for admin-tasks or databse migrations and thus have no configuration scripts.
 
@@ -256,7 +252,7 @@ This chapter focuses on the implementation of the most critical components of th
 ## RabbitMQ vs Redis
 
 A prototype of *TSA* was implemented using RabbitMQ for inter-service communication, e.g. passing analyzed tweets from *tweetstream-service* to the *webserver-service*. This implementation worked quite well for message passing but RabbitMQ was not enough to fulfill our requirements: the state information (i.e. which user tracked which keywords) was lost when a *tweetstream-service* went down, because the service stored this information in main memory. This lead to the problem that the clients didn't receive any more tweets, because after a restart, the *tweetstream-service* no longer knew about the state he had before. This absolutely disagreed with the stateless process and share-nothing concept. 
-This is why redis was chosen as a distributed cache for storing the app's state. When a service goes down and restarts a few seconds later, it is now able to query the current state information from redis and is able to create a new connection to the Twitter Streaming API. Due to the fact that redis also provides a reliable fast publish/subscribe messaging model, it was also chosen for inter-service communication instead of RabbitMQ .
+This is why redis was chosen as a distributed cache for storing the app's state. When a service goes down and restarts a few seconds later, it is now able to query the current state information from redis and is able to create a new connection to the Twitter Streaming API. Due to the fact that redis also provides a reliable fast publish/subscribe messaging model, it was also chosen for inter-service communication instead of RabbitMQ.
 This seemed to fix the state loss problems. Except when multiple instances of the *tweetstream-service* were started at the same time...
 
 ## Let the Battles Begin
@@ -384,7 +380,7 @@ Because our deployment procedure is highly automated, no manual steps are requir
 
 # Operations
 
-## How to monitor the app
+## How to Monitor the App
 
 For monitoring the app we use AWS CloudWatch, a monitoring service that is provided by AWS. With AWS CloudWatch we have access to several metrics and log files. The important metrics for the app are:
 
@@ -398,7 +394,7 @@ Especially the incoming and outgoing network traffic is very important, because 
 
 Using these metrics also helped us to configure our auto scaling groups correctly. In addition to the metrics we can also read the logs of AWS Lambda which will be provided by CloudWatch too.
 
-## How to troubleshoot
+## How to Troubleshoot
 
 When an error occurs, then several steps can be done to troubleshoot. Firstly, we can look at the metrics and logs provided by AWS CloudWatch. This metrics can give a hint which instance operates not as desired. Next we can look at the logs of the services, which are persisted in AWS DynamoDB. After the error was found, we can reproduce him locally and fix him. Thanks to our highly automated deployment process, we can quickly deploy the fix withing a few minutes.
 
