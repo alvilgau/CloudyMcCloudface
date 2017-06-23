@@ -104,7 +104,7 @@ When there are a lot of tweets which have to be analyzed, there is nothing furth
 
 4. Scale for records
 
-When the number of records increases, then there will be a lot of analyzed tweets that must be handled. For this reason an auto scaling group for the *recorder-service* was created too. This auto scaling group is configured exactly like the auto scaling group of *tweetstream-service*. Only the health check period is set to 5 minutes.
+When the number of records increases, there will be a lot of analyzed tweets that must be handled. For this reason an auto scaling group for the *recorder-service* was created too. This auto scaling group is configured exactly like the auto scaling group of *tweetstream-service*. Only the health check period is set to 5 minutes.
 
 ## Multi-Tenancy
 
@@ -137,23 +137,25 @@ This enables a user or a group of users to use their own twitter credentials whe
 The source code for the project is tracked in a public Git repository on [GitHub](https://github.com/cloudy-sentiment-analysis/CloudyMcCloudface). This repository contains the whole application (backend-services as well as frontend-client) and thus can easily be used for deployments on different systems (e.g. for production-deployment on AWS or local deployment for development reasons running with [localstack](https://github.com/atlassian/localstack)).
 
 Note: 
-The configuration file for the *TSA-services* is tracked in a separate private Git repository on [GitHub] due to security issues like private o-auth-credentials.
+The configuration file for the production *TSA-services* is tracked in a separate private Git repository on [GitHub] due to security issues like private o-auth-credentials.
 
 ### II. Dependencies
 
-To manage their dependencies, the Node.js-services use the node package manager `npm` which is shiped with a common Node.js-installation. The dependencies are declared in a configuration file called `package.json` and can easily be installed running the following console command, so there is no need to store external modules in the repository itself:
+To manage their dependencies, the Node.js-services use the node package manager `npm` which is shipped with a common Node.js-installation. The dependencies are declared in a configuration file called `package.json` and can easily be installed running the following console command, so there is no need to store external modules in the repository itself:
 
 ```bash
-npm i
+npm install
 ```
+
+The same applies to the Elm dependencies. The only difference is that the configuration file is called `elm-package.json` and the tool to manage the dependencies is called `elm-package`.
 
 ### III. Config
 
-The services receive their configuration during their startup by processing a file called `.env`. This file defines the required configuration as environment variable for each service so that the services' code and configuration are completely detached from each other. The advantage of this approach is that the configuration can easily be replaced for different deployments (e.g. production system, local developer system or test system) without the need to adjust any code.
+The services receive their configuration during startup by processing a file called `.env`. This file defines the required configuration as environment variable for each service so that the services' code and configuration are completely detached from each other. The advantage of this approach is that the configuration can easily be replaced for different deployments (e.g. production system, local developer system or test system) without the need to adjust any code.
 
 ### IV. Backing services
 
-The resources each service consumes are declared in the previsouly explained environment file. This applies to third party resources (Twitter API, AWS Lambda, redis cache, ...) as well as to our own services, so there is no distinction between them. The following snippet shows an excerpt of the `.env`-file:
+The resources each service consumes are declared in the previously explained environment file. This applies to third party resources (Twitter API, AWS Lambda, redis cache, ...) as well as to our own services, so there is no distinction between them. The following snippet shows an excerpt of the `.env`-file:
 
 ````
 # configuration of AWS Lambda
@@ -172,13 +174,13 @@ TWITTER_URL=https://stream.twitter.com/1.1/statuses/filter.json?filter_level=non
 
 The twelve-factor app guideline advises three separated stages to bring an application from source up and running.
 
-The first stage is called **build stage** and contains the steps to fetch external dependencies and create a build. Due JavaScript code will be interpreted and thus no compile step is required, we can disregard any code compilation for the backend services and only have to download external dependencies via node. At that point, also the dependencies for the Elm-application are resolved and the Elm-scripts get compiled to vanilla JavaScript, HTML and CSS. The steps for the first stage are automatically invoked from Travis CI when code changes are commited and pushed to the master branch (see `Continous Integration` for a detailed explanation). At this time, Travis triggers all code test. If any test would fail, the release cycle would stop right now. If everything went fine, Travis continues with the second stage.
+The first stage is called **build stage** and contains the steps to fetch external dependencies and create a build. Due JavaScript code will be interpreted and thus no compile step is required, we can disregard any code compilation for the backend services and only have to download external dependencies via node. At that point, also the dependencies for the Elm-application are resolved and the Elm-scripts get compiled to vanilla JavaScript, HTML and CSS. The steps for the first stage are automatically invoked from Travis CI when code changes are commited and pushed to the master branch (see `Continous Integration` for a detailed explanation). At this time, Travis triggers all code test. If any test fails, the release cycle is stopped immediately. If everything went fine, Travis continues with the second stage.
 
-In the second stage named **release**, Travis fetches the `.env` file from the private Git repository and bundles it with the rest of the code to a zip-file. This zip-file then will be deployed to a AWS S3 instance.
+In the second stage named **release**, Travis fetches the `.env` file from the private Git repository and bundles it with the rest of the code to a zip-file. This zip-file also contains the previously installed npm dependencies which allows the unpacked application to be run immediately on any machine. After successfully bundling the app, the zip-file is deployed to an AWS S3 bucket.
 
-In the third and last stage **run**, Travis triggers AWS CodeDeploy which then extracts the previously uploaded zip-file and starts the service instances.
+In the third and last stage **run**, Travis triggers AWS CodeDeploy which fetches and extracts the previously uploaded zip-file and starts the service instances.
 
-All three stages are highly automated and don't require any intervention of a developer. If the build or release stage fail, Travis updates a 'batch' (i.e. a svg-image with a fixed url) which is imported in the projects' [README.md-file](https://github.com/cloudy-sentiment-analysis/CloudyMcCloudface/blob/master/README.md). This way, each developer instantly can recognize if the build failed and act accordingly.
+All three stages are highly automated and don't require any intervention of a developer. If the build or release stage fail, Travis updates a 'batch' (i.e. a svg-image with a fixed url) which is imported in the projects' [README.md-file](https://github.com/cloudy-sentiment-analysis/CloudyMcCloudface/blob/master/README.md). This way, each developer can instantly recognize if the build failed and act accordingly.
 
 ![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/build-passing.png "Badge for a passing build") Travis badge for a passing build.
 
@@ -192,17 +194,17 @@ The *TSA* app has two different kinds of state:
 
 - *State 1*: which user belonging to which tenant tracked which keywords
 
-    The mapping between tenants, users, and keywords is stored in the redis cache. E.g. when the *tweetstream-service* goes down for a few seconds, the information is still kept in the key value store. When the service restarts, it requests the information from redis and thus is able to reconnect to twitter with the given credentials and keywords. This stateless flow allows us to shutdown each service type and the application will continue working when the service gets restarted. This is applies for the *recorder-service / webserver-serivce*.
+    The mapping between tenants, users, and keywords is stored in the redis cache. E.g. when the *tweetstream-service* goes down for a few seconds, the information is still kept in the key value store. When the service restarts, it requests the information from redis and thus is able to reconnect to twitter with the given credentials and keywords. This stateless flow allows us to shutdown each service type and the application will continue working when the service gets restarted. This applies to the *recorder-service / webserver-serivce*.
 
-- *State 2*: which user belonging to which tenant wants to record which keywords for what time range
+- *State 2*: which user belonging to which tenant wants to record which keywords for what time frame
 
-    It is not sufficient to store this type of information only in redis, because a user could schedule a record for in a few weeks or months. When the redis cache would be restarted, this information would be lost, so the record schedule is stored additionally in the permanent NoSQL storage DynamoDB. 
+    It is not sufficient to store this type of information only in redis, because a user could schedule a record for in a few weeks or months. When the redis cache would be restarted, this information would be lost, so the record schedule is additionally stored in the permanent NoSQL storage DynamoDB. 
 
 Note: In contrast to REST-APIs which are stateless by convention, websocket connections can be seen as a kind of state. In this case, the client won't receive any more analyzed tweets when the *webserver-service* goes down and the connection is lost. We circumvent this issue by resending the 'track'-message from our Elm-Client to the *webserver-service* when the client didn't receive any response from the *webserver-service* for a given amount of time (20 seconds). This will reestablish a lost connection and thus the flow of analyzed tweets will continue automatically without the need of the user having to reload the page manually.
 
 ### VII. Port binding
 
-Due the services are implemented with Node.js, there is no need for an external webserver container like Apache or HTTPD. So all our services are completely self-contained by relying on Node.js' internal http module. The port binding itself is declared in the configuration environment file `.env` whereby the services can be sticked to each other as described in the section `Backing Services`.
+Due to the fact that the services are implemented with Node.js, there is no need for an external webserver container like Apache or HTTPD. So all our services are completely self-contained by relying on Node.js' internal http module. The port binding itself is declared in the configuration environment file `.env` whereby the services can be sticked to each other as described in the section `Backing Services`.
 
 ### VIII. Concurrency
 
@@ -210,28 +212,28 @@ Due the services are implemented with Node.js, there is no need for an external 
 
 ### IX. Disposability
 
-Using Node.js with the slightly V8 Chrome engine, the overhead for startup time as well as shutdown time for a service / process is picayune. This brings a great benefit when it comes to a new deployment because down time can be neglected.
-By the usage of redis, our apps are designed to be robust again sudden death events. A detailed explanation about the robustness of the services including different scenarios can be found in the section `Let the battles begin`.
+Using Node.js with the V8 Chrome engine, the overhead for startup time as well as shutdown time for a service / process is insignificant. This brings a great benefit when it comes to a new deployment because down time can be neglected.
+By the usage of redis, the apps are designed to be robust against sudden death events. A detailed explanation about the robustness of the services including different scenarios can be found in the section `Let the battles begin`.
 
 ### X. Dev/prod parity
 
 The twelve-factor principles defines three substantial gaps between development and production:
 
-1. The **time** gap: With a twelve-factor app, the time between deployments should be performed in a few hours. We even fall below this time with our automated Continous Deployment strategy which lasts only for several minutes.
+1. The **time** gap: With a twelve-factor app, the time between deployments should be performed in a few hours. We even fall below this time with our automated Continuous Deployment strategy which takes mere minutes from push to running on the production system.
 
 2. The **personnal** gap: We as developers are also those who are responsible for the deployment and production processes. Thus we follow the statement of Werner Vogels (CTO at Amazon) from 2006: `You build it, you run it`.
 
-3. The **tools** gap: The gap between the development environment and the production environment should be as small as possible by using the same tools and services on both systems. Our production system is running on AWS whereby we use Localstack for local development. Localstack is an open source project from atlassian which provides a fully functional local AWS cloud stack. Therefore we are able to develop and test our application before changes are pushed to the production system on the amazon servers.
+3. The **tools** gap: The gap between the development environment and the production environment should be as small as possible by using the same tools and services on both systems. Our production system is running on AWS whereby we use Localstack for local development. Localstack is an open source project from Atlassian which provides a almost fully functional local AWS cloud stack in a docker container. Therefore we are able to develop and test our application before changes are pushed to the production system on AWS.
 
 ### XI. Logs
 
 Each of our services writes relevant log messages to the console (stdout and stderr) as suggested for a twelve-factor app.  
-We then developed two different scripts for logging purposes:
+Two different scripts were developed for logging purposes:
 
 1. *dynamodb-logger.js*:
 
     This script receives log messages from other services via the operating system pipe. Both channels, stdin and stderr are supported to allow different log levels. This script then stores the incoming log messages into a DynamoDB. The service which is logged can be given a name as a command line argument for the *dynamodb-logger*.
-    To be able to identify the logs of each service, the dynamodb-logger creates a uuid4 each time it gets started which is also tracked in the database. This is necessary when multiple instances of the same service type (i.e. the same name) are logged. This unique identifier enables the possibility to retrace which service instance created which log statements.
+    To be able to identify the logs of each service, the dynamodb-logger creates a uuid4 each time it gets started which is also tracked in the database. This is necessary when multiple instances of the same service type (i.e. the same name) are logging. This unique identifier enables the possibility to retrace which service instance created which log statements.
 
     The following snippet shows how to use the *dynamodb-logger* script to log the messages from an imaginary service called *some-cool-service* which is implemented in the file `someCoolService.js`:
 
@@ -239,7 +241,7 @@ We then developed two different scripts for logging purposes:
     node someCoolService.js | node dynamodb-logger.js some-cool-service
     ```
 
-    A huge gain of this concept is that the services theirselves don't have to care about log files or log strategies. This way of logging can also be used for non-Node.js-services because logging is done with the help of the operating system (pipe) and does not rely on a specific language or log library.
+    A huge gain of this concept is that the services themselves don't have to care about log files or log strategies. This way of logging can also be used for non-Node.js-services because logging is done with the help of the operating system (pipe) and does not rely on a specific language or log library.
 
 2. *log-rest.js*:
 
@@ -255,41 +257,49 @@ We then developed two different scripts for logging purposes:
 
 # Implementation
 
+// todo: kurzer text
+
 
 ## RabbitMQ vs Redis
 
-A prototype of *TSA* was implemented using RabbitMQ for inter-service communication, e.g. passing analyzed tweets from *tweetstream-service* to the *webserver-service*. This implementation worked quite well for message passing but RabbitMQ was not enough to fulfill our requirements: the state information (i.e. which user tracked which keywords) was lost when a *tweetstream-service* went down because the service stored this information in main memory. This lead to the problem that the clients didn't receive any more tweets, because after a restart, the *tweetstream-service* no longer knew about the state he had before. This absolutely disagreed with the stateless process and share-nothing concept. 
-This is why redis was chosen as a distributed cache for storing the app's state. When a service goes down and restarts a few seconds later, it is now able to query the current state information from redis and is able to create a new connection to the Twitter Streaming API. Due to the fact that redis also provides a reliable fast publish/subscribe messaging model, it was chosen instead of RabbitMQ for inter-service communication.
-This seemed to fix the state loss problems. Except when multiple instances of the *tweetstream-service* were started at the same time.
+A prototype of *TSA* was implemented using RabbitMQ for inter-service communication, e.g. passing analyzed tweets from *tweetstream-service* to the *webserver-service*. This implementation worked quite well for message passing but RabbitMQ was not enough to fulfill our requirements: the state information (i.e. which user tracked which keywords) was lost when a *tweetstream-service* went down, because the service stored this information in main memory. This lead to the problem that the clients didn't receive any more tweets, because after a restart, the *tweetstream-service* no longer knew about the state he had before. This absolutely disagreed with the stateless process and share-nothing concept. 
+This is why redis was chosen as a distributed cache for storing the app's state. When a service goes down and restarts a few seconds later, it is now able to query the current state information from redis and is able to create a new connection to the Twitter Streaming API. Due to the fact that redis also provides a reliable fast publish/subscribe messaging model, it was also chosen for inter-service communication instead of RabbitMQ .
+This seemed to fix the state loss problems. Except when multiple instances of the *tweetstream-service* were started at the same time...
 
-## Let the battles begin
+## Let the Battles Begin
 
-### Twitter API restrictions 
+// todo: kurzer text
+
+### Twitter API Restrictions 
 
 Twitter imposes very strict limitations for their API usage. This means that it is only allowed to hold one connection to the Streaming API at the same time with the same twitter account credentials, i.e. an o-auth-token. The creation of a new connection causes the oldest connection to be closed. Twitter also checks for inflative connection tries which may entail an IP ban.
 
-### Running multiple instances of *tweetstream-service*
+### Running Multiple Instances of *tweetstream-service*
 
-Whenever a user tracks some keywords, then the information (tenant + user + keywords) is stored in the redis database. As a result the *tweetstream-service* will automatically be notified via redis keyspace events that there is a new user whose keywords need to be tracked. Hereupon the *tweetstream-service* will create a connection to the Twitter Streaming API in order to receive tweets for the given keywords.
+Whenever a user tracks keywords, the relevant information, i.e  tenant + user + keywords, is stored in the redis database. As a result the *tweetstream-service* will automatically be notified via redis keyspace events that there is a new user whose keywords need to be tracked. Hereupon the *tweetstream-service* will create a connection to the Twitter Streaming API in order to receive tweets for the given keywords.
 When there are two or more instances of the *tweetstream-service* up and running, each instance tries to connect to the Twitter API, what could potentially result in an IP ban. This is why a distributed synchronization mechanism to prevent the creation of multiple streams for one twitter account, respectively o-auth-token / tenant, had to be invented.
 
-### Requirements for the synchronization algorithm
+### Requirements for the Synchronization Algorithm
 
 We defined the following requirements the synchronization algorithm has to fulfill in order to ensure a faultless behavior for *TSA*:
 
 - operate correctly with any number of *tweetstream*-instances
 - exactly one *tweetstream*-instance must(!) 'win the battle', i.e. get a lock
-- when a lock is hold from any *tweetstream*-instance, no other instance may get the lock as long as the lock is held
+- when a lock is held by any *tweetstream*-instance, no other instance may get the lock as long as the lock is held
 - when a *tweetstream-service* holds a lock but then stops or crashes, the lock must still be released
-- when a lock is released, all other services must be allowed to restart a `battle` to fight for the lock
+- when a lock is released, all other services must be allowed to try to acquire the lock
 
-### The 'battle' algorithm
+### The 'battle' Algorithm
 
+The `battle` algorithm is a synchronization algorithm that ensures that only one *tweetstream*-instance can acquire the lock for a tenant.
 The algorithm was implemented with the help of redis' `incr`-command which atomically increments the value of a redis key by 1 and returns the new value.
-If the redis key has not existed yet, this command will create the variable with value 0 before.
-The return value then can be used to decide whether we won the battle for the tenant (return value = 1) or not (return value > 1).
+If the redis key does not exist when `incr` is called, the command will create the variable with the initial value of 0.
+As soon as lock is released all *tweetstream*-instances try to acquire it by calling the redis `incr`-command on a specific redis key. 
+Since the operation is atomic only one instance will receive the return value == 1. All other services will get return values > 1.
+The service that receives the value 1 is the winner of the `battle` and therefor receives the lock.
+Any subsequent `incr` calls by other *tweetstream*-instances will receive a return value greater than 1 and will not receive the lock.
 
-The following code shows the algorithm works:
+The following code shows how the algorithm works:
 
 ```javascript
 /*
@@ -329,14 +339,15 @@ const battleForTenant = (tenantId) => new Promise((resolve, reject) => {
 });
 ```
 
-As long as the battle is held from any *tweetstream*-instance, each `battleForTenant`-call from any *tweetstream*-instance will just increment the battle counter and thus won't win the battle.
+### Keeping the Lock
 
-We also set an expiration trigger (see 4.) which automatically deletes the redis key after a short amount of time if the expiration has not been refreshed. If a service wants to hold the lock, it has to refresh the expiration periodically e.g. with a timer. The reason for this is that when the service crashes, redis automatically will delete the key after when it expires and then all the other *tweetstream*-instances can start a new battle for this tenant.
+In redis a key can receive an expiration time. When the key expires it is deleted and an event is sent. This event triggers the *tweetstream*-instances to start a `battle` for a tenant. By setting a new expiration time the previous set expiration time can be overridden. This mechanism is used to automatically release a lock if a service goes down.
+To keep their locks each *tweetstream*-instance periodically resets the expiration time for all locks it holds. If an instance fails to do so the key expires and all the other *tweetstream*-instances start to `battle`.
 
 # Continuous Integration
 
 The continuous integration server of choice for many open source projects is currently Travis-CI.
-Travis-CI is a cloud based service that provides contiuous integration for a multitude languages.
+Travis-CI is a cloud based service that provides continuous integration for a multitude of languages.
 It is free of charge for open source software.
 After signing in to Travis-CI with a github account, the accounts repositories can be activated for CI.
 Every push to an activated repository triggers a build.
@@ -347,7 +358,6 @@ In our case the required build steps are roughly:
 *Build*
 
 * Install the dependencies of the webserver module.
-
 * Install the dependencies of the lambda module.
 * Run the test against the webserver.
 * Compile the Elm project to an HTML file.
@@ -355,13 +365,12 @@ In our case the required build steps are roughly:
 *Deploy*
 
 * Move the generated HTML file to the webserver.
-
 * Fetch the production .env file from a private repository.
 * Move the .env file to the webserver.
 * Create a versioned ZIP file of the webserver.
 * Save that ZIP into an AWS S3 bucket.
 * Deploy the lambda module to AWS lambda.
-* Trigger AWS CodeDeploy to deploy ZIP from AWS S3 bucket.
+* Trigger AWS CodeDeploy to restart services with new ZIP.
 
 The deploy steps are configure to only run when changes to the master branch occur.
 With this setup, a single push or merge to the master triggers the build and deployment of all production relevant code.
