@@ -382,7 +382,7 @@ Because of the additional costs that come with running two instances of every se
 
 ## Deployment model
 
-TSA has a public deployment model, then all used services such as CodeDeploy or DynamoDB are provided by AWS and are publicly accessible. Furthermore our app is running completely in the AWS Cloud and we don't use any private hosted data centers. An important reason for using a public deployment model is the mega scalable infrastructure.
+TSA has a public deployment model, then all used services such as CodeDeploy or DynamoDB are provided by AWS and are publicly accessible. Furthermore our app is running completely in the AWS Cloud and we don't use any private hosted data centers. An important reason for using a public deployment model is the mega scalable infrastructure that is available for all.
 
 ## How is the app deployed
 
