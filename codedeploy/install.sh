@@ -15,7 +15,7 @@ then
     forever start webserver.js
 elif [ "$DEPLOYMENT_GROUP_NAME" == "cloudy_stream" ]
 then
-    node start stream/main-tweetstream.js | node log/dynamodb-logger.js deploy-serv
+    forever start stream/main-tweetstream.js
 elif [ "$DEPLOYMENT_GROUP_NAME" == "cloudy_recorder" ]
 then
     forever start record/recorder.js
