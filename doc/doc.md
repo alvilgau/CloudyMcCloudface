@@ -386,6 +386,8 @@ Because of the additional costs that come with running two instances of every se
 
 ## Deployment model
 
+TSA has a public deployment model, then all used services such as CodeDeploy or DynamoDB are provided by AWS and are publicly accessible. Furthermore our app is running completely in the AWS Cloud and we don't use any private hosted data centers. An important reason for using a public deployment model is the mega scalable infrastructure.
+
 ## How is the app deployed
 
 The deployment of the app is realized with AWS CodeDeploy and get triggered from Travis CI. CodeDeploy receives deployment information such as bucket name, archive name and which AWS EC2 instances (deployment group) to deploy from Travis as well. In AWS CodeDeploy a set of EC2 instances is called as a *deployment group*. In order to deploy and run each of our services separately we configured three different deployment groups which can be triggered separately. The deployment groups included the last deployment status are shown in the following image. 
