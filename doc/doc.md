@@ -257,12 +257,11 @@ Two different scripts were developed for logging purposes:
 
 ### XII. Admin processes
 
-// todo: check ich nicht
+Twelve-factor advises to create scripts for repetitive tasks like database migrations or the cleanup of corrupt data. This is the reason why twelve-apps strongly favors programming languages that are shipped with a REPL, i.e. a shell especially designed for this language to run commands or start scripts. Node.js also comes with a REPL which can be used to run JavaScript commands. Until now we had no need for admin-tasks or databse migrations and thus have no configuration scripts.
 
 # Implementation
 
-// todo: kurzer text
-
+The following subsections describe challenges that occurred during the implementation phase. 
 
 ## RabbitMQ vs Redis
 
@@ -345,8 +344,8 @@ const battleForTenant = (tenantId) => new Promise((resolve, reject) => {
 
 ### Keeping the Lock
 
-In redis a key can receive an expiration time. When the key expires it is deleted and an event is sent. This event triggers the *tweetstream*-instances to start a `battle` for a tenant. By setting a new expiration time the previous set expiration time can be overridden. This mechanism is used to automatically release a lock if a service goes down.
-To keep their locks each *tweetstream*-instance periodically resets the expiration time for all locks it holds. If an instance fails to do so the key expires and all the other *tweetstream*-instances start to `battle`.
+In redis a key can receive an expiration time. When the key expires it is deleted and an event is published. By setting a new expiration time the previous set expiration time can be overridden. This mechanism is used to automatically release a lock if a service goes down.
+To keep their locks each *tweetstream*-instance periodically resets the expiration time for all keys, i.e. locks, it holds. If an instance fails to do so the key expires and all the other *tweetstream*-instances receive an event that a key was deleted and start to `battle` for the tenant associated with that key.
 
 # Continuous Integration
 
@@ -421,5 +420,24 @@ When an error occurs, then several steps can be done to troubleshoot. Firstly, w
 
 # Cost Calculation
 ## cost model
-## possible charging model
-## costs for an halb an hour test run
+The following graphic gives an estimate of the monthly cost for running the application in the AWS cloud.
+
+The calculation assumes 1000 concurrent users and 100 concurrent recordings at any given time.
+
+![AWS monthly cost](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/monthly-cost.png "AWS monthly cost") AWS monthly cost. *Calculated with cloudcraft.io*
+
+Not included in this graphic is the cost for outgoing network traffic, which adds another 140€ each month for 1000 concurrent users and increases the monthly total to ~340€.
+
+## Possible Charging Model
+
+When creating a charging model the two main features of the app have to be taken into consideration. The first is the real time analysis which produces a huge amount of outgoing network traffic. Here it would make sense to charge each user or tenant by the total analysis time. This data can be gathered relatively ease by listening to redis events.
+The second component is the recording of tweets. Outgoing network traffic is not as much an issue in this case, but storing the analyzed tweets is a massiv cost factor.
+What needs to be taken into consideration as well, is the fact that recordings are stored by tenant.
+Therefor it would make sense to charge each tenant for the total time of all stored recordings.
+
+## Costs for an Half an Hour Test Run
+
+It would cost about 15 cents to run the service for half an hour.
+
+
+
