@@ -334,8 +334,6 @@ As long as the battle is held from any *tweetstream*-instance, each `battleForTe
 
 We also set an expiration trigger (see 4.) which automatically deletes the redis key after a short amount of time if the expiration has not been refreshed. If a service wants to hold the lock, it has to refresh the expiration periodically e.g. with a timer. The reason for this is that when the service crashes, redis automatically will delete the key after when it expires and then all the other *tweetstream*-instances can start a new battle for this tenant.
 
-# Installation
-
 # Continuous Integration
 
 The continuous integration server of choice for many open source projects is currently Travis-CI.
@@ -371,6 +369,8 @@ With this setup, a single push or merge to the master triggers the build and dep
 Additionally deployments to dedicated development instances on AWS could be configured in just a few minutes.
 This would allow to have two identical AWS setups running at the same time, where one setups represents the master branch and the other the development branch of the project.
 Because of the additional costs that come with running two instances of every service we decided against running a production and development environment simultaneously.
+
+# Installation
 
 ## Deployment model
 
