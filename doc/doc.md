@@ -79,7 +79,7 @@ Through a REST-API which is included in the webserver, the user has the possibil
 
 ## Scaling
 
-There are three different kinds of scaling scenarios for *TSA*.
+There are four different kinds of scaling scenarios for *TSA*.
 
 1. Scale for tenants
 
