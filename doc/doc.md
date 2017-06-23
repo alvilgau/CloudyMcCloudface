@@ -76,7 +76,7 @@ Through a REST-API which is included in the webserver, the user has the possibil
 
 There are four different kinds of scaling scenarios for *TSA*.
 
-1. Scale for tenants
+**1. Scale for tenants**
 
 When the number of tenant increases, then there will be more http-connections to the Twitter Streaming API (which is one per tenant). In order to handle a massive amount of streams concurrently, multiple instances of the *tweetstream-service* may be required. For this purpose an auto scaling group was created for the *tweetstream-service*. This auto scaling group is configured as follow:
 
@@ -84,7 +84,7 @@ When the number of tenant increases, then there will be more http-connections to
 - Stop a *tweetstream-service* instance when the average incoming network traffic is less than 30 Megabyte for 10 minutes.
 - Every 30 seconds a health check will be executed to exchange dead instances. 
 
-2. Scale for users
+**2. Scale for users**
 
 When the number of user increases, then there are a lot of websocket connections to handle, one for each user. In order to handle a huge amount of users, new instances of the *webserver-service* need to be started. For this purpose a auto scaling group and a elastic load balancer was created. The auto scaling group has the following scaling policies:
 
@@ -94,11 +94,11 @@ When the number of user increases, then there are a lot of websocket connections
 
 The elastic load balancer distributes all incoming HTTP requests and incoming websocket connections evenly to distribute the load on the *webserver-service* instances.
 
-3. Scale for tweets
+**3. Scale for tweets**
 
 When there are a lot of tweets which have to be analyzed, there is nothing further to do! The analyzer function is a stateless AWS Lambda function which is scaled automatically by Amazon.
 
-4. Scale for recording
+**4. Scale for recording**
 
 When the number of recordings increases, there will be a lot of analyzed tweets that must be handled. For this reason an auto scaling group for the *recorder-service* was created too. This auto scaling group is configured exactly like the auto scaling group of *tweetstream-service*. Only the health check period is set to 5 minutes.
 
@@ -180,9 +180,9 @@ In the third and last stage **run**, Travis triggers AWS CodeDeploy which fetche
 
 All three stages are highly automated and don't require any intervention of a developer. If the build or release stage fail, Travis updates a 'batch' (i.e. a svg-image with a fixed url) which is imported in the projects' [README.md-file](https://github.com/cloudy-sentiment-analysis/CloudyMcCloudface/blob/master/README.md). This way, each developer can instantly recognize if the build failed and act accordingly.
 
-![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/build-passing.png "Badge for a passing build") Travis badge for a passing build.
+![Badge for a passing build](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/build-passing.png "Badge for a passing build")
 
-![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/build-failing.png "Badge for a failing build") Travis badge for a failing build.
+![Badge for a failing build](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/build-failing.png "Badge for a failing build")
 
 ### VI. Processes
 
@@ -371,7 +371,7 @@ Because of the additional costs that come with running two instances of every se
 
 The deployment of the app is realized with AWS CodeDeploy and gets triggered from Travis CI. CodeDeploy receives deployment information such as bucket name, archive name and which AWS EC2 instances (deployment group) to deploy from Travis as well. In AWS CodeDeploy a set of EC2 instances is called a *deployment group*. In order to deploy and run each of our services separately we configured three different deployment groups which can be triggered separately. The deployment groups including the last deployment status are shown in the following image. 
 
-![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/deployment-groups.png "AWS deployment groups") AWS deployment groups.
+![AWS deployment groups](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/deployment-groups.png "AWS deployment groups")
 
 Each of the deployment groups recognizes the affected EC2 instances by their membership in an auto scaling group. Due to this setup, CodeDeploy can easily deploy one service to several EC2 instances. Also CodeDeploy will be triggered automatically when the configured auto scaling groups create a new instance. With the `appspec.yml` file we describe which actions should be executed during deployment. In our case we call an installation bash script after CodeDeploy extracted the archive on the EC2 instance. This bash script updates the code and restarts the service depending on the deployment group.
 
@@ -390,7 +390,7 @@ For monitoring the app we use AWS CloudWatch, a monitoring service that is provi
 
 Especially the incoming and outgoing network traffic is very important, because CloudWatch uses them to set alarms which trigger the different auto scaling groups for creating or deleting an EC2 instance. The following image shows the incoming network traffic for the three defined auto scaling groups of our app.
 
-![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/cloudwatch-networkIn-metric.png "AWS CloudWatch monitoring incoming network traffic") AWS CloudWatch monitoring incoming network traffic.
+![AWS CloudWatch monitoring incoming network traffic](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/cloudwatch-networkIn-metric.png "AWS CloudWatch monitoring incoming network traffic")
 
 Using these metrics also helped us to configure our auto scaling groups correctly. In addition to the metrics we can also read the logs of AWS Lambda which will be provided by CloudWatch too.
 
@@ -403,7 +403,7 @@ The following graphic gives an estimate of the monthly costs for running the app
 
 The calculation assumes 1000 concurrent users and 100 concurrent recordings at any given time.
 
-![AWS monthly cost](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/monthly-cost.png "AWS monthly cost") AWS monthly cost. *Calculated with cloudcraft.io*
+![AWS monthly costs calculated with cloudcraft.co](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/monthly-cost.png "AWS monthly costs calculated with cloudcraft.co")
 
 The costs for outgoing network traffic is not included in this graphic, which adds another 140€ each month for 1000 concurrent users and increases the monthly total to ~340€.
 
