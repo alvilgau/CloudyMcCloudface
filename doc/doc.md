@@ -413,7 +413,7 @@ Especially the incoming and outgoing network traffic is very important, because 
 
 ![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/cloudwatch-networkIn-metric.png "AWS CloudWatch monitoring incoming network traffic") AWS CloudWatch monitoring incoming network traffic.
 
-
+Using these metrics also helped us to configure our auto scaling groups correctly. In addition to the metrics we can also read the logs of AWS Lambda which will be provided by CloudWatch too.
 
 ## How to troubleshoot
 
