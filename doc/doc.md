@@ -239,21 +239,11 @@ Two different scripts were developed for logging purposes:
     This script receives log messages from other services via the operating system pipe. Both channels, stdin and stderr are supported to allow different log levels. This script then stores the incoming log messages into a DynamoDB. The service which is logged can be given a name as a command line argument for the *dynamodb-logger*.
     To be able to identify the logs of each service, the dynamodb-logger creates a uuid4 each time it gets started which is also tracked in the database. This is necessary when multiple instances of the same service type (i.e. the same name) are logging. This unique identifier enables the possibility to retrace which service instance created which log statements.
 
-    The following snippet shows how to use the *dynamodb-logger* script to log the messages from an imaginary service called *some-cool-service* which is implemented in the file `someCoolService.js`:
-
-    ```
-    node someCoolService.js | node dynamodb-logger.js some-cool-service
-    ```
-
     A huge gain of this concept is that the services themselves don't have to care about log files or log strategies. This way of logging can also be used for non-Node.js-services because logging is done with the help of the operating system (pipe) and does not rely on a specific language or log library.
 
 2. *log-rest.js*:
 
-    This service provides a REST API to query the logs stored the previously mentioned DynamoDB. The output of the *log-rest-service* itself can also be logged using the *dynamodb-logger*-script:
-
-    ```
-    node log-rest.js | node dynamodb-logger.js log-rest-service
-    ```
+    This service provides a REST API to query the logs stored the previously mentioned DynamoDB.
 
 ### XII. Admin processes
 
