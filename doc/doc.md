@@ -376,11 +376,11 @@ Because of the additional costs that come with running two instances of every se
 
 ## How is the app deployed
 
-The deployment of the app is realized with AWS CodeDeploy and get triggered from Travis CI. In order to deploy and run each service separately we configured three different deployment groups which can be triggered separately. The deployment groups are shown in the following image. 
+The deployment of the app is realized with AWS CodeDeploy and get triggered from Travis CI. CodeDeploy receives deployment information such as bucket name, archive name and which AWS EC2 instance to deploy from Travis as well. In AWS CodeDeploy a set of EC2 instances is called as a *deployment group*. In order to deploy and run each of our services separately we configured three different deployment groups which can be triggered separately. The deployment groups included the last deployment status are shown in the following image. 
 
 ![alt text](https://raw.githubusercontent.com/cloudy-sentiment-analysis/CloudyMcCloudface/master/doc/deployment-groups.png "AWS deployment groups") AWS deployment groups.
 
-Each of the deployment group recognize the affected EC2 instances by their membership in an auto scaling group. Due this setup CodeDeploy can easily deploy one service to several EC2 instances. Also CodeDeploy will be triggered automatically when the configured auto scaling groups create a new instance.
+Each of the deployment groups recognize the affected EC2 instances by their membership in an auto scaling group. Due this setup, CodeDeploy can easily deploy one service to several EC2 instances. Also CodeDeploy will be triggered automatically when the configured auto scaling groups create a new instance. With the `appspec.yml` file we describe which actions should be executed during deployment. In our case we call an installation bash script after CodeDeploy extracted the archive into the EC2 instance. This bash script updates the code and restarts the service depending on the deployment group.  
 
 # Operations
 ## how to monitor the app
