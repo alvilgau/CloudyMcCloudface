@@ -1,5 +1,5 @@
 require('dotenv').config();
-const Path = require('Path');
+const Path = require('path');
 const Hapi = require('hapi');
 const AWS = require('aws-sdk');
 const _ = require('lodash');
@@ -22,7 +22,7 @@ const server = new Hapi.Server({
   }
 });
 server.connection({
-  host: 'localhost',
+  host: '0.0.0.0',
   port: process.env.LOG_REST_PORT
 });
 
@@ -81,7 +81,7 @@ server.route({
   handler: (request, reply) => {
     const params = {
       TableName: tableName,
-      FilterExpression: '#service = :service',
+      KeyConditionExpression: '#service = :service',
       ExpressionAttributeNames: {
         '#service': 'service'        
       },
@@ -90,7 +90,7 @@ server.route({
       }
     };
     console.log(params);
-    return reply(scan(params));
+    return reply(query(params));
   }
 });
 
