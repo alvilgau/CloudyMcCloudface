@@ -1,14 +1,15 @@
 require('dotenv').config();
 const AWS = require('aws-sdk');
 const uuidV4 = require('uuid/v4');
+const Tail = require('tail').Tail;
 
 const uuid = uuidV4();
 const service = process.argv[2] || 'unknown-service';
-const verbose = process.argv.includes('-v') || process.argv.includes('--verbose');
+const logLevel = process.argv[3] || 'unknown-level';
+const file = process.argv[4];
 const tableName = 'logs';
 
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
+const tail = new Tail(file);
 
 AWS.config.update({
   region: process.env.LOG_REGION,
@@ -53,7 +54,7 @@ const deleteTable = () => new Promise((resolve, reject) => {
   });
 });
 
-const log = (logLevel, message) => new Promise ((resolve, reject) => {
+const log = (message) => new Promise ((resolve, reject) => {
   const timestamp = new Date().getTime();
   const params = {
     TableName: tableName,
@@ -74,16 +75,8 @@ const log = (logLevel, message) => new Promise ((resolve, reject) => {
   });
 });
 
-const handleChunk = (chunk) => {     
-  const match = chunk.match(/^\[(.*)\]/);
-  const data = {
-        message: chunk.replace(match && match[0] + ' ', ''),
-        logLevel: match && match[1]
-    };
-  data.logLevel && log(data.logLevel, data.message);
-};
 
-process.stdin.on('data', (chunk) => handleChunk(chunk));
+tail.on('line', (data) => log(data));
 
 if (process.argv.includes('delete')) {
   deleteTable()

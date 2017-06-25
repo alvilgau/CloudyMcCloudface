@@ -12,15 +12,18 @@ cd /home/ec2-user/CloudyMcCloudface/webserver
 forever stopall
 if [ "$DEPLOYMENT_GROUP_NAME" == "cloudy_webserver" ]
 then
-    #{ { { node webserver.js; } 2>&3 | sed >&2 's/^/[INFO] /'; } 3>&1 1>&2 | sed 's/^/[ERROR] /';} 2>&1 | node log/dynamodb-logger.js webserver-service
-    forever start webserver.js
+    forever start -o out.log -e err.log webserver.js
+    forever start log/dynamodb-logger.js webserver INFO out.log
+    forever start log/dynamodb-logger.js webserver ERROR err.log
     forever start log/log-rest.js
 elif [ "$DEPLOYMENT_GROUP_NAME" == "cloudy_stream" ]
 then
-    #{ { { node stream/main-tweetstream.js; } 2>&3 | sed >&2 's/^/[INFO] /'; } 3>&1 1>&2 | sed 's/^/[ERROR] /';} 2>&1 | node log/dynamodb-logger.js tweetstream-service
-    forever start stream/main-tweetstream.js
+    forever start -o out.log -e err.log stream/main-tweetstream.js
+    forever start log/dynamodb-logger.js tweetstream INFO out.log
+    forever start log/dynamodb-logger.js tweetstream ERROR err.log
 elif [ "$DEPLOYMENT_GROUP_NAME" == "cloudy_recorder" ]
 then
-    #{ { { node record/recorder.js; } 2>&3 | sed >&2 's/^/[INFO] /'; } 3>&1 1>&2 | sed 's/^/[ERROR] /';} 2>&1 | node log/dynamodb-logger.js recorder-service
-    forever start record/recorder.js
+    forever start -o out.log -e err.log record/recorder.js
+    forever start log/dynamodb-logger.js recorder INFO out.log
+    forever start log/dynamodb-logger.js recorder ERROR err.log
 fi
