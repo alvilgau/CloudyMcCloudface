@@ -26,8 +26,8 @@ const analyzeTweets = (tweets) => {
   return {    
     timestamp: Date.now(),
     values: [
+      { name: 'Mean', value: Math.floor(Math.random() * (10) + 90) },
       //{ name: 'Mean', value: stats.mean(scores) },
-      { name: 'Mean', value: -20 },
       { name: 'Variance', value: stats.variance(scores) },
       { name: 'Standard Deviation', value: stats.stdev(scores) },
       { name: '0.25 Quantile', value: stats.percentile(scores, 0.25) },
